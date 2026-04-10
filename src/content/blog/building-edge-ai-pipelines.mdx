@@ -1,0 +1,32 @@
+---
+title: "Deploying Edge AI Inference on Jetson Orin for Industrial Logistics"
+date: "2026-02-15"
+tags: ["Edge AI", "TensorRT", "DeepStream", "NVIDIA Jetson", "Embedded Linux"]
+excerpt: "How we deployed CUDA and TensorRT inference pipelines on Jetson Orin at Ciena to detect conveyor anomalies in real time, cutting unplanned downtime by 22%."
+---
+
+# Deploying Edge AI Inference on Jetson Orin for Industrial Logistics
+
+At Ciena, I work on embedded Linux networking firmware for logistics edge gateways. One of the more interesting challenges has been deploying edge AI inference directly on NVIDIA Jetson Orin modules to detect conveyor and sorter anomalies in real-time warehouse environments.
+
+## The Problem
+
+Unplanned downtime in high-throughput fulfillment operations is expensive. Conveyor belt jams, sorter misalignments, and mechanical wear patterns that go undetected until something breaks — these are the kinds of failures that shut down entire processing lines. Traditional monitoring relies on threshold-based alerts on temperature and vibration sensors, which catch catastrophic failures but miss the gradual degradation patterns that precede them.
+
+## The Approach
+
+We built inference pipelines using CUDA and TensorRT on Jetson Orin to analyze visual and sensor data in real time. The key design decisions:
+
+**TensorRT optimization** was essential. Running raw PyTorch models on edge hardware burns through the thermal and power budgets before you hit useful frame rates. Converting to TensorRT with INT8 quantization where accuracy permits and FP16 elsewhere gave us the headroom to run detection models within the Jetson's thermal envelope during sustained operation.
+
+**DeepStream pipelines** for multi-sensor data integration. Rather than building custom video decode and batching logic, we leveraged DeepStream's GStreamer-based pipeline architecture to ingest multiple camera streams alongside telemetry data. This let us fuse visual anomaly signals with vibration, temperature, and throughput metrics in a single processing graph.
+
+**GPU profiling with Nsight Systems** was how we found the real bottlenecks. Memory bandwidth contention between inference kernels and the video decode pipeline was the initial limiting factor — not compute. Restructuring the memory layout and staggering decode and inference scheduling resolved this.
+
+## Results
+
+The deployment reduced unplanned operational downtime by 22% by catching degradation patterns early enough for scheduled maintenance. The DeepStream-based telemetry fusion improved fault localization accuracy by 27% — when something does go wrong, operators can identify the specific subsystem faster.
+
+## What I Learned
+
+Edge AI deployment is fundamentally different from cloud inference. You're working within fixed thermal budgets, limited memory, and power constraints that don't exist in a data center. The optimization work isn't optional — it's the difference between a system that works on a bench and one that runs 24/7 in a warehouse. Nsight Systems became an essential tool, not just for performance tuning but for understanding how inference workloads interact with the rest of the embedded system.

@@ -1,0 +1,43 @@
+---
+title: "Lessons from Packet Processing and Data-Plane Engineering"
+date: "2026-01-20"
+tags: ["Networking", "Embedded Linux", "P4", "DPDK", "Performance"]
+excerpt: "What I've learned about high-performance packet processing across two roles — from DMA optimization at Ciena to P4-programmable data planes at Cisco."
+---
+
+# Lessons from Packet Processing and Data-Plane Engineering
+
+High-performance networking is one of those domains where the gap between "it works" and "it works at line rate" is enormous. Over the past few years, I've worked on packet processing at two companies — optimizing DMA paths and interrupt handling for logistics edge gateways at Ciena, and building P4-programmable data-plane pipelines with switching ASIC SDKs at Cisco. The problems look different on the surface, but the underlying engineering principles are remarkably consistent.
+
+## DMA Optimization at Ciena
+
+At Ciena, the edge gateways handle packet processing for logistics infrastructure. The firmware runs on embedded Linux, and the challenge was sustaining throughput during peak fulfillment operations when traffic patterns become bursty and unpredictable.
+
+The 31% throughput improvement we achieved came from three areas:
+
+**DMA transfer path optimization.** The default DMA descriptor ring configurations were sized for average load, not peak. Resizing rings and aligning descriptor memory to cache-line boundaries eliminated most of the stalls we saw during burst traffic.
+
+**Interrupt coalescing tuning.** Aggressive interrupt coalescing saves CPU cycles during steady-state traffic but introduces latency spikes during load transitions. We implemented adaptive coalescing that adjusts thresholds based on recent packet arrival rates — a simple feedback loop that significantly smoothed the latency distribution.
+
+**Packet processing pipeline restructuring.** The original pipeline had serialization points where metadata lookups blocked the forwarding path. Moving to a run-to-completion model within each processing stage, with batch prefetching of next-hop metadata, removed most of the pipeline stalls.
+
+## P4 Data Planes at Cisco
+
+At Cisco, the challenge was different: building switching firmware that integrates P4-programmable data-plane pipelines with switching ASIC SDKs. P4 gives you programmability in the forwarding path — you can define custom header parsing, match-action tables, and stateful processing without changing the ASIC firmware.
+
+The 31% reduction in packet loss during large-scale network validation came from tightening the integration between the P4 pipeline and the ASIC SDK's table management. The default table population sequence assumed entries would be installed in a specific order, but during rapid reconvergence events, the ordering guarantee broke down. Implementing transactional table updates — where the full forwarding state is swapped atomically — eliminated the window where incomplete state caused drops.
+
+## BlueField DPU Offloading
+
+The most interesting work at Cisco was integrating AI-assisted traffic intelligence on NVIDIA BlueField DPUs. Running DOCA pipelines and ONNX inference models directly on the DPU's ARM cores meant we could classify encrypted traffic and detect anomalies without consuming host CPU cycles.
+
+The key insight was that DPU offloading isn't just about moving work off the host — it's about placing inference where the data already flows. The per-flow feature extraction happens inline in the packet processing path, which means the model sees features at wire speed with zero copy overhead. This improved encrypted anomaly classification accuracy by 24% compared to the host-based sampling approach, and reduced host CPU utilization by 29%.
+
+## Common Patterns
+
+Across both roles, the patterns that mattered most:
+
+1. **Profile before optimizing.** At Ciena it was Nsight Systems for GPU/system analysis; at Cisco it was DOCA profiling tools. The bottleneck is never where you think it is.
+2. **Batch everything.** Amortizing per-packet overhead across batches is the single highest-leverage optimization in packet processing.
+3. **Memory layout matters more than algorithms.** Cache-line alignment, prefetching, and avoiding false sharing consistently delivered larger improvements than algorithmic changes.
+4. **Test under realistic traffic.** Synthetic benchmarks with uniform packet sizes and steady arrival rates miss the edge cases that cause failures in production. Bursty, mixed-size traffic with reconvergence events is where systems actually break.

@@ -1,0 +1,36 @@
+---
+title: "Winning Two Awards at the Intelligence at the Frontier Hackathon"
+date: "2026-03-05"
+tags: ["Hackathon", "Physical AI", "Robotics", "Multi-Agent AI", "Gen AI"]
+excerpt: "How our team won Best Overall Use of DeepLake with HydraSwarm and the Physical AI & Robotics track with a Unitree G1 humanoid pipeline — all in 36 hours."
+---
+
+# Winning Two Awards at the Intelligence at the Frontier Hackathon
+
+The Intelligence at the Frontier hackathon, hosted by Funding the Commons and Protocol Labs in San Francisco (February 23-24, 2026), was one of those events where the ambition level matched the tooling. Around 150-200 curated builders, a $26,750+ prize pool, and four tracks spanning physical AI, agentic systems, AI safety, and sovereign infrastructure. Our team walked away with two awards.
+
+## HydraSwarm: Best Overall Use of DeepLake
+
+The first win came from HydraSwarm — a self-improving multi-agent AI system where 7 specialized agents (Product Manager, Architect, Developer, Reviewer, QA Engineer, SRE, and CTO) collaborate on software engineering tasks.
+
+The key insight was institutional memory. Most AI systems generate once and forget. HydraSwarm writes lessons back to HydraDB (powered by DeepLake) after every run. The next time a similar task comes in, each agent recalls relevant knowledge before generating output. The improvement is measurable: Run 1 scores 7/10, Run 2 scores 8/10, Run 3 scores 9/10.
+
+We built live agent thinking logs showing every HydraDB query and storage operation, SSE streaming for real-time agent activation, and a run comparison view that shows score deltas side-by-side. The judges could see the improvement happening in real time. 326 unit tests across 21 suites gave us confidence to ship fast without breaking things.
+
+## Physical AI & Robotics Track: Unitree G1 Pipeline
+
+The second win was in the Physical AI & Robotics track, sponsored by NomadicML. This one was hands-on — literally. We built a rapid-iteration pipeline for the Unitree G1 humanoid robot, moving from manual demonstration to autonomous policy testing.
+
+The stack: Meta Quest 3 integrated with MuJoCo for intuitive teleoperation, NVIDIA Sonic for low-latency control commands, DeepLake for high-throughput tensor storage and fast I/O of demonstration data, and NVIDIA GR00T for fine-tuning locomotion policies. We used Nomadic AI to diagnose failure modes when the robot's walking or pick-and-place tasks went wrong.
+
+The hardest part wasn't any single component — it was getting them all to work together under time pressure. When you're debugging a humanoid robot at 2 AM and the walking policy keeps falling over, you learn to prioritize ruthlessly.
+
+## MedAssist: Robotic Agents Hackathon Follow-Up
+
+A few weeks later at the Robotic Agents Hackathon (March 2026), our team built MedAssist — an AI-powered medication verification and dispensing agent. The system closes the full sense-reason-act loop: a camera on a SO-101 robotic arm scans the medication tray, Claude AI reasons about what should be dispensed for a specific patient through a 10-check safety sequence, and the arm physically picks the verified medication. ElevenLabs narrates each action in real time.
+
+This one was personal. Approximately 1.5 million people are harmed by medication errors in the US each year. Building a system that could autonomously verify and pick the right medication — or refuse to move if something is wrong — felt like the kind of work that matters.
+
+## What I Took Away
+
+Hackathons at this level aren't about demos. They're about proving you can ship a working system under extreme constraints. The skills that mattered most were systems integration, rapid debugging, and knowing when to simplify. The robotics track especially tested that — you can't fake latency when a physical robot is moving in front of judges.
