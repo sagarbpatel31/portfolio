@@ -1,27 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
+import { StatusBar } from "@/components/layout/status-bar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sagar-portfolio.vercel.app"),
   title: {
-    default: "Sagar Patel — Embedded Software Systems Engineer",
-    template: "%s | Sagar Patel",
+    default: "SAGAR_OS — Systems & AI Engineer",
+    template: "%s | SAGAR_OS",
   },
   description:
-    "Building high-performance Linux, networking, edge AI, and physical AI systems.",
+    "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
   keywords: [
     "Embedded Systems",
     "Linux",
@@ -40,18 +40,18 @@ export const metadata: Metadata = {
   authors: [{ name: "Sagar Patel" }],
   creator: "Sagar Patel",
   openGraph: {
-    title: "Sagar Patel — Embedded Software Systems Engineer",
+    title: "SAGAR_OS — Systems & AI Engineer",
     description:
-      "Building high-performance Linux, networking, edge AI, and physical AI systems.",
+      "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
     type: "website",
-    siteName: "Sagar Patel",
+    siteName: "SAGAR_OS",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sagar Patel — Embedded Software Systems Engineer",
+    title: "SAGAR_OS — Systems & AI Engineer",
     description:
-      "Building high-performance Linux, networking, edge AI, and physical AI systems.",
+      "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
   },
   robots: {
     index: true,
@@ -67,12 +67,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased">
+        <div className="scanline-overlay" aria-hidden="true" />
         <Navbar />
-        <main className="flex-grow pt-16">{children}</main>
-        <Footer />
+        <main className="flex-grow pt-14 pb-8">{children}</main>
+        <StatusBar />
       </body>
     </html>
   );

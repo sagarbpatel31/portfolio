@@ -17,6 +17,10 @@ jest.mock("framer-motion", () => ({
       const { variants, initial, animate, exit, transition, ...rest } = props;
       return <li ref={ref} {...rest}>{children}</li>;
     }),
+    a: React.forwardRef(({ children, ...props }: any, ref: any) => {
+      const { variants, initial, animate, exit, transition, ...rest } = props;
+      return <a ref={ref} {...rest}>{children}</a>;
+    }),
   },
   useInView: () => true,
   AnimatePresence: ({ children }: any) => <>{children}</>,
@@ -34,32 +38,26 @@ import { Footer } from "@/components/layout/footer";
 describe("Navbar", () => {
   beforeEach(() => render(<Navbar />));
 
-  it("renders SP monogram", () => {
-    expect(screen.getByText("SP")).toBeInTheDocument();
+  it("renders S monogram badge", () => {
+    expect(screen.getByText("S")).toBeInTheDocument();
   });
 
-  it("renders name", () => {
-    expect(screen.getByText("Sagar Patel")).toBeInTheDocument();
+  it("renders SAGAR_OS branding", () => {
+    expect(screen.getByText(/SAGAR/)).toBeInTheDocument();
+    expect(screen.getByText(/OS/)).toBeInTheDocument();
   });
 
   it("renders all nav links", () => {
-    expect(screen.getByText("Work")).toBeInTheDocument();
-    expect(screen.getByText("About")).toBeInTheDocument();
-    expect(screen.getByText("Experience")).toBeInTheDocument();
-    expect(screen.getByText("Projects")).toBeInTheDocument();
-    expect(screen.getByText("Blog")).toBeInTheDocument();
-    expect(screen.getByText("Contact")).toBeInTheDocument();
+    expect(screen.getByText("/home")).toBeInTheDocument();
+    expect(screen.getByText("/dashboard")).toBeInTheDocument();
+    expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 
-  it("nav links use anchor hrefs", () => {
-    const aboutLink = screen.getByText("About").closest("a");
-    expect(aboutLink).toHaveAttribute("href", "#about");
-  });
-
-  it("highlights active section", () => {
-    // useActiveSection is mocked to return "about"
-    const aboutLink = screen.getByText("About").closest("a");
-    expect(aboutLink?.className).toContain("text-accent");
+  it("nav links use correct hrefs", () => {
+    const homeLink = screen.getByText("/home").closest("a");
+    expect(homeLink).toHaveAttribute("href", "#hero");
+    const dashLink = screen.getByText("/dashboard").closest("a");
+    expect(dashLink).toHaveAttribute("href", "#dashboard");
   });
 
   it("has GitHub social link", () => {
@@ -93,10 +91,9 @@ describe("MobileNav", () => {
 
   it("renders nav links when open", () => {
     render(<MobileNav isOpen={true} onClose={() => {}} />);
-    expect(screen.getByText("About")).toBeInTheDocument();
-    expect(screen.getByText("Experience")).toBeInTheDocument();
-    expect(screen.getByText("Projects")).toBeInTheDocument();
-    expect(screen.getByText("Contact")).toBeInTheDocument();
+    expect(screen.getByText("/home")).toBeInTheDocument();
+    expect(screen.getByText("/dashboard")).toBeInTheDocument();
+    expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 
   it("has close button", () => {
@@ -116,7 +113,7 @@ describe("MobileNav", () => {
     const onClose = jest.fn();
     render(<MobileNav isOpen={true} onClose={onClose} />);
     const user = userEvent.setup();
-    await user.click(screen.getByText("About"));
+    await user.click(screen.getByText("/home"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -134,28 +131,8 @@ describe("MobileNav", () => {
 });
 
 describe("Footer", () => {
-  beforeEach(() => render(<Footer />));
-
-  it("renders copyright with current year", () => {
-    const year = new Date().getFullYear().toString();
-    expect(screen.getByText(new RegExp(year))).toBeInTheDocument();
-  });
-
-  it("renders Sagar Patel copyright", () => {
-    expect(screen.getByText(/Sagar Patel/)).toBeInTheDocument();
-  });
-
-  it("has social links", () => {
-    expect(screen.getByLabelText("GitHub")).toBeInTheDocument();
-    expect(screen.getByLabelText("LinkedIn")).toBeInTheDocument();
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
-  });
-
-  it("has contentinfo role", () => {
-    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
-  });
-
-  it("has social links navigation", () => {
-    expect(screen.getByRole("navigation", { name: "Social links" })).toBeInTheDocument();
+  it("renders null (replaced by StatusBar)", () => {
+    const { container } = render(<Footer />);
+    expect(container.innerHTML).toBe("");
   });
 });

@@ -59,6 +59,10 @@ jest.mock("@/lib/use-active-section", () => ({
   useActiveSection: () => "hero",
 }));
 
+jest.mock("@/components/terminal", () => ({
+  Terminal: () => <div data-testid="terminal">Terminal Mock</div>,
+}));
+
 import { Hero } from "@/components/sections/hero";
 import { Highlights } from "@/components/sections/highlights";
 import { About } from "@/components/sections/about";
@@ -90,16 +94,12 @@ describe("Hero section", () => {
     expect(screen.getByText(/firmware that powers edge networks/)).toBeInTheDocument();
   });
 
-  it("has See My Work CTA linking to highlights", () => {
-    expect(screen.getByRole("link", { name: "See My Work" })).toHaveAttribute("href", "#highlights");
+  it("has View Dashboard CTA linking to dashboard", () => {
+    expect(screen.getByRole("link", { name: /View Dashboard/ })).toHaveAttribute("href", "#dashboard");
   });
 
   it("has Resume download CTA", () => {
     expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("href", "/resume.pdf");
-  });
-
-  it("has Let's Talk CTA", () => {
-    expect(screen.getByRole("link", { name: /Let's Talk/ })).toHaveAttribute("href", "#contact");
   });
 
   it("has GitHub and LinkedIn social links", () => {

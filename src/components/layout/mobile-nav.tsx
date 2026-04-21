@@ -1,16 +1,13 @@
 "use client";
 
 import { X, Github, Linkedin, Mail } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import { fadeIn, staggerContainer } from "@/lib/motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { fadeIn } from "@/lib/motion";
 
 const navLinks = [
-  { label: "Work", href: "#highlights" },
-  { label: "About", href: "#about" },
-  { label: "Experience", href: "#experience" },
-  { label: "Projects", href: "#projects" },
-  { label: "Blog", href: "#blog" },
-  { label: "Contact", href: "#contact" },
+  { label: "/home", href: "#hero" },
+  { label: "/dashboard", href: "#dashboard" },
+  { label: "/resume", href: "/resume.pdf" },
 ];
 
 interface MobileNavProps {
@@ -23,50 +20,46 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/95 backdrop-blur-lg md:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-lg"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile navigation"
         >
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-md p-2 text-muted transition-colors hover:text-foreground"
-            onClick={onClose}
-            aria-label="Close menu"
-          >
-            <X className="h-6 w-6" />
-          </button>
-
-          <motion.nav
-            variants={staggerContainer(0.08, 0.1)}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            aria-label="Mobile navigation"
-          >
-            <ul className="flex flex-col items-center gap-6" role="list">
-              {navLinks.map((link, index) => (
-                <motion.li key={link.href} variants={fadeIn("up", index * 0.05)}>
-                  <a
-                    href={link.href}
-                    className="text-2xl font-medium text-muted transition-colors hover:text-foreground"
-                    onClick={onClose}
-                  >
-                    {link.label}
-                  </a>
-                </motion.li>
-              ))}
-            </ul>
-
-            {/* Social links */}
-            <motion.div
-              variants={fadeIn("up", 0)}
-              className="mt-10 flex items-center gap-5"
+          <div className="flex h-14 items-center justify-between px-4">
+            <span className="font-mono text-xs font-medium text-foreground tracking-wider">
+              SAGAR<span className="text-accent">_</span>OS
+            </span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-2 text-muted transition-colors hover:text-foreground"
+              aria-label="Close menu"
             >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <nav className="flex flex-col items-center justify-center gap-6 px-4 pt-16">
+            {navLinks.map((link, index) => (
+              <motion.a
+                key={link.href}
+                href={link.href}
+                onClick={onClose}
+                variants={fadeIn("up", 0)}
+                initial="hidden"
+                animate="visible"
+                transition={{ delay: index * 0.05 }}
+                className="font-mono text-2xl text-muted-foreground transition-colors hover:text-accent"
+              >
+                {link.label}
+              </motion.a>
+            ))}
+
+            <div className="mt-8 flex items-center gap-4">
               <a
                 href="https://github.com/sagarbpatel31"
                 target="_blank"
@@ -92,8 +85,8 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               >
                 <Mail className="h-5 w-5" />
               </a>
-            </motion.div>
-          </motion.nav>
+            </div>
+          </nav>
         </motion.div>
       )}
     </AnimatePresence>

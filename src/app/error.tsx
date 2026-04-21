@@ -20,11 +20,11 @@ export default function Error({
   return (
     <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
       <Container className="flex flex-col items-center text-center">
-        <TriangleAlert size={48} className="mb-6 text-accent" />
-        <h1 className="font-mono text-2xl font-bold text-foreground">
+        <TriangleAlert size={48} className="mb-6 text-accent-rose" />
+        <h1 className="font-mono text-xl font-bold text-foreground">
           runtime_error
         </h1>
-        <p className="mt-4 max-w-md text-muted">
+        <p className="mt-3 max-w-md text-sm text-muted">
           Something went wrong. Please try again.
         </p>
         {error.digest && (
@@ -33,8 +33,10 @@ export default function Error({
           </p>
         )}
         <div className="mt-8 flex gap-3">
-          <Button onClick={() => reset()}>Try Again</Button>
-          <Button asChild variant="outline">
+          <Button onClick={() => reset()} size="sm" className="font-mono text-xs bg-accent text-background hover:bg-accent-dim">
+            Try Again
+          </Button>
+          <Button asChild variant="outline" size="sm" className="font-mono text-xs">
             <Link href="/">Back to Home</Link>
           </Button>
         </div>
