@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { getAllSlugs, getPostBySlug } from "@/lib/blog";
 import { Container } from "@/components/ui/container";
-import { Badge } from "@/components/ui/badge";
 import { BlogPostContent } from "@/components/blog-post-content";
 
 interface BlogPostPageProps {
@@ -19,7 +18,7 @@ export async function generateMetadata({ params }: BlogPostPageProps) {
   const { slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return { title: "Post Not Found" };
-  return { title: `${post.title} — Sagar Patel` };
+  return { title: `${post.title} — SAGAR_OS` };
 }
 
 function formatDate(dateString: string): string {
@@ -39,40 +38,49 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
-    <section className="py-24 sm:py-32">
-      <Container>
-        <nav aria-label="Back to blog">
+    <section className="py-16 sm:py-20">
+      <Container className="max-w-4xl">
+        <nav aria-label="Back to dashboard">
           <Link
-            href="/#blog"
-            className="inline-flex items-center gap-2 text-sm text-muted hover:text-accent transition-colors mb-10"
+            href="/"
+            className="inline-flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-accent transition-colors mb-8"
           >
-            <ArrowLeft size={16} aria-hidden="true" />
-            Back to all posts
+            <ArrowLeft size={14} aria-hidden="true" />
+            cd ~/dashboard
           </Link>
         </nav>
 
-        <header className="mb-12">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted mb-4">
+        <header className="mb-10">
+          <div className="flex flex-wrap items-center gap-4 font-mono text-xs text-muted-foreground mb-4">
             <span className="inline-flex items-center gap-1.5">
-              <Calendar size={14} aria-hidden="true" />
+              <Calendar size={12} aria-hidden="true" />
               <time dateTime={post.date}>{formatDate(post.date)}</time>
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock size={14} aria-hidden="true" />
+              <Clock size={12} aria-hidden="true" />
               {post.readingTime}
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
-            {post.title}
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-5">
+            <span className="text-foreground">{post.title}</span>
           </h1>
           <div className="flex flex-wrap gap-2">
             {post.tags.map((tag) => (
-              <Badge key={tag}>{tag}</Badge>
+              <span
+                key={tag}
+                className="inline-flex items-center rounded border border-accent/20 bg-accent/5 px-2.5 py-1 font-mono text-xs text-accent"
+              >
+                {tag}
+              </span>
             ))}
           </div>
         </header>
 
-        <BlogPostContent content={post.content} />
+        <div className="dash-card">
+          <div className="dash-card-body">
+            <BlogPostContent content={post.content} />
+          </div>
+        </div>
       </Container>
     </section>
   );

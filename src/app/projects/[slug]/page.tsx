@@ -24,7 +24,7 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${project.title} — Sagar Patel`,
+    title: `${project.title} — SAGAR_OS`,
     description: project.description,
   };
 }

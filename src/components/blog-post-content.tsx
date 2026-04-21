@@ -125,13 +125,13 @@ export function BlogPostContent({ content }: BlogPostContentProps) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
 
-      <div className="mt-16 pt-8 border-t border-border">
+      <div className="mt-12 pt-6 border-t border-border">
         <Link
-          href="/#blog"
-          className="inline-flex items-center gap-2 text-sm text-muted hover:text-accent transition-colors"
+          href="/"
+          className="inline-flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-accent transition-colors"
         >
-          <ArrowLeft size={16} aria-hidden="true" />
-          Back to all posts
+          <ArrowLeft size={14} aria-hidden="true" />
+          cd ~/dashboard
         </Link>
       </div>
     </motion.div>
