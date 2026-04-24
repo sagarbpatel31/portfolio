@@ -265,13 +265,22 @@ body {
 
 .process-row {
   display: grid;
-  grid-template-columns: 48px 1fr 64px 64px 80px;
-  padding: 8px 16px;
+  /* mobile: PID | PROCESS | STATUS */
+  grid-template-columns: 36px 1fr 72px;
+  padding: 8px 12px;
   font-family: var(--font-mono), monospace;
   font-size: 12px;
   border-bottom: 1px solid rgba(30, 41, 59, 0.5);
   transition: background 0.15s ease;
   align-items: center;
+}
+
+/* sm+: full 5-column layout */
+@media (min-width: 640px) {
+  .process-row {
+    grid-template-columns: 48px 1fr 64px 64px 80px;
+    padding: 8px 16px;
+  }
 }
 
 .process-row:hover {

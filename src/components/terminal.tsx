@@ -21,7 +21,31 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "  contact     — Establish connection", type: "output" },
     { text: "  status      — System status", type: "output" },
     { text: "  resume      — Download resume", type: "output" },
+    { text: "  whoami      — Current user info", type: "output" },
+    { text: "  ls          — List directory", type: "output" },
+    { text: "  uname       — System info", type: "output" },
     { text: "  clear       — Clear terminal", type: "output" },
+  ],
+  whoami: () => [
+    { text: "visitor", type: "accent" },
+    { text: "", type: "output" },
+    { text: "You are exploring the SAGAR_OS portfolio terminal.", type: "muted" },
+    { text: "Sagar Patel is the sysadmin. He built this.", type: "muted" },
+  ],
+  "ls": () => [
+    { text: "total 8", type: "muted" },
+    { text: "drwxr-xr-x  projects/", type: "accent" },
+    { text: "drwxr-xr-x  experience/", type: "accent" },
+    { text: "drwxr-xr-x  skills/", type: "accent" },
+    { text: "-rw-r--r--  resume.pdf", type: "output" },
+    { text: "-rw-r--r--  README.md", type: "output" },
+    { text: "-r--------  .secrets  (nice try)", type: "muted" },
+  ],
+  "uname": () => [
+    { text: "SAGAR_OS v1.0.0 (stable)", type: "accent" },
+    { text: "Kernel: Embedded-Linux + AI-Stack", type: "output" },
+    { text: "Arch:   x86_64 / ARM64 / Jetson Orin", type: "output" },
+    { text: "Uptime: 5y 10m (career mode)", type: "muted" },
   ],
   about: () => [
     { text: profile.shortBio, type: "output" },
@@ -76,6 +100,69 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     }
     return [{ text: "Opening resume.pdf...", type: "accent" }];
   },
+  // ── Easter eggs ──────────────────────────────────────
+  "sudo hire sagar": () => [
+    { text: "[sudo] password for recruiter:", type: "muted" },
+    { text: "", type: "output" },
+    { text: "✓ Access granted.", type: "accent" },
+    { text: "✓ Redirecting to resume...", type: "accent" },
+    { text: "", type: "output" },
+    { text: "Just kidding — but seriously, let's talk.", type: "output" },
+    { text: `→ ${profile.email}`, type: "accent" },
+  ],
+  "sudo": () => [
+    { text: "visitor is not in the sudoers file.", type: "accent" },
+    { text: "This incident will be reported.", type: "muted" },
+    { text: "", type: "output" },
+    { text: "Hint: try 'sudo hire sagar'", type: "muted" },
+  ],
+  "git log": () => [
+    { text: "commit e33fa3a (HEAD -> main)", type: "accent" },
+    { text: "Author: Sagar Patel <sagar@myjobemails.com>", type: "output" },
+    { text: "Date:   ongoing", type: "muted" },
+    { text: "    feat: keep shipping", type: "output" },
+    { text: "", type: "output" },
+    { text: "commit 439f979", type: "output" },
+    { text: "    feat: 5+ years embedded systems + AI", type: "output" },
+    { text: "", type: "output" },
+    { text: "commit 0000001", type: "output" },
+    { text: "    init: first line of code, age 14", type: "muted" },
+  ],
+  "ping": () => [
+    { text: "PING sagar-os: 56 data bytes", type: "muted" },
+    { text: "64 bytes: icmp_seq=0 ttl=64 time=0.42 ms", type: "output" },
+    { text: "64 bytes: icmp_seq=1 ttl=64 time=0.38 ms", type: "output" },
+    { text: "64 bytes: icmp_seq=2 ttl=64 time=0.41 ms", type: "output" },
+    { text: "", type: "output" },
+    { text: "→ sagar-os is alive and responding.", type: "accent" },
+  ],
+  "cat readme.md": () => [
+    { text: "# Sagar Patel", type: "accent" },
+    { text: "", type: "output" },
+    { text: "Embedded software engineer who also ships AI.", type: "output" },
+    { text: "Builds things from the silicon up.", type: "output" },
+    { text: "", type: "output" },
+    { text: "## Stack", type: "accent" },
+    { text: "C / C++ / Python / Embedded Linux / CUDA / ROS2 / GenAI", type: "output" },
+    { text: "", type: "output" },
+    { text: "## Status", type: "accent" },
+    { text: `${profile.status}`, type: "output" },
+  ],
+  "exit": () => [
+    { text: "Nice try. The terminal does not quit.", type: "accent" },
+    { text: "You are already inside the machine.", type: "muted" },
+  ],
+  "rm -rf /": () => [
+    { text: "rm: permission denied: /", type: "accent" },
+    { text: "The portfolio is immutable. Good try.", type: "muted" },
+  ],
+  "hello": () => [
+    { text: "Hello! I'm SAGAR_OS.", type: "accent" },
+    { text: "Type 'help' to see what I can do.", type: "output" },
+  ],
+  "hi": () => [
+    { text: "Hey! Type 'help' to get started.", type: "accent" },
+  ],
 };
 
 export function Terminal() {
@@ -174,8 +261,8 @@ export function Terminal() {
             {line.text || "\u00A0"}
           </div>
         ))}
-        <form onSubmit={handleSubmit} className="flex items-center">
-          <span className="text-accent-green mr-1">visitor@sagar-os:~$</span>
+        <form onSubmit={handleSubmit} className="flex items-center gap-1">
+          <span className="text-accent-green whitespace-nowrap shrink-0">visitor@sagar-os:~$</span>
           <input
             ref={inputRef}
             type="text"

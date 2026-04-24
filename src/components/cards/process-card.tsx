@@ -11,13 +11,13 @@ export function ProcessCard() {
         <span>proc monitor</span>
         <span className="text-accent-green">{projects.length} processes</span>
       </div>
-      <div>
+      <div className="overflow-x-hidden">
         {/* Header row */}
         <div className="process-row process-header">
           <span>PID</span>
           <span>PROCESS</span>
-          <span>YEAR</span>
-          <span>CAT</span>
+          <span className="hidden sm:block">YEAR</span>
+          <span className="hidden sm:block">CAT</span>
           <span className="text-right">STATUS</span>
         </div>
         {/* Process rows */}
@@ -33,22 +33,22 @@ export function ProcessCard() {
               <span className="text-muted">
                 {String(i + 1).padStart(3, "0")}
               </span>
-              <span className="flex items-center gap-2 text-foreground group-hover:text-accent transition-colors">
+              <span className="flex items-center gap-2 text-foreground group-hover:text-accent transition-colors min-w-0 truncate">
                 {name}
-                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent" />
+                <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-accent flex-shrink-0" />
               </span>
-              <span className="text-muted">{project.year}</span>
-              <span className="text-muted">{shortCat}</span>
+              <span className="hidden sm:block text-muted">{project.year}</span>
+              <span className="hidden sm:block text-muted">{shortCat}</span>
               <span className="text-right">
                 {project.featured ? (
                   <span className="inline-flex items-center gap-1 text-accent-green">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-green" />
-                    ACTIVE
+                    <span className="hidden sm:inline">ACTIVE</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-accent-amber">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-amber" />
-                    IDLE
+                    <span className="hidden sm:inline">IDLE</span>
                   </span>
                 )}
               </span>

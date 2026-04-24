@@ -15,7 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://sagar-portfolio.vercel.app"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sagarbpatel31.github.io/portfolio"
+  ),
   title: {
     default: "SAGAR_OS — Systems & AI Engineer",
     template: "%s | SAGAR_OS",
@@ -69,7 +71,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased">
+      <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased overflow-x-hidden">
         <div className="scanline-overlay" aria-hidden="true" />
         <Navbar />
         <main className="flex-grow pt-14 pb-8">{children}</main>
