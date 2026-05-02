@@ -48,12 +48,21 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "SAGAR_OS",
     locale: "en_US",
+    images: [
+      {
+        url: "/profile.jpeg",
+        width: 592,
+        height: 592,
+        alt: "Sagar Patel — Systems & AI Engineer",
+      },
+    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "SAGAR_OS — Systems & AI Engineer",
     description:
       "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+    images: ["/profile.jpeg"],
   },
   robots: {
     index: true,
