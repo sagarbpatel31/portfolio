@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Navbar } from "@/components/layout/navbar";
 import { StatusBar } from "@/components/layout/status-bar";
 import "./globals.css";
@@ -85,6 +86,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-grow pt-14 pb-8">{children}</main>
         <StatusBar />
+        <Analytics />
       </body>
     </html>
   );
