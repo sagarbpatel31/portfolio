@@ -11,6 +11,7 @@ import { TimelineCard } from "@/components/cards/timeline-card";
 import { ActivityCard } from "@/components/cards/activity-card";
 import { EduCard } from "@/components/cards/edu-card";
 import { ContactCard } from "@/components/cards/contact-card";
+import { GitHubCard } from "@/components/cards/github-card";
 
 interface BlogEntry {
   slug: string;
@@ -80,7 +81,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
           </div>
 
           {/* Third row */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {/* Education */}
             <motion.div variants={fadeIn("up", 0)}>
               <EduCard />
@@ -89,6 +90,11 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
             {/* Contact */}
             <motion.div variants={fadeIn("up", 0)}>
               <ContactCard />
+            </motion.div>
+
+            {/* GitHub live stats */}
+            <motion.div variants={fadeIn("up", 0)} className="sm:col-span-2 lg:col-span-1">
+              <GitHubCard />
             </motion.div>
           </div>
         </motion.div>

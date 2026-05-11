@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Navbar } from "@/components/layout/navbar";
 import { StatusBar } from "@/components/layout/status-bar";
+import { KonamiOverlay } from "@/components/konami-overlay";
 import "./globals.css";
 
 const inter = Inter({
@@ -86,6 +87,7 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-grow pt-14 pb-8">{children}</main>
         <StatusBar />
+        <KonamiOverlay />
         <Analytics />
       </body>
     </html>
