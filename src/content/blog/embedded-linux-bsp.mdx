@@ -1,0 +1,277 @@
+---
+title: "Embedded Linux from Scratch: BSP, Kernel Config, and Device Drivers"
+date: "2026-03-28"
+tags: ["Embedded Linux", "Linux Kernel", "Device Drivers", "BSP", "Yocto"]
+excerpt: "What nobody tells you about bringing up embedded Linux on custom hardware — from BSP bringup and kernel config to writing your first character driver and surviving device tree."
+---
+
+# Embedded Linux from Scratch: BSP, Kernel Config, and Device Drivers
+
+Embedded Linux bringup is one of those disciplines where the gap between "I know Linux" and "I can bring up Linux on this board" is enormous. I've worked through it at Ciena on logistics edge gateways, and the lessons are hard-won enough to be worth writing down.
+
+## What a BSP Actually Is
+
+A Board Support Package (BSP) is the collection of everything needed to boot Linux on specific hardware:
+
+- **Bootloader** (U-Boot typically) — initializes hardware, loads kernel
+- **Kernel configuration** — which drivers to compile in vs. as modules
+- **Device tree** — hardware description passed to kernel at boot
+- **Root filesystem** — userspace, libraries, init system
+- **Toolchain** — cross-compiler targeting your CPU architecture
+
+None of this is automatic. Each piece requires hardware-specific customization.
+
+## U-Boot Bringup
+
+U-Boot runs before the kernel. It initializes DRAM, clocks, and storage controllers, then loads the kernel image and device tree blob (DTB) into memory.
+
+Critical early debugging tool: UART. Before anything else works, you need a serial console. UART init happens very early in U-Boot — check your board's schematic for the debug UART pins before you do anything else.
+
+```
+# U-Boot console — basic sanity checks
+=> printenv  # see environment variables
+=> bdinfo    # board info — DRAM size, clock rates
+=> mmc info  # verify storage controller init
+```
+
+If U-Boot boots but the kernel panics immediately, the DTB is usually wrong. U-Boot passes the DTB address to the kernel — verify it's loading the correct one.
+
+## Kernel Configuration
+
+`make menuconfig` is unwieldy for large configs. In practice, start from the vendor-provided defconfig and diff from there:
+
+```bash
+# Start from vendor defconfig
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- vendor_defconfig
+
+# Compare to a known working config
+diff .config reference_config | grep "^[<>]" | head -40
+```
+
+Categories that matter most for embedded:
+
+**Reduce kernel size:**
+```
+CONFIG_MODULES=y          # loadable modules vs. monolithic
+CONFIG_DEBUG_INFO=n       # strip debug symbols for production
+CONFIG_KALLSYMS=n         # symbol table — needed for oops traces, costs RAM
+```
+
+**Driver inclusion:**
+```
+CONFIG_I2C=y
+CONFIG_SPI=y
+CONFIG_GPIO_SYSFS=y       # expose GPIO to userspace
+CONFIG_ETHERNET=y
+```
+
+**Real-time considerations:**
+```
+CONFIG_PREEMPT_RT=y       # PREEMPT_RT patch for hard RT requirements
+CONFIG_NO_HZ_FULL=y       # tickless for RT isolation
+```
+
+For our gateway hardware, the monolithic vs. module decision mattered for boot time. Modules load asynchronously and can be deferred — building critical drivers in (not as modules) eliminated late-init races that caused sporadic boot failures.
+
+## Device Tree
+
+Device tree is the most painful part of embedded Linux bringup. The DTS (Device Tree Source) describes hardware topology — which peripherals exist, at what addresses, with what interrupts and clocks.
+
+A simple I2C sensor node:
+```dts
+&i2c1 {
+    status = "okay";
+    clock-frequency = <400000>;  /* 400 kHz fast mode */
+
+    temp_sensor: lm75@48 {
+        compatible = "national,lm75";
+        reg = <0x48>;             /* I2C address */
+        interrupt-parent = <&gpio1>;
+        interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
+    };
+};
+```
+
+Common mistakes:
+- Wrong `reg` address (verify against schematic, not just datasheet)
+- Missing `status = "okay"` — disabled nodes are ignored silently
+- Clock parent wrong — peripheral won't init even if driver loads
+- Interrupt polarity mismatch — driver loads but IRQ never fires
+
+Debug device tree issues with:
+```bash
+dtc -I dtb -O dts /proc/device-tree > /tmp/live.dts
+# Compare live DTS to what you compiled
+```
+
+## Writing a Character Driver
+
+The simplest useful driver is a character device — exposes a file interface (`open/read/write/ioctl`) to userspace.
+
+Skeleton:
+
+```c
+#include <linux/module.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/uaccess.h>
+
+#define DEVICE_NAME "mydev"
+#define CLASS_NAME  "myclass"
+
+static dev_t dev_num;
+static struct cdev my_cdev;
+static struct class *my_class;
+
+static ssize_t mydev_read(struct file *f, char __user *buf,
+                           size_t len, loff_t *off)
+{
+    char data[] = "hello from kernel\n";
+    size_t to_copy = min(len, sizeof(data));
+    if (copy_to_user(buf, data, to_copy))
+        return -EFAULT;
+    return to_copy;
+}
+
+static const struct file_operations my_fops = {
+    .owner = THIS_MODULE,
+    .read  = mydev_read,
+};
+
+static int __init mydev_init(void)
+{
+    alloc_chrdev_region(&dev_num, 0, 1, DEVICE_NAME);
+    cdev_init(&my_cdev, &my_fops);
+    cdev_add(&my_cdev, dev_num, 1);
+    my_class = class_create(CLASS_NAME);
+    device_create(my_class, NULL, dev_num, NULL, DEVICE_NAME);
+    pr_info("mydev: loaded\n");
+    return 0;
+}
+
+static void __exit mydev_exit(void)
+{
+    device_destroy(my_class, dev_num);
+    class_destroy(my_class);
+    cdev_del(&my_cdev);
+    unregister_chrdev_region(dev_num, 1);
+}
+
+module_init(mydev_init);
+module_exit(mydev_exit);
+MODULE_LICENSE("GPL");
+```
+
+The critical rules:
+- Never sleep in interrupt context
+- `copy_to_user` / `copy_from_user` — never dereference userspace pointers directly
+- Reference count your device correctly — `open` increments, `release` decrements
+- Use `pr_err/pr_info` not `printk` directly
+
+## Platform Driver and Device Tree Binding
+
+For hardware described in device tree, use the platform driver model:
+
+```c
+static const struct of_device_id mydrv_of_match[] = {
+    { .compatible = "mycompany,mydevice" },
+    {}
+};
+MODULE_DEVICE_TABLE(of, mydrv_of_match);
+
+static int mydrv_probe(struct platform_device *pdev)
+{
+    struct resource *res;
+    void __iomem *base;
+
+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+    base = devm_ioremap_resource(&pdev->dev, res);
+    if (IS_ERR(base))
+        return PTR_ERR(base);
+
+    /* devm_ variants auto-cleanup on driver unbind */
+    dev_info(&pdev->dev, "probed at %pa\n", &res->start);
+    return 0;
+}
+
+static struct platform_driver mydrv = {
+    .probe  = mydrv_probe,
+    .driver = {
+        .name           = "mydevice",
+        .of_match_table = mydrv_of_match,
+    },
+};
+module_platform_driver(mydrv);
+```
+
+The `compatible` string in the driver must match the DTS node exactly — this is how the kernel binds drivers to hardware nodes.
+
+## Debugging the Kernel
+
+Essential tools:
+
+```bash
+# Kernel messages — follow live
+dmesg -w
+
+# Check if driver loaded
+lsmod | grep mydev
+
+# Driver probe failure details
+journalctl -k | grep mydev
+
+# GPIO state
+cat /sys/kernel/debug/gpio
+
+# I2C scan (requires i2c-tools)
+i2cdetect -y 1
+
+# Oops trace — decode addresses
+addr2line -e vmlinux -f <address>
+```
+
+For harder bugs, `ftrace` is invaluable — it can trace function calls inside the kernel without adding printk spam:
+
+```bash
+echo function > /sys/kernel/debug/tracing/current_tracer
+echo mydrv_probe > /sys/kernel/debug/tracing/set_ftrace_filter
+echo 1 > /sys/kernel/debug/tracing/tracing_on
+# trigger the event
+cat /sys/kernel/debug/tracing/trace
+```
+
+## Yocto for Production
+
+For production, Yocto (or Buildroot for simpler targets) manages the full build system — toolchain, kernel, rootfs, package management, reproducible builds.
+
+The BSP layer structure:
+
+```
+meta-myboard/
+├── conf/
+│   ├── layer.conf
+│   └── machine/myboard.conf   # MACHINE definition
+├── recipes-kernel/
+│   └── linux/
+│       └── linux-myboard.bb   # kernel recipe
+└── recipes-bsp/
+    └── u-boot/
+        └── u-boot-myboard.bb  # bootloader recipe
+```
+
+Key machine config variables:
+```bitbake
+MACHINE = "myboard"
+TARGET_ARCH = "aarch64"
+PREFERRED_PROVIDER_virtual/kernel = "linux-myboard"
+SERIAL_CONSOLES = "115200;ttyS0"
+KERNEL_DEVICETREE = "myboard.dtb"
+```
+
+Yocto's build reproducibility — same inputs produce bit-identical outputs — is essential for production firmware where you need to audit exactly what's in a shipped image.
+
+## The Lesson
+
+Embedded Linux bringup teaches you to respect every abstraction layer. When something doesn't work, you can't assume the layer below is correct — you have to verify it. UART before USB. Device tree before drivers. Bootloader before kernel. Work bottom-up, verify each layer before building on it.
+
+The hardware is always right. If your code disagrees, check the schematic.
