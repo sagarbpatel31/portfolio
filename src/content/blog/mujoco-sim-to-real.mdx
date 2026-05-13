@@ -1,0 +1,245 @@
+---
+title: "MuJoCo Sim-to-Real: Closing the Gap for Humanoid Robots"
+date: "2026-05-08"
+tags: ["Robotics", "MuJoCo", "Sim-to-Real", "Physical AI", "Unitree G1"]
+excerpt: "How we used MuJoCo simulation, teleoperation data, and NVIDIA GR00T to build locomotion policies for the Unitree G1 humanoid — and what the sim-to-real gap actually looks like in practice."
+---
+
+# MuJoCo Sim-to-Real: Closing the Gap for Humanoid Robots
+
+Simulation is where you iterate cheaply. Real hardware is where you find out what your simulation got wrong. The engineering discipline of sim-to-real transfer is about making that gap as small as possible so that policies trained or tested in simulation actually work when deployed.
+
+Here's what we learned building the Unitree G1 pipeline at the Intelligence at the Frontier hackathon — 36 hours of dense robotics engineering.
+
+## Why Simulation First
+
+The G1 is a 35-DOF humanoid that falls over. A lot. Every fall is a potential hardware failure — a wrist joint, a sensor, a cable. Developing policies entirely on real hardware means:
+
+- Slow iteration (reset after every fall)
+- Hardware wear and failure risk
+- No repeatability (different floor friction, battery state, ambient temperature)
+- No ground truth state (the robot doesn't know its exact joint angles — sensors have noise)
+
+MuJoCo gives you perfect state information, zero reset cost, and the ability to run thousands of policy rollouts overnight without touching the hardware.
+
+## MuJoCo Model Setup for G1
+
+MuJoCo uses XML (MJCF) to describe robot geometry, joints, actuators, and contacts. The G1's MJCF model was provided by Unitree — but the default parameters needed tuning to match real hardware behavior.
+
+Key parameters we adjusted:
+
+```xml
+<!-- Joint damping — real motors have more damping than default -->
+<joint name="left_hip_pitch" damping="2.5" armature="0.01"/>
+
+<!-- Contact parameters — critical for foot-ground interaction -->
+<geom name="left_foot" type="box"
+      size="0.12 0.06 0.01"
+      friction="0.8 0.005 0.0001"   <!-- slide, spin, roll friction -->
+      condim="6"                     <!-- 6D contact forces -->
+      solimp="0.9 0.95 0.001"
+      solref="0.02 1"/>
+
+<!-- Actuator gains — match real motor torque curves -->
+<motor name="left_hip_pitch_motor"
+       joint="left_hip_pitch"
+       gear="100"
+       ctrlrange="-100 100"/>
+```
+
+The friction parameters matter enormously for walking. Too low → foot slides; too high → unrealistic. We matched against slow-motion video of the G1 walking on similar floor material.
+
+## Teleoperation with Meta Quest 3
+
+Before training any policy, you need demonstration data. We used Meta Quest 3 for teleoperation — the controller's 6DOF tracking maps to robot end-effector commands.
+
+The integration stack:
+
+```
+Quest 3 → VR runtime → hand pose stream → IK solver → joint targets → G1 controllers
+```
+
+MuJoCo served as the visualization and physics validation layer — before sending commands to the real robot, we verified the IK solution was collision-free in simulation.
+
+```python
+import mujoco
+import mujoco.viewer
+
+class TeleoperationEnv:
+    def __init__(self, model_path: str):
+        self.model = mujoco.MjModel.from_xml_path(model_path)
+        self.data = mujoco.MjData(self.model)
+
+    def set_ee_target(self, left_pos, right_pos, left_quat, right_quat):
+        """Solve IK and set joint targets"""
+        q_left = solve_ik(self.model, self.data,
+                          "left_end_effector", left_pos, left_quat)
+        q_right = solve_ik(self.model, self.data,
+                           "right_end_effector", right_pos, right_quat)
+
+        # Check for self-collision in sim before sending to real robot
+        self.data.qpos[self.left_arm_joints] = q_left
+        self.data.qpos[self.right_arm_joints] = q_right
+        mujoco.mj_forward(self.model, self.data)
+
+        n_contacts = self.data.ncon
+        if n_contacts > 0:
+            return None  # Collision detected — don't send command
+
+        return q_left, q_right
+
+    def step(self, ctrl: np.ndarray):
+        self.data.ctrl[:] = ctrl
+        mujoco.mj_step(self.model, self.data)
+        return self.get_obs()
+
+    def get_obs(self) -> dict:
+        return {
+            "qpos": self.data.qpos.copy(),
+            "qvel": self.data.qvel.copy(),
+            "ee_left": self.data.site("left_end_effector").xpos.copy(),
+            "ee_right": self.data.site("right_end_effector").xpos.copy(),
+        }
+```
+
+## Collecting Demonstration Data
+
+DeepLake stored demonstration trajectories as tensors — fast write during collection, fast read during training:
+
+```python
+import deeplake
+
+ds = deeplake.empty("hub://myorg/g1_demos")
+ds.create_tensor("obs/qpos",    dtype="float32", shape=(None, 35))
+ds.create_tensor("obs/qvel",    dtype="float32", shape=(None, 35))
+ds.create_tensor("obs/ee_left", dtype="float32", shape=(None, 3))
+ds.create_tensor("action",      dtype="float32", shape=(None, 12))  # arm joints
+ds.create_tensor("timestamp",   dtype="float64", shape=(None,))
+
+# During teleoperation loop
+with ds:
+    for t, (obs, action) in enumerate(demo_stream):
+        ds.obs.qpos.append(obs["qpos"])
+        ds.obs.qvel.append(obs["qvel"])
+        ds.obs.ee_left.append(obs["ee_left"])
+        ds.action.append(action)
+        ds.timestamp.append(time.time())
+```
+
+We collected ~45 minutes of demonstrations across pick-and-place and walking tasks. 45 minutes sounds like nothing — at 50Hz that's 135,000 timesteps, enough to train a reasonable behavioral cloning baseline.
+
+## NVIDIA GR00T for Policy Fine-tuning
+
+GR00T is NVIDIA's foundation model for humanoid robot control. Rather than training from scratch, we fine-tuned GR00T on our demonstration data to produce task-specific policies.
+
+The fine-tuning process:
+
+```python
+from gr00t.model import GR00TPolicy
+from gr00t.data import RobotDataModule
+
+# Load pre-trained GR00T
+policy = GR00TPolicy.from_pretrained("nvidia/GR00T-N1")
+
+# Wrap our DeepLake dataset
+data_module = RobotDataModule(
+    dataset_path="hub://myorg/g1_demos",
+    obs_keys=["qpos", "qvel", "ee_left", "ee_right"],
+    action_key="action",
+    sequence_length=16,    # Context window for policy
+    batch_size=32,
+)
+
+# Fine-tune
+trainer = GR00TTrainer(
+    policy=policy,
+    data_module=data_module,
+    learning_rate=1e-4,
+    max_epochs=50,
+    gradient_clip=1.0,
+)
+trainer.fit()
+policy.save("g1_pick_place_policy")
+```
+
+The pre-trained GR00T weights provide strong priors on humanoid motion — fine-tuning on 45 minutes of demonstration data gave us a working policy in ~2 hours of training.
+
+## The Sim-to-Real Gap: What Actually Failed
+
+Honest account of where simulation predictions diverged from real hardware:
+
+**1. Joint stiffness.** The MuJoCo model had joint stiffness set to zero. Real G1 joints have non-negligible passive stiffness at extreme ranges — this caused the sim policy to occasionally command positions that the real robot held against significant spring force, triggering torque limits.
+
+Fix: measured real joint torque vs. position curves, added matching `stiffness` values in MJCF.
+
+**2. Foot contact timing.** MuJoCo's contact detection is instantaneous. Real foot-ground contact takes 10–20ms to resolve mechanically. The walking policy's ground reaction timing was calibrated to simulation — on hardware, the stance phase started slightly late, causing a characteristic shuffle.
+
+Fix: added a 15ms contact detection delay in the reward function during training to force the policy to anticipate contact rather than react to it.
+
+**3. Sensor noise.** Simulation joint angles are perfect. Real encoders have ±0.3° noise and occasional spikes. The policy trained on clean sim data was sensitive to noisy real observations.
+
+Fix: domain randomization — add Gaussian noise to all observations during sim training:
+
+```python
+def get_obs_with_noise(self) -> dict:
+    obs = self.get_obs()
+    obs["qpos"] += np.random.normal(0, 0.005, obs["qpos"].shape)
+    obs["qvel"] += np.random.normal(0, 0.05, obs["qvel"].shape)
+    return obs
+```
+
+Domain randomization is the single highest-leverage sim-to-real technique. Policies trained with noisy observations generalize to real hardware dramatically better.
+
+**4. Actuator lag.** MuJoCo actuators respond instantaneously. Real motors have ~20ms lag between commanded and actual torque. This caused the policy to over-command during fast motions.
+
+Fix: add actuator lag to the simulator:
+
+```python
+class LaggedActuatorEnv(TeleoperationEnv):
+    def __init__(self, *args, lag_steps: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lag_steps = lag_steps
+        self.ctrl_buffer = deque(
+            [np.zeros(self.model.nu)] * lag_steps,
+            maxlen=lag_steps + 1
+        )
+
+    def step(self, ctrl: np.ndarray):
+        self.ctrl_buffer.append(ctrl)
+        lagged_ctrl = self.ctrl_buffer[0]  # Apply oldest command
+        return super().step(lagged_ctrl)
+```
+
+## Nomadic AI for Failure Diagnosis
+
+When the G1's policy failed on hardware, we needed to identify whether the failure was a policy error, a sim-to-real gap, or a hardware issue. Nomadic AI's platform ingested the failure trajectory and compared it against the simulation rollout of the same initial conditions.
+
+The diagnostic output showed which joints diverged first between sim and real, and at what timestep — giving us concrete evidence that the foot contact timing was the root cause rather than the walking policy itself.
+
+## What Transfers Well, What Doesn't
+
+**Transfers well:**
+- High-level task structure (reach, grasp, lift, place)
+- Joint trajectory shapes
+- Obstacle avoidance (if geometry matches)
+- Policies trained with domain randomization
+
+**Transfers poorly without careful tuning:**
+- Precise force/torque control
+- Contact-rich manipulation (fingers, dexterous hands)
+- High-speed motions (>2 rad/s joint velocity)
+- Policies trained on perfect sim observations
+
+The G1 walking policy reached stable walking on flat ground after addressing the four failure modes above. Pick-and-place required additional real-world fine-tuning passes — contact-rich manipulation is where the sim-to-real gap is hardest to close with simulation alone.
+
+## The Workflow That Works
+
+1. **Build accurate MJCF model** — match real hardware parameters, especially contacts and damping
+2. **Add domain randomization from day one** — not as an afterthought
+3. **Collect teleoperation demos on real hardware** — use sim for visualization, not as the sole data source
+4. **Train with actuator lag and sensor noise** — mandatory, not optional
+5. **Use foundation models** (GR00T, etc.) — fine-tuning beats training from scratch with limited demo data
+6. **Deploy incrementally** — test each component on hardware before integrating
+7. **Log everything** — sim rollouts, real deployments, divergence timestamps
+
+The sim-to-real gap doesn't disappear. You narrow it systematically, one physics parameter at a time.

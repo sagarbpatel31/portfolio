@@ -1,0 +1,293 @@
+---
+title: "Programming NVIDIA BlueField DPUs with DOCA"
+date: "2026-05-10"
+tags: ["DOCA", "DPU", "BlueField", "Networking", "NVIDIA", "Embedded Systems"]
+excerpt: "How to build data-plane applications on NVIDIA BlueField DPUs using the DOCA SDK — packet processing, flow steering, and running AI inference inline with network traffic."
+---
+
+# Programming NVIDIA BlueField DPUs with DOCA
+
+The BlueField Data Processing Unit (DPU) is one of the more interesting pieces of hardware to program. It's a network adapter with its own ARM CPU complex, GPU connectivity, and a programmable data plane — and it sits inline between the network and the host. DOCA (Data Center Infrastructure-on-a-Chip Architecture) is NVIDIA's SDK for building applications that run on it.
+
+At Cisco, I worked on integrating BlueField DPU offloading into our P4 switching pipeline — running ONNX inference models on the DPU's ARM cores for encrypted traffic classification while the data plane handled packet forwarding at line rate. Here's what I learned.
+
+## What a DPU Actually Is
+
+The mental model: a DPU is a smart NIC with a Linux system inside.
+
+```
+┌────────────────────────────────────────────────┐
+│                  Host System                   │
+│  ┌────────────┐         ┌─────────────────────┐│
+│  │  x86 CPUs  │◄───PCIe►│   BlueField DPU     ││
+│  │  Host OS   │         │  ┌───────────────┐  ││
+│  └────────────┘         │  │ ARM Cortex-A78│  ││
+│                         │  │  DPU OS (Linux│  ││
+│                         │  └───────────────┘  ││
+│                         │  ┌───────────────┐  ││
+│                         │  │  eSwitch      │  ││
+│                         │  │  (hardware)   │  ││
+│                         │  └───────────────┘  ││
+│                         │  ┌───────────────┐  ││
+│                         │  │  100GbE Ports │  ││
+│                         └─────────────────────┘│
+└────────────────────────────────────────────────┘
+         ▲
+    Network (100GbE)
+```
+
+The eSwitch steers packets between ports, the host VFs (Virtual Functions), and the DPU's ARM cores — at hardware speed, without ARM CPU involvement for the fast path.
+
+The key insight: **network traffic flows through the DPU before reaching the host**. This means you can inspect, modify, drop, or mirror packets before the host OS sees them, without consuming host CPU cycles.
+
+## DOCA SDK Structure
+
+DOCA organizes functionality into libraries:
+
+| Library | Function |
+|---------|----------|
+| `doca_flow` | Hardware flow tables, packet steering, counters |
+| `doca_dpi` | Deep Packet Inspection |
+| `doca_firewall` | Stateful firewall offload |
+| `doca_regex` | Hardware regex matching |
+| `doca_compress` | Hardware compression |
+| `doca_buf` | Buffer management for zero-copy |
+| `doca_ctx` | Context/device lifecycle management |
+
+For AI-assisted traffic intelligence (our use case), the relevant stack is `doca_flow` for packet capture + custom ARM code for inference + `doca_flow` for action (drop, allow, rate-limit).
+
+## Setting Up DOCA Context
+
+```c
+#include <doca_flow.h>
+#include <doca_dev.h>
+#include <doca_log.h>
+
+DOCA_LOG_REGISTER(MY_APP);
+
+int init_doca(struct app_ctx *ctx) {
+    doca_error_t result;
+
+    /* Open DPU device */
+    result = doca_dev_open(ctx->pci_addr, &ctx->dev);
+    if (result != DOCA_SUCCESS) {
+        DOCA_LOG_ERR("Failed to open device: %s",
+                     doca_error_get_descr(result));
+        return -1;
+    }
+
+    /* Initialize DOCA flow on the device */
+    struct doca_flow_cfg flow_cfg = {
+        .queues = 4,                      /* number of HW queues */
+        .mode_args = "vnf,hws",           /* VNF mode, hardware steering */
+        .nr_counters = 1024,
+    };
+
+    result = doca_flow_init(&flow_cfg);
+    if (result != DOCA_SUCCESS) {
+        DOCA_LOG_ERR("Flow init failed: %s", doca_error_get_descr(result));
+        return -1;
+    }
+
+    /* Create ports for each network interface */
+    struct doca_flow_port_cfg port_cfg = {
+        .port_id = 0,
+        .type    = DOCA_FLOW_PORT_DPDK_BY_ID,
+        .devargs = "0",
+    };
+
+    result = doca_flow_port_start(&port_cfg, &ctx->port);
+    if (result != DOCA_SUCCESS) {
+        DOCA_LOG_ERR("Port start failed: %s", doca_error_get_descr(result));
+        return -1;
+    }
+
+    return 0;
+}
+```
+
+## Building Flow Tables
+
+DOCA Flow uses match/action tables — similar to OpenFlow or P4 tables but expressed in C.
+
+```c
+/* Create a pipe to match TCP flows and send to ARM for inspection */
+int create_inspect_pipe(struct doca_flow_port *port,
+                        struct doca_flow_pipe **pipe) {
+    struct doca_flow_match match = {
+        .parser_meta.outer_l3_type = DOCA_FLOW_L3_META_IPV4,
+        .parser_meta.outer_l4_type = DOCA_FLOW_L4_META_TCP,
+        .outer = {
+            .tcp.flags = DOCA_FLOW_MATCH_WILDCARD,  /* any TCP flags */
+        },
+    };
+
+    /* Forward to ARM CPU for processing */
+    struct doca_flow_fwd fwd = {
+        .type = DOCA_FLOW_FWD_PIPE,
+        /* Will be overridden per-entry for more granular steering */
+    };
+
+    /* Mirror a copy to ARM, original continues to host */
+    struct doca_flow_monitor monitor = {
+        .counter_type = DOCA_FLOW_RESOURCE_TYPE_NON_SHARED,
+    };
+
+    struct doca_flow_pipe_cfg pipe_cfg = {
+        .attr = {
+            .name       = "TCP_INSPECT",
+            .type       = DOCA_FLOW_PIPE_BASIC,
+            .nb_actions = 1,
+        },
+        .port    = port,
+        .match   = &match,
+        .monitor = &monitor,
+        .fwd     = &fwd,
+    };
+
+    return doca_flow_pipe_create(&pipe_cfg, NULL, NULL, pipe);
+}
+```
+
+## Packet Processing on ARM
+
+Packets sent to the ARM cores arrive via DPDK queues (the DPU runs its own DPDK instance):
+
+```c
+#include <rte_ethdev.h>
+#include <rte_mbuf.h>
+
+#define BURST_SIZE 32
+
+void process_packets(uint16_t port_id, struct ort_session *ort_sess) {
+    struct rte_mbuf *pkts[BURST_SIZE];
+
+    while (running) {
+        uint16_t nb_rx = rte_eth_rx_burst(port_id, 0, pkts, BURST_SIZE);
+        if (nb_rx == 0) continue;
+
+        for (uint16_t i = 0; i < nb_rx; i++) {
+            struct rte_mbuf *pkt = pkts[i];
+
+            /* Extract features inline — no copy */
+            uint8_t *pkt_data = rte_pktmbuf_mtod(pkt, uint8_t *);
+            float features[FEATURE_DIM];
+            extract_flow_features(pkt_data, pkt->pkt_len, features);
+
+            /* Run ONNX inference on ARM */
+            float score = infer_anomaly_score(ort_sess, features);
+
+            if (score > ANOMALY_THRESHOLD) {
+                /* Update flow table to drop subsequent packets */
+                update_flow_action(pkt, DOCA_FLOW_FWD_DROP);
+                log_anomaly(pkt_data, score);
+            }
+
+            rte_pktmbuf_free(pkt);
+        }
+    }
+}
+```
+
+The zero-copy aspect is key: `rte_pktmbuf_mtod` gives a pointer to the packet data in DMA memory — we read features without copying the packet anywhere.
+
+## Running ONNX Inference on BlueField ARM
+
+The BlueField-3's ARM cores run a standard Aarch64 Linux. ONNX Runtime runs on it directly:
+
+```c
+#include <onnxruntime_c_api.h>
+
+struct ort_session {
+    OrtEnv     *env;
+    OrtSession *session;
+    OrtMemoryInfo *memory_info;
+};
+
+struct ort_session *load_model(const char *model_path) {
+    struct ort_session *ctx = calloc(1, sizeof(*ctx));
+    const OrtApi *ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+
+    ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "traffic_intel", &ctx->env);
+
+    OrtSessionOptions *opts;
+    ort->CreateSessionOptions(&opts);
+    ort->SetIntraOpNumThreads(opts, 4);  /* Use 4 ARM cores */
+
+    ort->CreateSession(ctx->env, model_path, opts, &ctx->session);
+    ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault,
+                              &ctx->memory_info);
+
+    ort->ReleaseSessionOptions(opts);
+    return ctx;
+}
+
+float infer_anomaly_score(struct ort_session *ctx, float *features) {
+    const OrtApi *ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
+
+    int64_t shape[] = {1, FEATURE_DIM};
+    OrtValue *input_tensor;
+    ort->CreateTensorWithDataAsOrtValue(
+        ctx->memory_info, features,
+        FEATURE_DIM * sizeof(float),
+        shape, 2, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT,
+        &input_tensor
+    );
+
+    const char *input_names[]  = {"features"};
+    const char *output_names[] = {"score"};
+    OrtValue *output_tensor = NULL;
+
+    ort->Run(ctx->session, NULL,
+             input_names, (const OrtValue *const *)&input_tensor, 1,
+             output_names, 1, &output_tensor);
+
+    float *score_data;
+    ort->GetTensorMutableData(output_tensor, (void **)&score_data);
+    float score = score_data[0];
+
+    ort->ReleaseValue(input_tensor);
+    ort->ReleaseValue(output_tensor);
+    return score;
+}
+```
+
+At Cisco, this approach improved encrypted traffic anomaly classification accuracy by 24% compared to host-based sampling — the DPU sees every packet, not a sampled subset.
+
+## Performance Results
+
+Moving AI inference from host to DPU:
+
+| Metric | Host-based | DPU-based |
+|--------|-----------|-----------|
+| Host CPU utilization | 29% (inference threads) | <1% |
+| Packets sampled | ~15% (sampling required) | 100% (inline) |
+| Classification accuracy | Baseline | +24% |
+| Inference latency | 2–8ms (scheduling jitter) | 0.8ms (dedicated ARM) |
+
+The host CPU gains back those cycles for application workloads. The DPU's ARM cores run at lower clock speeds than host CPUs but have dedicated access to the packet stream — no scheduling jitter, no cache competition.
+
+## Practical Considerations
+
+**DOCA version pinning.** DOCA APIs change between releases. Pin your DOCA version in your build system and test before upgrading. The BlueField firmware version must match the DOCA SDK version.
+
+**ARM vs. host compilation.** Applications running on the DPU's ARM cores must be cross-compiled for Aarch64, or compiled natively on the DPU itself. A common development workflow: cross-compile on x86 dev machine, deploy to DPU over SSH.
+
+**Shared memory with host.** The DPU and host share a memory region accessible from both sides. Use this for control plane communication — status updates, configuration — not data plane (too slow).
+
+**Debugging.** Standard Linux debugging tools work on the DPU: gdb, strace, perf. The DPU exposes a management network interface — SSH directly onto the ARM Linux for interactive debugging.
+
+## When to Use a DPU
+
+DPU offloading makes sense when:
+- You need 100% packet visibility (sampling is unacceptable)
+- Host CPU cycles are scarce
+- Per-flow state that must survive host OS restarts
+- Latency-sensitive enforcement (drop before host sees the packet)
+
+It's overkill when:
+- Traffic volumes are low
+- Sampling is acceptable
+- You don't control the hardware stack
+
+The BlueField is genuinely powerful infrastructure. DOCA is a solid SDK for it. The learning curve is real — you're programming two systems simultaneously (DPU Linux + hardware flow tables) — but the capability it unlocks is unique.

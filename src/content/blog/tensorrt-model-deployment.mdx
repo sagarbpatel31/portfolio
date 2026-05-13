@@ -1,0 +1,270 @@
+---
+title: "TensorRT in Production: The Complete Optimization Workflow"
+date: "2026-05-05"
+tags: ["TensorRT", "NVIDIA", "Inference", "Embedded AI", "CUDA"]
+excerpt: "End-to-end TensorRT optimization — from PyTorch model to INT8 engine running at 60fps on Jetson Orin. Covers ONNX export, calibration, engine building, profiling, and common pitfalls."
+---
+
+# TensorRT in Production: The Complete Optimization Workflow
+
+Taking a PyTorch model from research to edge inference involves more steps than most tutorials cover. Here's the complete workflow I've used to deploy inference pipelines on NVIDIA Jetson Orin — from raw `.pt` file to a calibrated INT8 engine running at production frame rates.
+
+## Why TensorRT
+
+PyTorch runs models correctly. TensorRT runs them fast. The gap is significant:
+
+| Precision | Framework | Throughput (Jetson Orin, ResNet-50) |
+|-----------|-----------|--------------------------------------|
+| FP32 | PyTorch | ~45 fps |
+| FP32 | TensorRT | ~120 fps |
+| FP16 | TensorRT | ~220 fps |
+| INT8 | TensorRT | ~380 fps |
+
+TensorRT achieves this through layer fusion (combining Conv+BN+ReLU into one kernel), kernel auto-tuning (selecting the fastest kernel implementation for your exact GPU and tensor shapes), and precision reduction.
+
+## Step 1: Export to ONNX
+
+TensorRT doesn't consume PyTorch models directly — it needs ONNX as an intermediate.
+
+```python
+import torch
+import torch.onnx
+
+model = load_your_model()
+model.eval()
+
+# Fixed input shape — TensorRT optimizes per shape
+dummy_input = torch.randn(1, 3, 640, 640).cuda()
+
+torch.onnx.export(
+    model,
+    dummy_input,
+    "model.onnx",
+    opset_version=17,           # Use latest supported opset
+    input_names=["images"],
+    output_names=["output"],
+    dynamic_axes={              # Allow batch dimension to vary
+        "images": {0: "batch"},
+        "output": {0: "batch"},
+    },
+    do_constant_folding=True,   # Fold constants at export time
+)
+```
+
+Verify the ONNX graph before proceeding:
+
+```python
+import onnx
+model_onnx = onnx.load("model.onnx")
+onnx.checker.check_model(model_onnx)
+print(onnx.helper.printable_graph(model_onnx.graph))
+```
+
+Common ONNX export issues:
+- **Custom ops** — ops not in standard ONNX opset need custom plugins
+- **Dynamic shapes** — TensorRT prefers static shapes; profile carefully if you need dynamic
+- **Unsupported layers** — check TensorRT layer support matrix for your version
+
+## Step 2: Build the TensorRT Engine
+
+```python
+import tensorrt as trt
+
+TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+
+def build_engine(onnx_path: str, precision: str = "fp16") -> trt.ICudaEngine:
+    builder = trt.Builder(TRT_LOGGER)
+    network = builder.create_network(
+        1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+    )
+    parser = trt.OnnxParser(network, TRT_LOGGER)
+    config = builder.create_builder_config()
+
+    # Memory pool — tune to your GPU's available memory
+    config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 4 << 30)  # 4 GB
+
+    if precision == "fp16":
+        config.set_flag(trt.BuilderFlag.FP16)
+    elif precision == "int8":
+        config.set_flag(trt.BuilderFlag.INT8)
+        config.int8_calibrator = MyCalibrator("calib_data/")
+
+    # Parse ONNX
+    with open(onnx_path, "rb") as f:
+        if not parser.parse(f.read()):
+            for i in range(parser.num_errors):
+                print(parser.get_error(i))
+            raise RuntimeError("ONNX parse failed")
+
+    # Optimization profile for dynamic shapes
+    profile = builder.create_optimization_profile()
+    profile.set_shape("images",
+        min=(1, 3, 640, 640),
+        opt=(4, 3, 640, 640),   # Optimize for batch=4
+        max=(8, 3, 640, 640),
+    )
+    config.add_optimization_profile(profile)
+
+    engine_bytes = builder.build_serialized_network(network, config)
+    engine = trt.Runtime(TRT_LOGGER).deserialize_cuda_engine(engine_bytes)
+
+    # Serialize for reuse — engine build is slow (minutes)
+    with open("model.trt", "wb") as f:
+        f.write(engine_bytes)
+
+    return engine
+```
+
+**Cache your engine.** Building takes 2–10 minutes on Jetson Orin. Always serialize to disk and reload.
+
+## Step 3: INT8 Calibration
+
+INT8 quantization maps float values to 8-bit integers. The calibrator provides representative data so TensorRT can compute optimal scale factors per layer.
+
+```python
+import tensorrt as trt
+import numpy as np
+import pycuda.driver as cuda
+
+class MyCalibrator(trt.IInt8EntropyCalibrator2):
+    def __init__(self, calib_dir: str, batch_size: int = 8):
+        super().__init__()
+        self.batch_size = batch_size
+        self.images = load_calib_images(calib_dir)  # ~500 representative images
+        self.idx = 0
+        self.device_input = cuda.mem_alloc(
+            batch_size * 3 * 640 * 640 * 4  # float32 bytes
+        )
+        self.cache_file = "calib.cache"
+
+    def get_batch_size(self) -> int:
+        return self.batch_size
+
+    def get_batch(self, names):
+        if self.idx + self.batch_size > len(self.images):
+            return None
+        batch = self.images[self.idx : self.idx + self.batch_size]
+        self.idx += self.batch_size
+        batch_np = preprocess(batch).astype(np.float32)
+        cuda.memcpy_htod(self.device_input, batch_np.ravel())
+        return [int(self.device_input)]
+
+    def read_calibration_cache(self):
+        if os.path.exists(self.cache_file):
+            with open(self.cache_file, "rb") as f:
+                return f.read()
+
+    def write_calibration_cache(self, cache):
+        with open(self.cache_file, "wb") as f:
+            f.write(cache)
+```
+
+Calibration data selection matters more than quantity. 200–1000 images representative of real deployment inputs work better than 10,000 random images. For anomaly detection, include examples of both normal and anomalous inputs.
+
+## Step 4: Inference Runtime
+
+```python
+import tensorrt as trt
+import pycuda.driver as cuda
+import numpy as np
+
+class TRTInference:
+    def __init__(self, engine_path: str):
+        TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+        with open(engine_path, "rb") as f:
+            self.engine = trt.Runtime(TRT_LOGGER).deserialize_cuda_engine(f.read())
+        self.context = self.engine.create_execution_context()
+        self.stream = cuda.Stream()
+
+        # Allocate buffers
+        self.bindings = []
+        self.host_inputs, self.host_outputs = [], []
+        self.device_inputs, self.device_outputs = [], []
+
+        for i in range(self.engine.num_io_tensors):
+            name = self.engine.get_tensor_name(i)
+            shape = self.engine.get_tensor_shape(name)
+            dtype = trt.nptype(self.engine.get_tensor_dtype(name))
+            size = trt.volume(shape)
+
+            host_mem = cuda.pagelocked_empty(size, dtype)   # pinned memory
+            device_mem = cuda.mem_alloc(host_mem.nbytes)
+            self.bindings.append(int(device_mem))
+
+            if self.engine.get_tensor_mode(name) == trt.TensorIOMode.INPUT:
+                self.host_inputs.append(host_mem)
+                self.device_inputs.append(device_mem)
+            else:
+                self.host_outputs.append(host_mem)
+                self.device_outputs.append(device_mem)
+
+    def infer(self, input_data: np.ndarray) -> np.ndarray:
+        np.copyto(self.host_inputs[0], input_data.ravel())
+
+        # Async H2D
+        cuda.memcpy_htod_async(self.device_inputs[0],
+                                self.host_inputs[0], self.stream)
+        # Execute
+        self.context.execute_async_v3(self.stream.handle)
+        # Async D2H
+        cuda.memcpy_dtoh_async(self.host_outputs[0],
+                                self.device_outputs[0], self.stream)
+        self.stream.synchronize()
+
+        return self.host_outputs[0].copy()
+```
+
+Pinned (page-locked) host memory is non-negotiable for async transfers. Regular numpy arrays force synchronous copies.
+
+## Step 5: Profiling the Engine
+
+TensorRT has built-in layer profiling:
+
+```python
+class LayerProfiler(trt.IProfiler):
+    def __init__(self):
+        super().__init__()
+        self.layers = {}
+
+    def report_layer_time(self, layer_name: str, ms: float):
+        self.layers[layer_name] = self.layers.get(layer_name, 0) + ms
+
+profiler = LayerProfiler()
+context.profiler = profiler
+
+# Run several inference passes
+for _ in range(100):
+    inference.infer(test_input)
+
+# Sort by time — find hotspots
+for name, ms in sorted(profiler.layers.items(),
+                        key=lambda x: x[1], reverse=True)[:10]:
+    print(f"{ms/100:.3f}ms  {name}")
+```
+
+On our deployment, this revealed that one custom attention layer was consuming 40% of inference time — not the conv layers everyone expected. We replaced it with a simpler equivalent that TensorRT could fuse aggressively.
+
+## Common Pitfalls
+
+**Shape mismatch after export.** TensorRT engines are shape-specific. An engine built for `(1, 3, 640, 640)` won't accept `(1, 3, 416, 416)` unless you configured dynamic shapes with an optimization profile.
+
+**Different results on different GPUs.** TensorRT selects kernels per GPU architecture. An engine built on a desktop RTX won't run on Jetson — build on the target hardware.
+
+**INT8 accuracy regression.** INT8 quantization loses information. Test on your validation set before production. Common issues:
+- Batch normalization layers absorb into preceding conv at FP16/INT8 — verify BN is fused, not left as separate FP32 ops
+- Sigmoid activations saturate in INT8 — consider keeping them in FP16 with `precision_constraints`
+
+**Memory fragmentation.** Long-running inference servers fragment GPU memory. Use a dedicated CUDA allocator with fixed-size pools, or restart periodically for embedded deployments with limited VRAM.
+
+## The Deployment Checklist
+
+Before shipping an engine to production:
+
+1. Build engine on target hardware (not dev machine)
+2. Validate accuracy on full validation set (not just spot checks)
+3. Measure throughput under sustained load (not single-image benchmarks)
+4. Verify thermal behavior — sustained throughput after 10 minutes, not peak
+5. Serialize engine + record exact TensorRT version (engines are version-specific)
+6. Test with realistic batch sizes — throughput curves are non-linear
+
+TensorRT optimization is not magic. It's systematic — profile, identify the constraint, address it, re-profile. The gains compound.

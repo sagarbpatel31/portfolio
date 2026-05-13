@@ -1,0 +1,191 @@
+---
+title: "Building Self-Improving Multi-Agent AI Systems"
+date: "2026-05-01"
+tags: ["Multi-Agent AI", "LLM", "System Design", "HydraSwarm", "Gen AI"]
+excerpt: "How we built HydraSwarm — a 7-agent system that gets measurably better at software engineering tasks with each run, using persistent vector memory and structured agent roles."
+---
+
+# Building Self-Improving Multi-Agent AI Systems
+
+Most AI demos generate once and forget. The interesting engineering question is: how do you build a system that actually improves from experience? HydraSwarm — the system our team built at the Intelligence at the Frontier hackathon — answers that question with a concrete architecture.
+
+The result: scores went from 7/10 on Run 1 to 9/10 on Run 3 on identical tasks. The improvement was real, measurable, and came from the architecture — not model upgrades.
+
+## The Problem with Single-Agent Systems
+
+Single-agent LLM systems hit a ceiling. Give one agent a complex software engineering task — design an architecture, implement it, review the code, write tests, ensure it deploys — and you get mediocre output across all dimensions. The context window fills up. The agent can't hold all roles simultaneously with high fidelity.
+
+The solution isn't a smarter model. It's decomposition.
+
+## The 7-Agent Architecture
+
+HydraSwarm uses seven specialized agents, each with a defined role and bounded responsibility:
+
+| Agent | Responsibility |
+|-------|---------------|
+| **Product Manager** | Requirements analysis, acceptance criteria |
+| **Architect** | System design, component interfaces |
+| **Developer** | Implementation, code generation |
+| **Reviewer** | Code review, standards enforcement |
+| **QA Engineer** | Test strategy, test case generation |
+| **SRE** | Deployment, observability, reliability |
+| **CTO** | Final evaluation, scoring, synthesis |
+
+Each agent operates with a role-specific system prompt and has access to the shared memory store. The CTO agent scores output at the end — that score becomes part of the next run's memory.
+
+## The Memory Architecture
+
+The self-improvement mechanism is HydraDB — a vector store (powered by DeepLake) where each agent writes lessons after task completion and reads relevant lessons before generating output.
+
+```python
+class HydraDB:
+    def __init__(self, dataset_path: str):
+        self.ds = deeplake.load(dataset_path)
+
+    def store_lesson(self, agent_role: str, task_type: str,
+                     lesson: str, score: float):
+        embedding = embed(f"{agent_role}: {lesson}")
+        self.ds.append({
+            "embedding": embedding,
+            "agent_role": agent_role,
+            "task_type": task_type,
+            "lesson": lesson,
+            "score": score,
+            "timestamp": time.time(),
+        })
+
+    def recall(self, agent_role: str, context: str,
+               top_k: int = 3) -> list[str]:
+        query_embedding = embed(f"{agent_role}: {context}")
+        results = self.ds.search(
+            embedding=query_embedding,
+            k=top_k,
+            filter={"agent_role": agent_role},
+        )
+        # Weight by score — higher-scoring lessons ranked first
+        return [r["lesson"] for r in sorted(
+            results, key=lambda x: x["score"], reverse=True
+        )]
+```
+
+Before each agent generates output, it queries HydraDB for relevant lessons from prior runs. The lessons augment the agent's context:
+
+```python
+async def run_agent(agent: Agent, task: Task, db: HydraDB) -> AgentOutput:
+    lessons = db.recall(agent.role, task.description)
+    lesson_block = "\n".join(f"- {l}" for l in lessons)
+
+    prompt = f"""
+{agent.system_prompt}
+
+Lessons from previous runs:
+{lesson_block}
+
+Current task:
+{task.description}
+"""
+    output = await agent.generate(prompt)
+
+    # Write new lessons back after generation
+    lesson = extract_lesson(task, output)
+    db.store_lesson(agent.role, task.type, lesson, score=None)
+
+    return output
+```
+
+The score is written after the CTO agent evaluates — lessons from higher-scoring runs get recalled preferentially.
+
+## The Collaboration Protocol
+
+Agents don't run in parallel by default — they run in a dependency graph. The Architect can't design until the PM finishes requirements. The Developer can't implement until the Architect finishes design. The Reviewer can't review until the Developer finishes implementation.
+
+```python
+async def run_pipeline(task: Task, db: HydraDB) -> PipelineResult:
+    # Sequential phases with output passing
+    requirements = await run_agent(pm_agent, task, db)
+    architecture = await run_agent(arch_agent,
+        task.with_context(requirements), db)
+    implementation = await run_agent(dev_agent,
+        task.with_context(requirements, architecture), db)
+
+    # Parallel where possible
+    review, tests = await asyncio.gather(
+        run_agent(reviewer_agent, task.with_context(implementation), db),
+        run_agent(qa_agent, task.with_context(implementation), db),
+    )
+
+    deployment = await run_agent(sre_agent,
+        task.with_context(implementation, tests), db)
+
+    # Final evaluation
+    score = await run_agent(cto_agent,
+        task.with_context(requirements, implementation, review, tests), db)
+
+    # Persist lessons with scores
+    db.update_scores(pipeline_id, score.value)
+
+    return PipelineResult(score=score, artifacts=[
+        requirements, architecture, implementation, tests, deployment
+    ])
+```
+
+The Reviewer and QA agents run in parallel — both need implementation as input but don't depend on each other.
+
+## Streaming and Observability
+
+At the hackathon, the live agent thinking logs were what sold the judges. Seeing each agent activate, query HydraDB, and generate output in real time made the architecture legible.
+
+We used Server-Sent Events for streaming:
+
+```python
+async def stream_pipeline(task: Task):
+    async for event in run_pipeline_streaming(task):
+        yield f"data: {json.dumps(event)}\n\n"
+```
+
+Each event carried:
+```json
+{
+  "agent": "Architect",
+  "phase": "recall",
+  "content": "Recalling 3 lessons from HydraDB...",
+  "lessons": ["Use dependency injection...", "Avoid circular imports..."]
+}
+```
+
+The frontend showed a timeline of agent activations with their HydraDB queries visible — you could watch the system use its memory in real time.
+
+## What Makes It Actually Self-Improve
+
+Three mechanisms drive improvement:
+
+**1. Lesson specificity.** Generic lessons ("write clean code") don't help. Specific lessons tied to task types and failure modes do ("when generating async Python, always handle cancellation in finally blocks — missed this in Run 1 causing resource leaks").
+
+**2. Score weighting.** Not all lessons are equal. Lessons from high-scoring runs get higher recall priority. This prevents the system from reinforcing bad patterns.
+
+**3. Role-specific recall.** The Developer doesn't see the PM's lessons and vice versa. Role scoping prevents context pollution and keeps each agent's recalled knowledge relevant.
+
+## 326 Tests, Fast Iteration
+
+The test suite — 326 unit tests across 21 suites — wasn't overkill for a hackathon. It was the reason we could iterate on the memory architecture at 2am without breaking agent communication.
+
+Key test categories:
+- **Agent prompt injection** — verify lessons get inserted correctly
+- **Memory round-trips** — store a lesson, recall it, verify content
+- **Pipeline ordering** — assert agents receive correct prior outputs
+- **Score propagation** — verify CTO score updates lesson weights
+- **SSE streaming** — assert all pipeline events are emitted in order
+
+Fast tests (all ran in under 8 seconds) meant we could refactor aggressively and catch regressions immediately.
+
+## What's Next for This Architecture
+
+The hackathon version was task-specific (software engineering). The architecture generalizes:
+
+- **Hardware design agents** — RTL review, timing analysis, DRC check agents
+- **Embedded firmware pipeline** — requirements → architecture → C implementation → static analysis → RTOS integration review
+- **Research synthesis** — paper ingestion, hypothesis generation, experiment design, results analysis
+
+The core insight transfers: decompose complex tasks by role, give each role bounded responsibility, and let persistent vector memory carry forward what works. The system gets better because the memory gets better.
+
+That's the architecture. Simple in principle, powerful in practice.
