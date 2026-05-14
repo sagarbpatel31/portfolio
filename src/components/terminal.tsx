@@ -278,7 +278,7 @@ export function Terminal() {
       </div>
       <div ref={scrollRef} className="terminal-body">
         {history.map((line, i) => (
-          <div key={i} className={colorMap[line.type]}>
+          <div key={i} className={`whitespace-pre ${colorMap[line.type]}`}>
             {line.text || "\u00A0"}
           </div>
         ))}
