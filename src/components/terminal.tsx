@@ -28,8 +28,11 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "  clear       — Clear terminal", type: "output" },
   ],
   neofetch: () => [
-    { text: "", type: "output" },
-    { text: "      S   A   G   A   R", type: "accent" },
+    { text: "  *****    *    *****    *    **** ", type: "accent" },
+    { text: "  *       * *   *       * *   *   *", type: "accent" },
+    { text: "  ****   *****  *  **  *****  **** ", type: "accent" },
+    { text: "      *  *   *  *   *  *   *  * *  ", type: "accent" },
+    { text: "  *****  *   *  *****  *   *  *  **", type: "accent" },
     { text: "", type: "output" },
     { text: "", type: "output" },
     { text: "  sagar@sagar-os", type: "accent" },
