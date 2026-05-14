@@ -18,6 +18,7 @@ export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
       date: `${award.year}-01`,
       icon: "\u2605",
       label: `WON: ${award.title}`,
+      href: award.links?.[0]?.url,
       color: "text-accent-amber",
     });
   });
@@ -58,7 +59,7 @@ export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
           );
 
           return entry.href ? (
-            <Link key={i} href={entry.href}>
+            <Link key={i} href={entry.href} target={entry.href.startsWith("http") ? "_blank" : undefined} rel={entry.href.startsWith("http") ? "noopener noreferrer" : undefined}>
               {inner}
             </Link>
           ) : (

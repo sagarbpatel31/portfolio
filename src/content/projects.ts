@@ -2,17 +2,104 @@ import { Project } from "@/types";
 
 export const projects: Project[] = [
   {
-    slug: "tracemind",
-    title: "TraceMind — Incident Intelligence for Robotics",
+    slug: "stepahead",
+    title: "StepAhead — AI Career Acceleration for Engineers",
+    tagline:
+      "Personalized AI coaching platform that maps your skill gaps and builds a daily action plan to land your next engineering role faster.",
+    description:
+      "StepAhead is an AI-powered career acceleration tool designed for embedded, robotics, and systems engineers. It analyzes your current skills against target job descriptions, identifies the exact gaps, and generates a day-by-day upskilling plan with curated projects, mock interviews, and application tracking.",
+    longDescription: `StepAhead addresses a specific pain point: engineers with deep technical skills often struggle to navigate the job market efficiently. The platform ingests your resume and a set of target job descriptions, then uses AI to run a structured gap analysis across technical skills, soft skills, and domain knowledge.
+
+The skill mapping engine compares your profile against a curated taxonomy covering embedded systems, edge AI, robotics, networking, and software engineering roles. Each gap is scored by urgency (how often it appears in target JDs) and effort (estimated hours to close). The output is a prioritized action plan rather than a generic skill list.
+
+The daily planner breaks the action plan into concrete 30–90 minute blocks — a mix of coding challenges, project milestones, mock interview sessions, and application tasks. Progress is tracked with streaks and rating updates (Elo-style) so the plan adapts as you improve.
+
+Integrated application tracking pulls job listings from Greenhouse, Lever, and Ashby via API, tagging each listing against your current skill profile to surface the best-fit roles at any point in your preparation timeline.`,
+    tags: ["Next.js", "TypeScript", "Claude AI", "Supabase", "Tailwind CSS"],
+    category: "AI & Full Stack",
+    highlights: [
+      "AI gap analysis comparing your profile against target JDs across a structured skill taxonomy",
+      "Prioritized action plan scored by urgency and effort — not just a skill list",
+      "Daily planner with adaptive 30–90 min blocks: coding, projects, mock interviews, applications",
+      "Elo-style skill rating system that updates as you complete tasks and assessments",
+      "Integrated job listing tracker pulling from Greenhouse, Lever, and Ashby",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/stepahead" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "fieldfix",
+    title: "FieldFix — AI Field Diagnostics for Embedded Systems",
+    tagline:
+      "On-device AI assistant that diagnoses embedded hardware faults in the field — no cloud, no connectivity required.",
+    description:
+      "FieldFix is a mobile-first AI diagnostics tool for field engineers working on embedded Linux devices, IoT gateways, and edge hardware. It runs locally on Android/iOS, capturing logs and telemetry from connected devices over USB/serial, and uses an on-device model to diagnose faults and suggest repair procedures.",
+    longDescription: `When embedded hardware fails in the field, engineers often have limited connectivity, no access to internal tooling, and time pressure. FieldFix is designed for exactly this environment: a mobile app that communicates with embedded devices over USB serial or SSH, captures diagnostic data, and runs AI-powered fault diagnosis entirely on-device.
+
+The diagnostic engine is a fine-tuned language model (quantized to run on mobile hardware) trained on embedded system error patterns — kernel panics, boot failures, driver errors, hardware fault codes, and thermal events. Given a log dump or error code, it identifies the probable root cause and suggests step-by-step remediation procedures.
+
+The capture layer supports multiple connection methods: USB serial (UART), SSH over local network, and Bluetooth for short-range device access. Log parsing handles dmesg output, systemd journal, custom application logs, and IPMI/BMC event logs.
+
+A repair procedure library covers common embedded hardware faults — flash corruption recovery, bootloader recovery, driver reinit, network interface reset, and hardware-in-the-loop test sequences. Procedures can be executed directly from the app over the connected interface.`,
+    tags: ["React Native", "Python", "TensorFlow Lite", "Embedded Linux", "UART"],
+    category: "Embedded & Tools",
+    highlights: [
+      "On-device AI fault diagnosis — works without cloud connectivity in field environments",
+      "Multi-interface device capture: USB serial (UART), SSH, and Bluetooth",
+      "Fine-tuned model trained on embedded error patterns: kernel panics, boot failures, driver errors",
+      "Repair procedure library with direct execution over connected interface",
+      "Supports dmesg, systemd journal, application logs, and IPMI/BMC event logs",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/fieldfix" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "signalforge",
+    title: "SignalForge — High-Performance Network Traffic Generator",
+    tagline:
+      "DPDK-powered packet generator and traffic analyzer for stress-testing data-plane pipelines and validating network behavior.",
+    description:
+      "SignalForge is a high-performance network traffic generation and analysis tool built on DPDK. It generates crafted packet streams at line rate for testing switching firmware, P4 data planes, and embedded network stacks — with a Python CLI for test scenario authoring and real-time throughput/latency dashboards.",
+    longDescription: `Validating high-performance networking code requires traffic that can stress the system at full line rate with controllable packet patterns. SignalForge fills this gap: a DPDK-based traffic generator that runs on commodity x86 hardware and pushes packets at rates up to 100Gbps, with precise control over packet content, timing, and flow distribution.
+
+The core engine is written in C with DPDK for kernel-bypass packet I/O. It uses multi-queue RSS distribution to spread traffic across CPU cores, with per-core packet generation threads that minimize cache contention. Configurable inter-packet gaps enable both constant-rate and bursty traffic patterns that reflect real production load profiles.
+
+A Python CLI layer wraps the C engine, providing a YAML-based test scenario format. Scenarios specify packet templates (Ethernet/IP/TCP/UDP headers with field ranges for fuzzing), flow definitions (src/dst IP ranges, port ranges), traffic rates (constant, ramp, burst), and measurement windows. This makes test authoring accessible without requiring DPDK expertise.
+
+Real-time analysis captures per-flow throughput, latency distributions (p50/p95/p99), packet loss rates, and reorder events. Results stream to a terminal dashboard (Rich-based) and export to CSV for post-analysis. Integration with Wireshark via pcap export enables packet-level inspection of captured traffic.`,
+    tags: ["C", "DPDK", "Python", "Networking", "Linux", "Performance"],
+    category: "Networking & Systems",
+    highlights: [
+      "DPDK kernel-bypass packet I/O for line-rate generation up to 100Gbps on commodity hardware",
+      "Multi-queue RSS distribution with per-core generation threads for minimal cache contention",
+      "YAML-based test scenario format: packet templates, flow definitions, rate profiles",
+      "Real-time dashboard: per-flow throughput, latency p50/p95/p99, loss rate, reorder events",
+      "pcap export for Wireshark integration and packet-level inspection",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/signalforge" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "watchpoint",
+    title: "Watchpoint — Incident Intelligence for Robotics",
     tagline:
       "End-to-end traces, replay, and root-cause analysis for ROS2 and edge AI systems.",
     description:
       "An incident analysis platform for physical AI systems that captures telemetry across the stack — logs, metrics, ROS2 topics, inference timing, hardware state — and generates replayable failure bundles with AI-assisted root-cause analysis.",
-    longDescription: `TraceMind is a startup project addressing a critical gap in robotics debugging: when a robot fails in the field, there's no easy way to replay and diagnose what happened across the full stack.
+    longDescription: `Watchpoint is a startup project addressing a critical gap in robotics debugging: when a robot fails in the field, there's no easy way to replay and diagnose what happened across the full stack.
 
 The platform captures telemetry from multiple sources — system logs, metrics, ROS2 topic data, inference timing, and hardware state — through a lightweight Go edge agent that runs on Linux and Jetson devices. A separate Python ROS2 collector monitors topic publish rates, node health, and message lag.
 
-When incidents are detected (CPU threshold breach, topic rate drops, thermal throttling, or process crashes), TraceMind automatically captures a correlated bundle. The web interface provides a single-page correlation timeline connecting metrics, events, ROS2 state, and deployment versions, making it possible to trace failures back to their root cause.
+When incidents are detected (CPU threshold breach, topic rate drops, thermal throttling, or process crashes), Watchpoint automatically captures a correlated bundle. The web interface provides a single-page correlation timeline connecting metrics, events, ROS2 state, and deployment versions, making it possible to trace failures back to their root cause.
 
 The architecture uses a Next.js frontend with a FastAPI backend, PostgreSQL for structured data, and Docker Compose for local development. The edge agent is cross-compiled in Go for minimal overhead on resource-constrained devices.`,
     tags: ["Python", "FastAPI", "Go", "Next.js", "PostgreSQL", "ROS2", "Docker"],
@@ -25,9 +112,9 @@ The architecture uses a Next.js frontend with a FastAPI backend, PostgreSQL for 
       "Full-stack architecture: Next.js frontend, FastAPI backend, PostgreSQL, Docker Compose",
     ],
     links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/tracemind" },
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/watchpoint" },
     ],
-    featured: true,
+    featured: false,
     year: "2026",
   },
   {
@@ -57,7 +144,7 @@ Built during the Intelligence at the Frontier Hackathon (February 2026), the pro
     links: [
       { label: "GitHub", url: "https://github.com/sagarbpatel31/HydraSwarm" },
     ],
-    featured: true,
+    featured: false,
     year: "2026",
   },
   {
@@ -84,7 +171,7 @@ Built at the Robotic Agents Hackathon (March 2026) in the Cyberwave × Toolhouse
     links: [
       { label: "GitHub", url: "https://github.com/sagarbpatel31/med-assist" },
     ],
-    featured: true,
+    featured: false,
     year: "2026",
   },
   {
@@ -114,7 +201,7 @@ Key contributions include implementing the ACOLITE correction workflow, RGB patc
         url: "https://github.com/sagarbpatel31/Sagar_TriesteItalyChapter_PlasticDebrisDetection",
       },
     ],
-    featured: true,
+    featured: false,
     year: "2025",
   },
   {

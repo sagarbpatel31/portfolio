@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Trophy } from "lucide-react";
+import { Trophy, ExternalLink } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { fadeIn, staggerContainer } from "@/lib/motion";
@@ -47,6 +47,22 @@ export function Awards() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted">{award.description}</p>
+                    {award.links && award.links.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {award.links.map((link) => (
+                          <a
+                            key={link.url}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 rounded border border-accent/20 bg-accent/5 px-2 py-0.5 font-mono text-xs text-accent transition-colors hover:bg-accent/10"
+                          >
+                            {link.label}
+                            <ExternalLink size={9} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>

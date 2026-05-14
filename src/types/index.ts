@@ -33,6 +33,7 @@ export interface Award {
   event: string;
   year: string;
   description: string;
+  links?: { label: string; url: string }[];
 }
 
 export interface Social {
