@@ -3,58 +3,60 @@ import { Project } from "@/types";
 export const projects: Project[] = [
   {
     slug: "stepahead",
-    title: "StepAhead — AI Career Acceleration for Engineers",
-    tagline:
-      "Personalized AI coaching platform that maps your skill gaps and builds a daily action plan to land your next engineering role faster.",
+    title: "StepAhead — AI Baby Motor Development Tracker",
+    tagline: "Peace of mind every step of the way — AI-powered infant motor milestone tracking with real-time movement analysis.",
     description:
-      "StepAhead is an AI-powered career acceleration tool designed for embedded, robotics, and systems engineers. It analyzes your current skills against target job descriptions, identifies the exact gaps, and generates a day-by-day upskilling plan with curated projects, mock interviews, and application tracking.",
-    longDescription: `StepAhead addresses a specific pain point: engineers with deep technical skills often struggle to navigate the job market efficiently. The platform ingests your resume and a set of target job descriptions, then uses AI to run a structured gap analysis across technical skills, soft skills, and domain knowledge.
+      "StepAhead is a mobile AI platform that analyzes infant motor movements in real time, tracking developmental milestones, detecting potential delays early, and enabling parents to share findings with medical professionals.",
+    longDescription: `StepAhead addresses a critical gap in early childhood healthcare: developmental motor delays often go undetected until they become harder to treat. Traditional milestone tracking relies on memory and periodic pediatric visits — StepAhead gives parents continuous, AI-powered visibility into their baby's motor development between appointments.
 
-The skill mapping engine compares your profile against a curated taxonomy covering embedded systems, edge AI, robotics, networking, and software engineering roles. Each gap is scored by urgency (how often it appears in target JDs) and effort (estimated hours to close). The output is a prioritized action plan rather than a generic skill list.
+The core workflow is Record → Analyze → Track. Parents record video of their baby's movements through the mobile app. The AI model processes the footage in real time, classifying motor patterns against developmental milestone benchmarks calibrated for the baby's age. Results surface as a structured milestone dashboard with progress trends over time.
 
-The daily planner breaks the action plan into concrete 30–90 minute blocks — a mix of coding challenges, project milestones, mock interview sessions, and application tasks. Progress is tracked with streaks and rating updates (Elo-style) so the plan adapts as you improve.
+The analysis engine detects subtle patterns that are difficult for non-specialists to spot — asymmetric limb usage, delayed reflex responses, atypical muscle tone indicators — and flags them for review. Parents can share the full analysis report directly with their pediatrician or specialist, with exportable timeline views and movement data.
 
-Integrated application tracking pulls job listings from Greenhouse, Lever, and Ashby via API, tagging each listing against your current skill profile to surface the best-fit roles at any point in your preparation timeline.`,
-    tags: ["Next.js", "TypeScript", "Claude AI", "Supabase", "Tailwind CSS"],
-    category: "AI & Full Stack",
+StepAhead is built around three principles: accessible (no specialist equipment needed, just a smartphone), continuous (not just snapshot assessments), and collaborative (designed to enhance, not replace, professional care).`,
+    tags: ["Mobile App", "Computer Vision", "AI", "React Native", "Healthcare"],
+    category: "AI & Health Tech",
     highlights: [
-      "AI gap analysis comparing your profile against target JDs across a structured skill taxonomy",
-      "Prioritized action plan scored by urgency and effort — not just a skill list",
-      "Daily planner with adaptive 30–90 min blocks: coding, projects, mock interviews, applications",
-      "Elo-style skill rating system that updates as you complete tasks and assessments",
-      "Integrated job listing tracker pulling from Greenhouse, Lever, and Ashby",
+      "Real-time AI movement analysis using smartphone camera — no specialized equipment required",
+      "Developmental milestone benchmarks calibrated by age for accurate motor delay detection",
+      "Progress tracking dashboard with trend visualization over weeks and months",
+      "Shareable reports for pediatricians and specialists with full movement timeline",
+      "Flags asymmetric limb usage, delayed reflexes, and atypical muscle tone patterns",
     ],
     links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/stepahead" },
+      { label: "Live Demo", url: "https://step-ahead-website.vercel.app" },
     ],
     featured: true,
     year: "2026",
   },
   {
     slug: "fieldfix",
-    title: "FieldFix — AI Field Diagnostics for Embedded Systems",
-    tagline:
-      "On-device AI assistant that diagnoses embedded hardware faults in the field — no cloud, no connectivity required.",
+    title: "FieldFix — Offline AI Repair Assistant for Field Technicians",
+    tagline: "Full AI-powered repair guidance with zero cloud dependency — runs entirely on a local laptop, accessible from any device on the network.",
     description:
-      "FieldFix is a mobile-first AI diagnostics tool for field engineers working on embedded Linux devices, IoT gateways, and edge hardware. It runs locally on Android/iOS, capturing logs and telemetry from connected devices over USB/serial, and uses an on-device model to diagnose faults and suggest repair procedures.",
-    longDescription: `When embedded hardware fails in the field, engineers often have limited connectivity, no access to internal tooling, and time pressure. FieldFix is designed for exactly this environment: a mobile app that communicates with embedded devices over USB serial or SSH, captures diagnostic data, and runs AI-powered fault diagnosis entirely on-device.
+      "FieldFix is an offline-first repair intelligence system for field technicians. A FastAPI backend runs Gemma 3 4B locally via Ollama, backed by a RAG knowledge base of 295 expert-written repair documents. Accessible from phones and tablets over local WiFi — no internet required.",
+    longDescription: `FieldFix was built for the environments where repair problems actually happen: agricultural fields, industrial facilities, remote construction sites — places with no cloud connectivity and no time to search through manuals. A technician speaks or types a symptom, and FieldFix returns structured repair guidance: ranked probable causes, step-by-step instructions, required tools, and safety stop conditions.
 
-The diagnostic engine is a fine-tuned language model (quantized to run on mobile hardware) trained on embedded system error patterns — kernel panics, boot failures, driver errors, hardware fault codes, and thermal events. Given a log dump or error code, it identifies the probable root cause and suggests step-by-step remediation procedures.
+The AI backbone is Gemma 3 4B running through Ollama with Metal GPU acceleration on the host laptop. The model never touches the cloud — all inference is local. A RAG layer (ChromaDB with all-MiniLM-L6-v2 embeddings, 295 semantic chunks) grounds the model's responses in 37 expert-written repair documents spanning Robotics, Electronics, Emergency Equipment, Household systems, and Safety Guides.
 
-The capture layer supports multiple connection methods: USB serial (UART), SSH over local network, and Bluetooth for short-range device access. Log parsing handles dmesg output, systemd journal, custom application logs, and IPMI/BMC event logs.
+The multi-agent pipeline processes each symptom through five specialized agents: a diagnosis agent identifies probable causes, a cause ranker orders them by likelihood, a repair planner generates RAG-augmented step-by-step instructions, a question agent surfaces clarifying questions, and a verification agent produces stop conditions and prevention tips.
 
-A repair procedure library covers common embedded hardware faults — flash corruption recovery, bootloader recovery, driver reinit, network interface reset, and hardware-in-the-loop test sequences. Procedures can be executed directly from the app over the connected interface.`,
-    tags: ["React Native", "Python", "TensorFlow Lite", "Embedded Linux", "UART"],
-    category: "Embedded & Tools",
+Safety is handled deterministically — before any AI agent sees a query, a rules-based guardrail layer classifies it against 9 hard-stop categories (gas leaks, electrical fire, lithium battery failure, high-voltage exposure, etc.). Hard stops return an immediate warning with no AI processing. This design choice — no model for safety decisions — is intentional.
+
+A per-device SQLite history store lets the system recall previous repairs on the same device, improving diagnostic accuracy for recurring issues. The frontend is a Next.js app served over the local network, accessible from iOS Safari on any phone connected to the same WiFi.`,
+    tags: ["Python", "FastAPI", "Next.js", "Gemma 3", "Ollama", "ChromaDB", "RAG", "TypeScript"],
+    category: "AI & Embedded Tools",
     highlights: [
-      "On-device AI fault diagnosis — works without cloud connectivity in field environments",
-      "Multi-interface device capture: USB serial (UART), SSH, and Bluetooth",
-      "Fine-tuned model trained on embedded error patterns: kernel panics, boot failures, driver errors",
-      "Repair procedure library with direct execution over connected interface",
-      "Supports dmesg, systemd journal, application logs, and IPMI/BMC event logs",
+      "Fully offline — Gemma 3 4B via Ollama with Metal GPU, zero cloud calls",
+      "5-agent pipeline: diagnosis, cause ranking, repair planning, Q&A, verification",
+      "RAG knowledge base: 295 chunks from 37 expert docs across 5 repair categories",
+      "Deterministic safety guardrails run before any AI processing — 9 hard-stop categories",
+      "Per-device SQLite repair history improves accuracy for recurring issues",
+      "Mobile-accessible over local WiFi — works on iOS Safari with no app install",
+      "115 unit tests + 9 orchestrator tests across safety, RAG, routing, and API layers",
     ],
     links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/fieldfix" },
+      { label: "GitHub", url: "https://github.com/patilgayatri22/fieldfix-ai" },
     ],
     featured: true,
     year: "2026",
@@ -91,27 +93,30 @@ Real-time analysis captures per-flow throughput, latency distributions (p50/p95/
   {
     slug: "watchpoint",
     title: "Watchpoint — Incident Intelligence for Robotics",
-    tagline:
-      "End-to-end traces, replay, and root-cause analysis for ROS2 and edge AI systems.",
+    tagline: "Stop guessing why your robot failed — Watchpoint captures incidents, correlates telemetry, and generates replayable failure bundles with AI root-cause analysis.",
     description:
-      "An incident analysis platform for physical AI systems that captures telemetry across the stack — logs, metrics, ROS2 topics, inference timing, hardware state — and generates replayable failure bundles with AI-assisted root-cause analysis.",
-    longDescription: `Watchpoint is a startup project addressing a critical gap in robotics debugging: when a robot fails in the field, there's no easy way to replay and diagnose what happened across the full stack.
+      "Watchpoint is a robotics observability platform. A lightweight Go agent runs on Linux/Jetson edge hardware, detects incidents (node crashes, topic starvation, thermal throttling), and generates portable replay bundles. A rules-based + AI-assisted RCA engine surfaces root causes in a correlation timeline dashboard.",
+    longDescription: `When a robot fails in the field, the debugging process is painful: logs are scattered across multiple systems, the exact sequence of events is unclear, and reproducing the failure requires setting up the same hardware configuration. Watchpoint solves this by treating robot failures as first-class incidents — capturing everything automatically, correlating it, and packaging it for investigation.
 
-The platform captures telemetry from multiple sources — system logs, metrics, ROS2 topic data, inference timing, and hardware state — through a lightweight Go edge agent that runs on Linux and Jetson devices. A separate Python ROS2 collector monitors topic publish rates, node health, and message lag.
+The edge agent is written in Go for minimal overhead on resource-constrained hardware. It runs on Linux and NVIDIA Jetson devices, collecting CPU, memory, GPU, and disk metrics with a local ring buffer that preserves pre-incident context. A separate Python ROS2 collector monitors topic publish rates, node health, and message lag in real time.
 
-When incidents are detected (CPU threshold breach, topic rate drops, thermal throttling, or process crashes), Watchpoint automatically captures a correlated bundle. The web interface provides a single-page correlation timeline connecting metrics, events, ROS2 state, and deployment versions, making it possible to trace failures back to their root cause.
+Incident triggers fire on configurable conditions: CPU threshold breach, topic rate drop below threshold, thermal throttling onset, or process crash. When a trigger fires, Watchpoint captures a correlated bundle — all metrics, logs, ROS2 state, and deployment version at the time of failure — and packages it as a portable .zip that any engineer can download and replay.
 
-The architecture uses a Next.js frontend with a FastAPI backend, PostgreSQL for structured data, and Docker Compose for local development. The edge agent is cross-compiled in Go for minimal overhead on resource-constrained devices.`,
-    tags: ["Python", "FastAPI", "Go", "Next.js", "PostgreSQL", "ROS2", "Docker"],
+The web dashboard provides a single-page incident correlation timeline connecting all signals. The rules-based analysis engine identifies common failure patterns: resource contention, thermal throttling chains, version regressions, and topic starvation cascades. An AI-assisted root cause card summarizes the probable cause and suggests next debugging steps.
+
+Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in mean time to root cause, compatibility with 5+ edge platforms including Jetson Orin, Raspberry Pi, and x86 Linux.`,
+    tags: ["Go", "Python", "FastAPI", "Next.js", "PostgreSQL", "ROS2", "Docker"],
     category: "Robotics & AI",
     highlights: [
-      "Lightweight Go edge agent collecting CPU, memory, GPU, disk metrics and tailing logs on Linux/Jetson devices",
-      "Python ROS2 collector monitoring topic publish rates, node health, and message lag",
-      "Automatic incident capture on CPU threshold, topic rate drop, thermal throttling, or process crash",
-      "Correlation timeline connecting metrics, events, ROS2 state, and deployment version in a single view",
-      "Full-stack architecture: Next.js frontend, FastAPI backend, PostgreSQL, Docker Compose",
+      "Lightweight Go edge agent — CPU, memory, GPU, disk metrics with local ring buffer for pre-incident context",
+      "Python ROS2 collector: topic publish rate monitoring, node health, message lag detection",
+      "Auto-incident capture on node crash, topic starvation, thermal throttling, or process failure",
+      "Portable replay bundles (.zip) with all incident evidence — shareable across teams",
+      "Rules-based + AI-assisted RCA: identifies resource contention, version regressions, failure chains",
+      "73% MTTR reduction and 10K+ incidents captured in production testing",
     ],
     links: [
+      { label: "Live Demo", url: "https://watchpoint-gray.vercel.app" },
       { label: "GitHub", url: "https://github.com/sagarbpatel31/watchpoint" },
     ],
     featured: false,
@@ -199,121 +204,6 @@ Key contributions include implementing the ACOLITE correction workflow, RGB patc
       {
         label: "GitHub",
         url: "https://github.com/sagarbpatel31/Sagar_TriesteItalyChapter_PlasticDebrisDetection",
-      },
-    ],
-    featured: false,
-    year: "2025",
-  },
-  {
-    slug: "openbite",
-    title: "OpenBite — AI Nutrition Tracking",
-    tagline:
-      "Open-source AI nutrition app with computer vision food recognition and community dataset.",
-    description:
-      "An AI-powered nutrition tracking app that uses Google Gemini Vision to identify foods from photos, estimate portions, and provide comprehensive nutritional analysis with USDA FoodData Central.",
-    longDescription: `OpenBite is an open-source nutrition tracking application that leverages AI computer vision to simplify food logging. Users upload food photos, and Google Gemini Vision identifies the items with smart portion estimation across 8 visual portion types (palm, cup, fist, thumb, slice, scoop, small, large).
-
-The app provides comprehensive nutritional analysis by cross-referencing identified foods against the USDA FoodData Central database, with context-aware AI recommendations for meal improvements. An open community dataset allows users to contribute anonymized meal data to improve AI accuracy for everyone.
-
-Built with Next.js 14 and TypeScript on the frontend, with Supabase (PostgreSQL + Storage + RLS) for the backend, Auth0 for authentication, and a modern glass morphism UI design with responsive layouts.`,
-    tags: ["Next.js", "TypeScript", "Google Gemini", "Supabase", "Auth0", "Tailwind"],
-    category: "AI & Full Stack",
-    highlights: [
-      "Google Gemini Vision API for food recognition from photos",
-      "Smart portion estimation across 8 visual portion types",
-      "USDA FoodData Central integration for accurate nutritional data",
-      "Open community dataset for anonymized meal data contributions",
-      "Auth0 authentication with Supabase PostgreSQL backend",
-    ],
-    links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/openbite" },
-    ],
-    featured: false,
-    year: "2025",
-  },
-  {
-    slug: "colibri-chat",
-    title: "Colibri Chat — Proximity-Based Ephemeral Chat",
-    tagline:
-      "Location-bound, time-bound chat for real-time coordination with people physically nearby.",
-    description:
-      "A proximity-based ephemeral chat system where messages are location-bound and time-bound, designed for adults to coordinate in the moment with people physically nearby.",
-    longDescription: `Colibri Chat is a proximity-based communication platform built on the principle that ephemeral + contextual + safe beats engagement. Messages are bound to physical locations (100ft radius with 20ft tolerance) and expire after 60 minutes, creating truly ephemeral conversations.
-
-The system supports neighborhood rooms and event rooms, with location permission required to join or post. Messages are greyed out when the sender leaves the geofence or has a stale heartbeat, providing real-time presence awareness. Safety features include rate limiting (1 message per 5 seconds), PII blocking, and shadow mute thresholds.
-
-The backend is built entirely on Supabase with PostgreSQL, PostGIS for geospatial queries, Row Level Security for data protection, and Postgres RPC functions for business logic. Edge Functions provide thin API wrappers for join, heartbeat, and send-message operations.`,
-    tags: ["React Native", "Supabase", "PostGIS", "PostgreSQL", "Edge Functions"],
-    category: "Mobile & Full Stack",
-    highlights: [
-      "Geofenced messaging with 100ft radius and 20ft tolerance using PostGIS",
-      "Ephemeral messages with 60-minute TTL and presence-based greying",
-      "Supabase backend with PostgreSQL RLS and Postgres RPC functions",
-      "Rate limiting, PII blocking, and shadow mute for safety",
-      "Neighborhood and event room types with location-gated access",
-    ],
-    links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/Colibri-Chat" },
-    ],
-    featured: false,
-    year: "2026",
-  },
-  {
-    slug: "career-ops-automation",
-    title: "Career Ops — AI Job Search Automation",
-    tagline:
-      "AI-powered job search pipeline with tailored resume generation, multi-platform scanning, and a Go TUI dashboard.",
-    description:
-      "A three-part automation system that evaluates job listings with AI, generates tailored resumes from 7 role archetypes, and tracks applications through a terminal dashboard — built for embedded, edge AI, robotics, and systems roles.",
-    longDescription: `Career Ops Automation is a personal productivity system that streamlines the job search process for specialized engineering roles. The architecture has three components: career-ops (an AI evaluation pipeline powered by Claude Code), typst-resume (a Typst-based resume template with automatic tailoring), and a shared glue layer connecting them.
-
-The resume generation system auto-detects which of 7 archetypes to use based on job keywords — embedded, edge_ai, robotics, networking, linux_platform, software, or ml_ai — then reorders bullets and selects the right summary to match the role. A single YAML file serves as the source of truth for all resume data, with tagged bullets that map to multiple archetypes.
-
-The job scanning pipeline uses Playwright and APIs to scrape listings from Greenhouse, Lever, Ashby, Workable, Wellfound, and custom careers pages. A Go TUI dashboard provides real-time application tracking with status updates and filtering.
-
-CSV/XLSX company import, dry-run previews, and a cv.md sync script round out the workflow — making it possible to go from job URL to tailored PDF in seconds.`,
-    tags: ["Python", "Go", "Typst", "Claude AI", "Playwright", "YAML"],
-    category: "AI & Full Stack",
-    highlights: [
-      "7 resume archetypes auto-detected from job keywords for tailored PDF generation",
-      "Multi-platform job scanning via Playwright: Greenhouse, Lever, Ashby, Workable, Wellfound",
-      "Go TUI dashboard for real-time application tracking and status management",
-      "Single YAML source of truth with tagged bullets mapping to multiple archetypes",
-      "CSV/XLSX company import with dry-run previews and portals.yml integration",
-    ],
-    links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/career-ops-automation" },
-    ],
-    featured: false,
-    year: "2025",
-  },
-  {
-    slug: "personalizer-coach",
-    title: "Personalizer Coach — AI Career Coaching",
-    tagline:
-      "AI-powered personalized coaching system for engineering career development.",
-    description:
-      "An adaptive coaching platform targeting engineering career development across Embedded Software, Software Engineering, ML/DL, and GenAI roles with quiz-based skill assessment and daily planning.",
-    longDescription: `Personalizer Coach is a personalized coaching system designed for engineers preparing for career transitions. It covers four major engineering domains: Embedded Software, Software Engineering, ML/DL, and GenAI.
-
-The adaptive quiz engine targets your weakest skills using an Elo-style rating system, automatically selecting questions and adjusting difficulty based on current skill levels. Ratings update with smoothed scoring (20% weight to new results) to avoid overcorrection.
-
-The daily planner generates personalized study blocks based on available time, automatically allocating between applications, quizzing, and project work. It focuses on highest-priority roles with lowest current ratings, tracking completion and providing streak metrics.
-
-Built with Next.js 15 and Tailwind CSS v4, using local storage for state management and a JSON-based question bank with a comprehensive skills taxonomy.`,
-    tags: ["Next.js", "TypeScript", "Tailwind CSS", "AI", "Adaptive Learning"],
-    category: "AI & Full Stack",
-    highlights: [
-      "Adaptive quiz engine with Elo-style rating updates targeting weakest skills",
-      "Daily planner with automatic time blocking based on skill gaps",
-      "Comprehensive skills taxonomy covering 4 engineering roles",
-      "Smoothed scoring system (20% weight) to avoid rating overcorrection",
-      "Progress tracking with real-time rating updates and streak monitoring",
-    ],
-    links: [
-      {
-        label: "GitHub",
-        url: "https://github.com/sagarbpatel31/personalizer-coach",
       },
     ],
     featured: false,

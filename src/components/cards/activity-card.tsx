@@ -9,16 +9,26 @@ interface BlogEntry {
   date: string;
 }
 
+type FeedEntry = {
+  date: string;
+  icon: string;
+  label: string;
+  href?: string;
+  external: boolean;
+  color: string;
+};
+
 export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
-  // Merge awards and posts into a single feed, sorted by date
-  const feed: { date: string; icon: string; label: string; href?: string; color: string }[] = [];
+  const feed: FeedEntry[] = [];
 
   awards.forEach((award) => {
+    const link = award.links?.[0];
     feed.push({
       date: `${award.year}-01`,
-      icon: "\u2605",
+      icon: "★",
       label: `WON: ${award.title}`,
-      href: award.links?.[0]?.url,
+      href: link?.url,
+      external: true,
       color: "text-accent-amber",
     });
   });
@@ -26,14 +36,14 @@ export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
   blogEntries.forEach((post) => {
     feed.push({
       date: post.date,
-      icon: "\u270E",
+      icon: "✎",
       label: `POST: ${post.title}`,
       href: `/blog/${post.slug}`,
+      external: false,
       color: "text-accent",
     });
   });
 
-  // Sort descending
   feed.sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -50,20 +60,36 @@ export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
                 entry.href ? "cursor-pointer hover:text-accent transition-colors" : ""
               }`}
             >
-              <span className="text-muted whitespace-nowrap">
-                [{entry.date}]
-              </span>
+              <span className="text-muted whitespace-nowrap">[{entry.date}]</span>
               <span className={entry.color}>{entry.icon}</span>
-              <span className="text-muted-foreground">{entry.label}</span>
+              <span className="text-muted-foreground flex-1 min-w-0">
+                {entry.label}
+              </span>
+              {entry.href && (
+                <span className="text-accent opacity-60 shrink-0">↗</span>
+              )}
             </div>
           );
 
-          return entry.href ? (
-            <Link key={i} href={entry.href} target={entry.href.startsWith("http") ? "_blank" : undefined} rel={entry.href.startsWith("http") ? "noopener noreferrer" : undefined}>
+          if (!entry.href) return <div key={i}>{inner}</div>;
+
+          if (entry.external) {
+            return (
+              <a
+                key={i}
+                href={entry.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {inner}
+              </a>
+            );
+          }
+
+          return (
+            <Link key={i} href={entry.href}>
               {inner}
             </Link>
-          ) : (
-            <div key={i}>{inner}</div>
           );
         })}
       </div>
