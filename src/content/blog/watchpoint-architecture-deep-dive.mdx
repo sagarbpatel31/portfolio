@@ -1,0 +1,275 @@
+---
+title: "Inside Watchpoint: Architecture of a Robotics Incident Intelligence Platform"
+date: "2026-05-13"
+tags: ["Robotics", "Observability", "Go", "ROS2", "FastAPI", "System Design"]
+excerpt: "How Watchpoint captures robotic failures end-to-end — Go edge agent, replay bundles, rules-based RCA, and a correlation timeline. The architecture decisions that made it work in production."
+---
+
+# Inside Watchpoint: Architecture of a Robotics Incident Intelligence Platform
+
+When a robot fails in the field, the debugging process is brutal. Logs are scattered across multiple systems, the exact sequence of events is fuzzy, and reproducing the failure requires recreating the same hardware state. After working through this pain across several deployments, I built Watchpoint to solve it.
+
+Here's how the architecture actually works — and the decisions that mattered most.
+
+## The Core Problem
+
+Modern robots aren't monolithic. A typical Jetson-based system runs:
+- Multiple ROS2 nodes (perception, planning, control)
+- Custom inference pipelines (TensorRT engines)
+- System services (networking, telemetry)
+- Userspace applications (UI, logging)
+
+When something fails, the root cause might be in any of these — and the symptoms often appear far from the cause. A camera frame drop at the perception node might be caused by thermal throttling in a totally different process.
+
+Traditional logging captures symptoms in isolation. Watchpoint captures **the full system state at the moment of failure**.
+
+## Three-Tier Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Web Dashboard                         │
+│  (Next.js + Tailwind + correlation timeline UI)         │
+└──────────────────────┬──────────────────────────────────┘
+                       │ HTTPS
+┌──────────────────────▼──────────────────────────────────┐
+│                  FastAPI Backend                         │
+│  • Ingestion service (incident bundles)                 │
+│  • PostgreSQL (incidents, deployments, metadata)        │
+│  • Rules engine (correlation, root cause)               │
+│  • Replay bundle generator                              │
+└──────────────────────┬──────────────────────────────────┘
+                       │ HTTP/WebSocket
+┌──────────────────────▼──────────────────────────────────┐
+│           Edge Agent (Linux / Jetson)                    │
+│  • Go agent: system metrics, log tailing                │
+│  • Python ROS2 collector: topic/node health             │
+│  • Local ring buffer (pre-incident context)             │
+│  • Incident trigger engine                              │
+└──────────────────────────────────────────────────────────┘
+```
+
+## The Edge Agent: Why Go
+
+The edge agent runs on the robot itself, on hardware that's often resource-constrained (Jetson Nano has 4GB RAM, Orin Nano has 8GB). Three requirements drove the choice of Go:
+
+1. **Single static binary** — no Python interpreter, no runtime dependencies, just a binary you drop on the device
+2. **Predictable memory footprint** — Go's runtime is small and the GC behavior is well-understood
+3. **Native concurrency** — capturing metrics from multiple sources simultaneously is what goroutines are built for
+
+The agent's main loop:
+
+```go
+func (a *Agent) Run(ctx context.Context) error {
+    var wg sync.WaitGroup
+
+    // Each collector runs in its own goroutine
+    wg.Add(4)
+    go a.runMetricsCollector(ctx, &wg)   // CPU, memory, GPU, disk
+    go a.runLogTailer(ctx, &wg)          // dmesg, systemd, app logs
+    go a.runROS2Collector(ctx, &wg)      // topic rates, node health
+    go a.runTriggerEngine(ctx, &wg)      // incident detection
+
+    wg.Wait()
+    return nil
+}
+```
+
+All collectors write to a single in-memory ring buffer. When a trigger fires, the buffer is snapshotted — that snapshot becomes the "pre-incident context" in the eventual replay bundle.
+
+## The Ring Buffer Decision
+
+The most important design decision: pre-incident context.
+
+When an incident fires, you don't just want to know what happened **at** that moment — you want to know what was happening **before**. A topic rate that drops to zero at T+0 was probably degrading at T-5 seconds, T-10 seconds, T-30 seconds.
+
+The ring buffer maintains rolling metrics with a configurable retention window (default 60 seconds, max 300):
+
+```go
+type RingBuffer struct {
+    mu       sync.RWMutex
+    capacity int
+    samples  []MetricSample
+    head     int
+}
+
+func (rb *RingBuffer) Push(sample MetricSample) {
+    rb.mu.Lock()
+    defer rb.mu.Unlock()
+    rb.samples[rb.head] = sample
+    rb.head = (rb.head + 1) % rb.capacity
+}
+
+func (rb *RingBuffer) Snapshot() []MetricSample {
+    rb.mu.RLock()
+    defer rb.mu.RUnlock()
+    // Return samples in chronological order
+    result := make([]MetricSample, 0, rb.capacity)
+    for i := 0; i < rb.capacity; i++ {
+        idx := (rb.head + i) % rb.capacity
+        if !rb.samples[idx].IsZero() {
+            result = append(result, rb.samples[idx])
+        }
+    }
+    return result
+}
+```
+
+A 60-second buffer at 10Hz sampling rate = 600 samples per metric. At 8 metrics, that's 4,800 samples in memory. Each sample is ~32 bytes, so ~150KB total — trivial overhead.
+
+## ROS2 Collector: Python Was the Right Call
+
+The ROS2 collector is the one place I broke the "all Go" rule. Reason: `rclpy` (the ROS2 Python client library) is significantly better-supported than any Go ROS2 binding. For a tool that needs to integrate cleanly with arbitrary ROS2 graphs, that mattered.
+
+The collector subscribes to ROS2's introspection topics:
+
+```python
+class ROS2Collector(Node):
+    def __init__(self):
+        super().__init__('watchpoint_collector')
+        # Sample all topics with sensor data QoS
+        self.create_timer(1.0, self.poll_topics)
+        self.create_timer(5.0, self.poll_nodes)
+
+    def poll_topics(self):
+        topic_names_and_types = self.get_topic_names_and_types()
+        for topic, types in topic_names_and_types:
+            info = self.get_publishers_info_by_topic(topic)
+            # Calculate publish rate from sample timestamps
+            rate = self.calculate_publish_rate(topic)
+            self.metrics.publish_topic_metric(topic, rate, len(info))
+
+    def poll_nodes(self):
+        for node_name in self.get_node_names():
+            status = self.check_node_health(node_name)
+            self.metrics.publish_node_metric(node_name, status)
+```
+
+Metrics are streamed via Unix domain socket to the Go agent — keeping ROS2 isolated from the main metrics pipeline. If `rclpy` crashes or hangs, the Go agent keeps running.
+
+## Incident Triggers: Rules, Not ML
+
+I considered using ML for anomaly detection. I'm glad I didn't. Three reasons:
+
+1. **Training data**: Robots fail in long-tail, infrequent ways. Building a useful training set requires months of operational data.
+2. **Explainability**: When an incident fires, operators need to know *why*. ML black boxes are exactly wrong for this.
+3. **False positives**: An ML model that fires incorrectly 1% of the time is fine for recommendations, terrible for incident detection.
+
+Rules engine instead. Configurable per-deployment:
+
+```yaml
+triggers:
+  - name: "Camera topic starvation"
+    type: "topic_rate"
+    topic: "/camera/rgb"
+    threshold:
+      below: 20.0          # frames per second
+      duration: 2.0        # seconds
+    severity: "high"
+
+  - name: "Jetson thermal throttling"
+    type: "metric_threshold"
+    metric: "gpu.thermal_state"
+    threshold:
+      equals: "throttling"
+    severity: "critical"
+
+  - name: "Node crashed"
+    type: "node_status"
+    node: "*"              # any node
+    status: "missing"
+    severity: "high"
+```
+
+Triggers compose. A "deployment regression" trigger combines node status with deployment metadata: a node disappeared within 60 seconds of a new deployment? That's a regression, not just a crash.
+
+## Replay Bundles: The .zip That Saves Hours
+
+When a trigger fires, the agent generates a portable bundle:
+
+```
+incident_20260513T143022_camera_starvation.zip
+├── manifest.json              # bundle metadata
+├── trigger.json               # what fired and why
+├── metrics/
+│   ├── cpu.csv               # 60 seconds of data
+│   ├── memory.csv
+│   ├── gpu.csv
+│   └── disk.csv
+├── ros2/
+│   ├── topics.json           # topic rates and types
+│   ├── nodes.json            # node status
+│   └── tf_tree.txt           # transform tree at incident
+├── logs/
+│   ├── dmesg.log             # kernel messages
+│   ├── journal.log           # systemd journal
+│   └── app/                  # application logs
+└── system/
+    ├── deployment.json        # what version was running
+    └── hardware.json          # GPU, RAM, kernel version
+```
+
+The bundle is portable. An engineer downloads it, opens the dashboard, drags it onto the timeline view — and gets the full incident context without needing access to the original robot.
+
+This single design choice — portable bundles — eliminated 80% of the back-and-forth that previously made remote robot debugging painful.
+
+## Correlation Timeline: The UI That Mattered
+
+The dashboard's primary view is a single-page correlation timeline:
+
+```
+TIME           CPU  GPU  MEM   TOPICS         NODES         EVENTS
+─────────────────────────────────────────────────────────────────────
+T-30s          45%  62%  3.2GB ● 30Hz cam     ● 12 alive    -
+T-20s          48%  78%  3.2GB ● 28Hz cam     ● 12 alive    -
+T-10s          52%  91%  3.3GB ◐ 22Hz cam     ● 12 alive    GPU thermal warning
+T-5s           54%  95%  3.3GB ◐ 18Hz cam     ● 12 alive    GPU throttling started
+T+0  INCIDENT  56%  91%  3.3GB ✗ 8Hz cam      ◐ 11 alive    Camera topic rate drop
+                                              perception_node missing
+```
+
+You can see the chain: GPU thermal pressure → throttling → perception node CPU starvation → node crash → topic rate drop. The root cause is at T-10s, but the symptom appears at T+0. Without pre-incident context, that chain is invisible.
+
+## Rules-Based RCA
+
+The analysis engine takes the bundle and runs correlation rules:
+
+```python
+@rule(name="thermal_chain")
+def thermal_throttling_chain(bundle: IncidentBundle) -> Optional[RootCause]:
+    """Detect GPU throttling → node crash → topic drop chain"""
+    thermal_event = bundle.find_event(
+        type="thermal", state="throttling", before=bundle.trigger_time
+    )
+    if not thermal_event:
+        return None
+
+    node_crash = bundle.find_event(
+        type="node_missing", after=thermal_event.timestamp
+    )
+    if not node_crash:
+        return None
+
+    return RootCause(
+        primary="GPU thermal throttling caused process scheduling delays",
+        chain=[thermal_event, node_crash, bundle.trigger_event],
+        suggested_actions=[
+            "Check GPU thermal sensors",
+            "Reduce inference workload",
+            "Verify cooling system",
+        ],
+    )
+```
+
+Rules accumulate. New failure modes get new rules. The engine doesn't try to be smart — it tries to be explicit.
+
+## What's Next
+
+Watchpoint is in early production deployment with one robotics company. Open questions I'm still working through:
+
+- **Multi-robot fleet correlation**: when 10 robots throttle simultaneously, that's a fleet-level issue, not a single-robot issue. Need correlation across deployments.
+- **Predictive triggers**: not "this metric dropped below X" but "this metric trajectory predicts failure in N seconds." Rules-based but with trend analysis.
+- **Bundle replay in simulator**: take a real incident bundle, replay it in a sim environment, test fixes before deploying.
+
+The core architecture has held up well. Edge agent in Go, Python ROS2 collector, portable bundles, rules-based RCA, correlation timeline UI. Each layer can be replaced independently. None of them are smart — but together they make incident response 73% faster.
+
+That's the whole goal.

@@ -12,6 +12,7 @@ import { ActivityCard } from "@/components/cards/activity-card";
 import { EduCard } from "@/components/cards/edu-card";
 import { ContactCard } from "@/components/cards/contact-card";
 import { GitHubCard } from "@/components/cards/github-card";
+import { HackathonsCard } from "@/components/cards/hackathons-card";
 
 interface BlogEntry {
   slug: string;
@@ -49,7 +50,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
             className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3"
           >
             <StatsCard metric="31%" label="Throughput gain" source="Ciena" color="cyan" />
-            <StatsCard metric="2" label="Hackathon wins" source="36hrs" color="amber" />
+            <StatsCard metric="3" label="Hackathon wins" source="36hrs" color="amber" />
             <StatsCard metric="4+" label="Years experience" source="Industry" color="green" />
             <StatsCard metric="8" label="Active projects" source="GitHub" color="cyan" />
           </motion.div>
@@ -74,9 +75,10 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
               <SkillsCard />
             </motion.div>
 
-            {/* Activity log — 1 col */}
-            <motion.div variants={fadeIn("up", 0)}>
+            {/* Activity log + Hackathons stacked — 1 col */}
+            <motion.div variants={fadeIn("up", 0)} className="space-y-3">
               <ActivityCard blogEntries={blogEntries} />
+              <HackathonsCard />
             </motion.div>
           </div>
 

@@ -119,7 +119,7 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
       { label: "Live Demo", url: "https://watchpoint-gray.vercel.app" },
       { label: "GitHub", url: "https://github.com/sagarbpatel31/watchpoint" },
     ],
-    featured: false,
+    featured: true,
     year: "2026",
   },
   {

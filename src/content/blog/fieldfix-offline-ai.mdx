@@ -1,0 +1,349 @@
+---
+title: "Why FieldFix Has Zero Cloud Dependencies: Designing AI for the Edge"
+date: "2026-05-14"
+tags: ["AI", "Edge Computing", "Ollama", "Gemma", "RAG", "Offline-First"]
+excerpt: "Building an AI repair assistant that works in agricultural fields with no internet. The architectural choices for offline LLMs, deterministic safety, and why we picked Gemma 3 4B."
+---
+
+# Why FieldFix Has Zero Cloud Dependencies: Designing AI for the Edge
+
+Most AI tools assume the cloud. They assume bandwidth, latency, and uptime that don't exist in the places where AI could actually help the most — agricultural fields, industrial facilities, remote infrastructure sites. FieldFix was built for those environments.
+
+Zero cloud calls. Zero internet dependency. Full AI repair guidance running on a single laptop, accessible from any phone on the local WiFi. Here's how, and why each architectural decision matters.
+
+## The Field Reality
+
+When something breaks at a wind farm in rural Texas, or a remote agricultural pump in the Central Valley, or a generator at a disaster relief site — the conditions are:
+
+- **Connectivity**: spotty cellular at best, often nothing
+- **Time pressure**: equipment downtime costs revenue or safety
+- **Expertise**: technicians on-site are skilled but may not know the specific failure mode
+- **Reference material**: paper manuals if you're lucky, nothing if you're not
+
+The existing "AI assistant" answer to this is wrong: it assumes the technician has 4G coverage to query ChatGPT or Claude. They don't.
+
+FieldFix's design constraint was strict: assume zero connectivity, full stack runs on a laptop the technician brings to the site.
+
+## The Stack
+
+```
+Phone (iOS Safari) ──WiFi──► Laptop Hotspot
+                                  │
+                                  ▼
+                    ┌─────────────────────────────┐
+                    │  Next.js Frontend (port 3000)│
+                    │  - Symptom input + speech    │
+                    │  - Structured repair output  │
+                    └────────────┬────────────────┘
+                                 │ REST
+                                 ▼
+                    ┌─────────────────────────────┐
+                    │  FastAPI Backend (port 8000) │
+                    │  ┌────────────────────────┐ │
+                    │  │ Safety Guardrails      │ │ ← deterministic
+                    │  └────────────────────────┘ │
+                    │  ┌────────────────────────┐ │
+                    │  │ Repair Orchestrator    │ │
+                    │  │  ├─ Diagnosis Agent    │ │
+                    │  │  ├─ Cause Ranker       │ │
+                    │  │  ├─ Repair Planner     │ │
+                    │  │  ├─ Question Agent     │ │
+                    │  │  └─ Verification Agent │ │
+                    │  └────────────────────────┘ │
+                    │  ┌────────────────────────┐ │
+                    │  │ RAG (ChromaDB)         │ │
+                    │  └────────────────────────┘ │
+                    │  ┌────────────────────────┐ │
+                    │  │ SQLite Device History  │ │
+                    │  └────────────────────────┘ │
+                    └────────────┬────────────────┘
+                                 │
+                                 ▼
+                    ┌─────────────────────────────┐
+                    │  Gemma 3 4B via Ollama       │
+                    │  (Metal GPU on Mac)          │
+                    └─────────────────────────────┘
+```
+
+Everything inside the laptop. Nothing outside.
+
+## Why Gemma 3 4B (And Not Llama or Mistral)
+
+The model choice matters more than people think. The constraints:
+
+- **Must run on consumer laptops** (M-series Mac, modern Intel/AMD with discrete GPU)
+- **Inference latency**: <3 seconds for repair plan generation
+- **Memory footprint**: <8GB so it doesn't bottleneck the host laptop
+- **Quality**: must handle technical reasoning, not just chat
+
+I benchmarked several options on an M3 MacBook Pro:
+
+| Model | Size | Latency | Quality (manual eval) |
+|-------|------|---------|----------------------|
+| Llama 3.2 3B | 3B | 1.8s | Good chat, weak technical reasoning |
+| Mistral 7B | 7B | 4.2s | Too slow on consumer hardware |
+| Gemma 3 4B | 4B | 2.1s | Strong technical, good instruction following |
+| Phi-3-mini | 3.8B | 1.9s | Decent but weaker at structured output |
+
+Gemma 3 won. The deciding factor: it handles structured JSON output reliably, which is critical when the agent pipeline depends on parseable responses between agents.
+
+## The Ollama Wrapper
+
+Ollama abstracts model serving. The Python client is trivial:
+
+```python
+import requests
+
+class OllamaClient:
+    def __init__(self, base_url: str = "http://localhost:11434"):
+        self.base_url = base_url
+
+    def generate(self, prompt: str, model: str = "gemma3:4b",
+                 format: str | None = None) -> str:
+        response = requests.post(
+            f"{self.base_url}/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "format": format,  # "json" for structured output
+                "options": {
+                    "temperature": 0.3,  # low for diagnostic consistency
+                    "num_predict": 1024,
+                }
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()["response"]
+```
+
+The Metal GPU acceleration happens automatically on Apple Silicon. On Linux with NVIDIA, Ollama uses CUDA. No model code changes needed.
+
+## The Multi-Agent Pipeline
+
+A single model call would have been too brittle. Instead, five specialized agents process each symptom:
+
+```python
+class RepairOrchestrator:
+    def __init__(self, client: OllamaClient, rag: RAGRetriever):
+        self.diagnosis = DiagnosisAgent(client)
+        self.ranker = CauseRanker(client)
+        self.planner = RepairPlanner(client, rag)
+        self.questioner = QuestionAgent(client)
+        self.verifier = VerificationAgent(client)
+
+    async def process(self, symptom: str, device_history: list) -> RepairPlan:
+        # 1. Identify possible causes
+        causes = await self.diagnosis.identify(symptom, device_history)
+
+        # 2. Rank by likelihood
+        ranked = await self.ranker.rank(causes, symptom)
+
+        # 3. Generate step-by-step repair (RAG-augmented)
+        steps = await self.planner.plan(ranked.top_cause(), symptom)
+
+        # 4. Surface clarifying questions if confidence low
+        questions = await self.questioner.identify_unknowns(symptom, ranked)
+
+        # 5. Define verification + stop conditions
+        verification = await self.verifier.define(steps, ranked.top_cause())
+
+        return RepairPlan(
+            symptom=symptom,
+            causes=ranked,
+            steps=steps,
+            questions=questions,
+            verification=verification,
+        )
+```
+
+Each agent has a focused prompt and a structured output schema. Failures in one agent don't cascade — the orchestrator handles partial results.
+
+## RAG Without a Vector Database Service
+
+The knowledge base is 37 expert-written markdown documents covering Robotics, Electronics, Emergency Equipment, Household systems, and Safety Guides. Chunked semantically into 295 pieces, embedded with `sentence-transformers/all-MiniLM-L6-v2`, stored in local ChromaDB.
+
+```python
+from sentence_transformers import SentenceTransformer
+import chromadb
+
+class RAGRetriever:
+    def __init__(self, db_path: str):
+        self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+        self.client = chromadb.PersistentClient(path=db_path)
+        self.collection = self.client.get_or_create_collection("repairs")
+
+    def retrieve(self, query: str, category: str | None = None,
+                 k: int = 5) -> list[dict]:
+        embedding = self.embedder.encode(query).tolist()
+        where = {"category": category} if category else None
+
+        results = self.collection.query(
+            query_embeddings=[embedding],
+            n_results=k,
+            where=where,
+        )
+        return [
+            {
+                "text": doc,
+                "metadata": meta,
+                "distance": dist,
+            }
+            for doc, meta, dist in zip(
+                results["documents"][0],
+                results["metadatas"][0],
+                results["distances"][0],
+            )
+        ]
+```
+
+ChromaDB stores everything as files. No service to run, no port to manage. The embedder loads once at startup (~60MB model). Retrieval is sub-100ms.
+
+## The Safety Layer: Deterministic, Not AI
+
+This is the most important design decision in the entire system: **safety checks never touch the model**.
+
+Nine hard-stop categories block AI processing entirely:
+
+```python
+HARD_STOPS = {
+    "gas_leak": [
+        "gas leak", "smell of gas", "natural gas", "propane leak",
+        "gas smell", "gas line leak",
+    ],
+    "co_alarm": [
+        "carbon monoxide", "co alarm", "co detector going off",
+    ],
+    "electrical_fire": [
+        "electrical fire", "outlet on fire", "wiring on fire",
+        "smoke from outlet", "burning smell electrical",
+    ],
+    "fuel_leak": [
+        "gasoline leak", "diesel leak", "fuel spill", "oil leak fire",
+    ],
+    "battery_swelling": [
+        "swollen battery", "puffy lithium", "expanded battery",
+        "swelling phone battery",
+    ],
+    "bare_wire": [
+        "exposed wire", "bare wire", "live wire visible",
+        "wire sticking out",
+    ],
+    "mains_voltage": [
+        "240v contact", "120v contact", "touched live wire",
+        "household current shock",
+    ],
+    "electric_shock": [
+        "got shocked", "electric shock", "shocked by",
+        "received shock from",
+    ],
+    "microwave_internal": [
+        "microwave capacitor", "microwave magnetron",
+        "opened microwave", "inside microwave",
+    ],
+}
+
+def check_safety(symptom: str) -> SafetyResult:
+    symptom_lower = symptom.lower()
+    for category, phrases in HARD_STOPS.items():
+        for phrase in phrases:
+            if phrase in symptom_lower:
+                return SafetyResult(
+                    blocked=True,
+                    category=category,
+                    message=HARD_STOP_MESSAGES[category],
+                )
+    return SafetyResult(blocked=False)
+```
+
+Why deterministic? Because LLM hallucination on safety questions is **unacceptable**. If a model occasionally tells someone to "use a wet rag" on an electrical fire, that's a catastrophic failure mode. Rules-based keyword matching has false positives (annoying) but never false negatives on the patterns it knows (safe).
+
+The unmatched space — symptoms with no keyword hit — proceeds to AI processing. But hard stops always win.
+
+## Per-Device Memory
+
+Each device the technician services has its own SQLite-backed history:
+
+```sql
+CREATE TABLE repair_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id TEXT NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    symptom TEXT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    resolution TEXT,
+    outcome TEXT CHECK(outcome IN ('resolved', 'partial', 'unresolved')),
+    notes TEXT
+);
+
+CREATE INDEX idx_device_timestamp ON repair_history(device_id, timestamp DESC);
+```
+
+When a technician returns to a device, the orchestrator queries history:
+
+```python
+def get_device_context(device_id: str, limit: int = 5) -> list[dict]:
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute("""
+        SELECT timestamp, symptom, diagnosis, resolution, outcome
+        FROM repair_history
+        WHERE device_id = ?
+        ORDER BY timestamp DESC
+        LIMIT ?
+    """, (device_id, limit)).fetchall()
+    return [dict(r) for r in rows]
+```
+
+This context gets injected into the diagnosis prompt. "Three weeks ago this same servo had a buzzing issue caused by loose mounting" is exactly the kind of context that improves diagnosis accuracy.
+
+## Frontend on Local WiFi
+
+The Next.js frontend runs on `0.0.0.0:3000` so any device on the same network can access it. The technician's laptop creates a personal hotspot, the phone connects to that hotspot, navigates to `http://[laptop-ip]:3000`, and uses Safari to interact with the system.
+
+```typescript
+// Quick LAN-friendly fetch
+async function diagnose(symptom: string, deviceId: string) {
+  const res = await fetch(`http://${LAPTOP_IP}:8000/repair/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ symptom, device_id: deviceId }),
+  });
+  return res.json();
+}
+```
+
+iOS Safari + speech recognition handles voice input. The technician describes the symptom verbally, the structured repair plan appears in seconds.
+
+## Latency Budget
+
+The full pipeline:
+
+```
+User speech → text                  : 200ms (on-device speech)
+Safety check (keyword match)        :  <5ms
+RAG retrieval (ChromaDB)            : 80ms
+Agent 1: Diagnosis                  : 800ms
+Agent 2: Cause Ranking              : 400ms
+Agent 3: Repair Planner (RAG context): 1200ms
+Agent 4: Question Agent             : 400ms
+Agent 5: Verification Agent         : 400ms
+Frontend render                     : 50ms
+─────────────────────────────────────────────
+Total                                ~3.5s
+```
+
+Three seconds from "spoke a symptom" to "received structured repair plan" — entirely offline. That's the win.
+
+## What the Cloud Approach Can't Do
+
+A cloud-based AI repair tool sounds simpler. It's not, because:
+
+1. **No coverage = no tool.** The places where this matters most have no coverage.
+2. **Privacy.** Industrial facilities don't want repair queries hitting external services.
+3. **Latency variability.** Cloud latency is multi-second under bad conditions. Local is consistent.
+4. **Long-term cost.** API calls add up. Local inference is free after hardware.
+
+There's a category of AI applications where offline-first isn't a feature — it's the entire point. FieldFix is one of them.
+
+The model is small, the safety layer is dumb on purpose, the deployment is a laptop. The simplicity is what makes it work.
