@@ -34,15 +34,4 @@ export const awards: Award[] = [
       { label: "Event", url: "https://luma.com/uv13n64x?tk=wjHDI0" },
     ],
   },
-  {
-    title: "Cyberwave × Toolhouse Track Winner",
-    event: "Robotic Agents Hackathon, March 2026",
-    year: "2026",
-    description:
-      "Built MedAssist — an AI-powered medication verification and dispensing agent that closes the full sense-reason-act loop. The SO-101 robot arm camera identifies each vial (drug name, dosage, expiry, position) via Claude Vision. A Toolhouse agent runs a 10-check safety sequence against the patient record. ElevenLabs provides real-time voice narration of every dispensing action. Addresses the 1.5M annual US medication error problem.",
-    links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/med-assist" },
-      { label: "Devpost", url: "https://devpost.com/software/medassist" },
-    ],
-  },
 ];

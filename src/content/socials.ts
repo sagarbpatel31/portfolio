@@ -12,6 +12,11 @@ export const socials: Social[] = [
     icon: "linkedin",
   },
   {
+    name: "X",
+    url: "https://x.com/SagarPa65006244",
+    icon: "x",
+  },
+  {
     name: "Email",
     url: "mailto:sagar@myjobemails.com",
     icon: "mail",

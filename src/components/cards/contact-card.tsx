@@ -129,6 +129,14 @@ export function ContactCard() {
                 >
                   linkedin ↗
                 </a>
+                <a
+                  href="https://x.com/SagarPa65006244"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-accent transition-colors"
+                >
+                  x ↗
+                </a>
               </div>
               <button
                 type="submit"

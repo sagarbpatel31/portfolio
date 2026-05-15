@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu, Github, Linkedin } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
+import { XIcon } from "@/components/icons/x-icon";
 
 export function Navbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -69,6 +70,15 @@ export function Navbar() {
               aria-label="LinkedIn"
             >
               <Linkedin className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href="https://x.com/SagarPa65006244"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden rounded-md p-2 text-muted-foreground transition-colors hover:text-accent sm:inline-flex"
+              aria-label="X (Twitter)"
+            >
+              <XIcon className="h-3.5 w-3.5" />
             </a>
 
             <button

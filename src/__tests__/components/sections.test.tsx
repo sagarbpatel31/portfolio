@@ -83,7 +83,7 @@ describe("Hero section", () => {
   });
 
   it("renders status badge", () => {
-    expect(screen.getByText(/Open to embedded.*AI software/)).toBeInTheDocument();
+    expect(screen.getByText(/Open to Physical AI.*Forward Deployed/)).toBeInTheDocument();
   });
 
   it("renders role domains terminal", () => {
@@ -91,7 +91,7 @@ describe("Hero section", () => {
   });
 
   it("renders tagline", () => {
-    expect(screen.getByText(/firmware that powers edge networks/)).toBeInTheDocument();
+    expect(screen.getByText(/Building production software from silicon to multi-agent AI/)).toBeInTheDocument();
   });
 
   it("has View Dashboard CTA linking to dashboard", () => {
@@ -148,16 +148,16 @@ describe("About section", () => {
   });
 
   it("renders bio text", () => {
-    expect(screen.getByText(/latency is measured in microseconds/)).toBeInTheDocument();
+    expect(screen.getByText(/full stack of physical AI/)).toBeInTheDocument();
   });
 
   it("renders focus areas", () => {
     expect(screen.getByText("Embedded Linux & BSP")).toBeInTheDocument();
-    expect(screen.getByText("Edge AI & Inference")).toBeInTheDocument();
+    expect(screen.getByText("Physical AI & Robotics")).toBeInTheDocument();
   });
 
   it("renders open to list", () => {
-    expect(screen.getByText("Embedded systems engineering")).toBeInTheDocument();
+    expect(screen.getByText("Embedded software engineering")).toBeInTheDocument();
   });
 
   it("has section id", () => {
@@ -201,13 +201,14 @@ describe("Projects section", () => {
   });
 
   it("renders project titles", () => {
-    expect(screen.getByText(/TraceMind/)).toBeInTheDocument();
-    expect(screen.getByText(/HydraSwarm/)).toBeInTheDocument();
-    expect(screen.getByText(/MedAssist/)).toBeInTheDocument();
-    expect(screen.getByText(/Plastic Debris Detection/)).toBeInTheDocument();
-    expect(screen.getByText(/OpenBite/)).toBeInTheDocument();
-    expect(screen.getByText(/Colibri Chat/)).toBeInTheDocument();
-    expect(screen.getByText(/Personalizer Coach/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Watchpoint/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/HydraSwarm/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/MedAssist/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Plastic Debris Detection/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/StepAhead/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/FieldFix/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/SignalForge/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/XG1/).length).toBeGreaterThan(0);
   });
 
   it("renders category filter tabs", () => {
@@ -215,19 +216,18 @@ describe("Projects section", () => {
     const tabLabels = buttons.map((b) => b.textContent);
     expect(tabLabels).toContain("All");
     expect(tabLabels).toContain("Robotics & AI");
-    expect(tabLabels).toContain("AI & Gen AI");
   });
 
   it("filters projects by category", async () => {
     const user = userEvent.setup();
     await user.click(screen.getByText("Applied ML"));
     expect(screen.getByText(/Plastic Debris Detection/)).toBeInTheDocument();
-    expect(screen.queryByText(/TraceMind/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Watchpoint/)).not.toBeInTheDocument();
   });
 
   it("project cards link to detail pages", () => {
-    const link = screen.getByRole("link", { name: /TraceMind/ });
-    expect(link).toHaveAttribute("href", "/projects/tracemind");
+    const link = screen.getByRole("link", { name: /Watchpoint/ });
+    expect(link).toHaveAttribute("href", "/projects/watchpoint");
   });
 
   it("has section id", () => {
@@ -243,9 +243,9 @@ describe("Skills section", () => {
   });
 
   it("renders all skill categories", () => {
-    expect(screen.getByText("Languages")).toBeInTheDocument();
-    expect(screen.getByText("Embedded & Systems")).toBeInTheDocument();
-    expect(screen.getByText("AI/ML & Edge")).toBeInTheDocument();
+    expect(screen.getByText("Programming Languages")).toBeInTheDocument();
+    expect(screen.getByText("Embedded Systems")).toBeInTheDocument();
+    expect(screen.getByText("Edge AI & NVIDIA Platforms")).toBeInTheDocument();
   });
 
   it("renders individual skill items", () => {
@@ -294,8 +294,8 @@ describe("Awards section", () => {
 
   it("renders hackathon awards", () => {
     expect(screen.getByText(/Best Overall Use of DeepLake/)).toBeInTheDocument();
-    expect(screen.getByText(/Physical AI & Robotics Track Winner/)).toBeInTheDocument();
-    expect(screen.getByText(/Cyberwave × Toolhouse Track/)).toBeInTheDocument();
+    expect(screen.getAllByText(/NomadicML/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/HydraSwarm/).length).toBeGreaterThan(0);
   });
 
   it("has section id", () => {
