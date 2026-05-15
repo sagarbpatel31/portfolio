@@ -2,25 +2,36 @@ import { Award } from "@/types";
 
 export const awards: Award[] = [
   {
-    title: "Best Overall Use of DeepLake",
+    title: "Physical AI & Robotics: Data at Scale — Best Overall Use of DeepLake",
     event: "Intelligence at the Frontier Hackathon 2026",
     year: "2026",
     description:
-      "Built HydraSwarm — a self-improving multi-agent AI system where 7 specialized agents (PM, Architect, Developer, Reviewer, QA, SRE, CTO) collaborate on software engineering tasks with institutional memory via HydraDB powered by DeepLake. Scores improved measurably each run: Run 1 → 7/10, Run 2 → 8/10, Run 3 → 9/10. Featured live agent thinking logs, SSE streaming, and run comparison views. 326 unit tests across 21 suites.",
+      "Won for XG1 — a rapid-iteration humanoid robot pipeline built in 2 days for the Unitree G1. Used DeepLake to store and stream Lightwheel's G1 beverage organization data with efficient tensor storage for fast I/O fine-tuning under tight time constraints. The data pipeline enabled GR00T policy fine-tuning that wouldn't have been possible with conventional storage.",
     links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/HydraSwarm" },
-      { label: "Hackathon", url: "https://dorahacks.io/hackathon/intelligence-at-the-frontier" },
+      { label: "Hackathon", url: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484" },
+      { label: "DeepLake", url: "https://www.deeplake.ai/" },
     ],
   },
   {
-    title: "Physical AI & Robotics Track Winner — NomadicML",
+    title: "Physical AI & Robotics by NomadicML — New Project Winner",
     event: "Intelligence at the Frontier Hackathon 2026",
     year: "2026",
     description:
-      "Built a rapid-iteration humanoid robot pipeline for the Unitree G1 in 36 hours. Stack: Meta Quest 3 + MuJoCo for intuitive teleoperation, NVIDIA Sonic for low-latency control commands, DeepLake for high-throughput tensor storage of demonstration data, and NVIDIA GR00T for fine-tuning locomotion policies. Used Nomadic AI to diagnose failure modes in walking and pick-and-place tasks. Competed against 150–200 curated builders for a $26,750+ prize pool.",
+      "Won for XG1's humanoid robot pipeline. Used Nomadic AI as a diagnostic layer to pinpoint failure modes in the fine-tuned GR00T agent's reasoning — identifying why specific task instructions failed and creating a clear improvement path. Combined immersive Meta Quest 3 + MuJoCo teleop with robust MLOps for a fast-track humanoid robot learning workflow.",
     links: [
-      { label: "Hackathon", url: "https://dorahacks.io/hackathon/intelligence-at-the-frontier" },
+      { label: "Hackathon", url: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484" },
       { label: "NomadicML", url: "https://nomadic.ai" },
+    ],
+  },
+  {
+    title: "Hackathon Winner — HydraSwarm",
+    event: "a fun hack day (promise) — Virtual / Discord",
+    year: "2026",
+    description:
+      "Won for HydraSwarm — a 7-agent software engineering company where every agent queries HydraDB before acting and stores lessons back after. Run a task once, score 7/10. Run a similar task again and agents recall what went wrong the first time — score goes up. Used 7 distinct HydraDB capabilities including knowledge ingestion, sub-tenants per agent, shared org memory, hybrid recall, graph relations, and inference. 325 unit tests across 21 suites.",
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/HydraSwarm" },
+      { label: "Event", url: "https://luma.com/uv13n64x?tk=wjHDI0" },
     ],
   },
   {
@@ -28,7 +39,7 @@ export const awards: Award[] = [
     event: "Robotic Agents Hackathon, March 2026",
     year: "2026",
     description:
-      "Built MedAssist — an AI-powered medication verification and dispensing agent that closes the full sense-reason-act loop. The SO-101 robot arm camera identifies each vial (drug name, dosage, expiry, position) via Claude Vision. A Toolhouse agent runs a 10-check safety sequence against the patient record. ElevenLabs provides real-time voice narration of every dispensing action. Addresses the 1.5M annual US medication error problem with autonomous AI-robotic verification.",
+      "Built MedAssist — an AI-powered medication verification and dispensing agent that closes the full sense-reason-act loop. The SO-101 robot arm camera identifies each vial (drug name, dosage, expiry, position) via Claude Vision. A Toolhouse agent runs a 10-check safety sequence against the patient record. ElevenLabs provides real-time voice narration of every dispensing action. Addresses the 1.5M annual US medication error problem.",
     links: [
       { label: "GitHub", url: "https://github.com/sagarbpatel31/med-assist" },
       { label: "Devpost", url: "https://devpost.com/software/medassist" },

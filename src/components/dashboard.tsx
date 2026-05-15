@@ -50,7 +50,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
             className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3"
           >
             <StatsCard metric="31%" label="Throughput gain" source="Ciena" color="cyan" />
-            <StatsCard metric="3" label="Hackathon wins" source="36hrs" color="amber" />
+            <StatsCard metric="4" label="Hackathon wins" source="3 events" color="amber" />
             <StatsCard metric="4+" label="Years experience" source="Industry" color="green" />
             <StatsCard metric="8" label="Active projects" source="GitHub" color="cyan" />
           </motion.div>

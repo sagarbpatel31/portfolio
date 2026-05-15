@@ -42,12 +42,15 @@ export function ProcessCard() {
               <span className="text-right">
                 {project.featured ? (
                   <span className="inline-flex items-center gap-1 text-accent-green">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-green" />
-                    <span className="hidden sm:inline">ACTIVE</span>
+                    <span className="relative inline-flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
+                    </span>
+                    <span className="hidden sm:inline font-semibold">ACTIVE</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-accent-amber">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-amber" />
+                  <span className="inline-flex items-center gap-1 text-accent-amber/70">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-amber/70" />
                     <span className="hidden sm:inline">IDLE</span>
                   </span>
                 )}

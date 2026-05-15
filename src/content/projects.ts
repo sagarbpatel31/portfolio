@@ -123,33 +123,86 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
     year: "2026",
   },
   {
-    slug: "hydraswarm",
-    title: "HydraSwarm — Multi-Agent AI with Institutional Memory",
+    slug: "xg1",
+    title: "XG1 — Rapid Humanoid Robot Learning Pipeline",
     tagline:
-      "Self-improving multi-agent AI software company powered by HydraDB institutional memory.",
+      "2-day humanoid robot pipeline for the Unitree G1 — Meta Quest 3 teleop, NVIDIA Sonic, DeepLake data, GR00T policy fine-tuning, Nomadic diagnostics. Won 2 tracks.",
     description:
-      "A multi-agent AI system where 7 specialized agents collaborate on tasks, with institutional learning that makes every subsequent run measurably better. Won Best Overall Use of DeepLake at Intelligence at the Frontier Hackathon.",
-    longDescription: `HydraSwarm simulates a software engineering company where 7 specialized AI agents — Product Manager, Architect, Developer, Reviewer, QA Engineer, SRE, and CTO — collaborate on tasks. Unlike one-shot AI tools, HydraSwarm remembers and improves: every task writes new knowledge back to HydraDB, and the next similar task produces a measurably better result.
+      "XG1 is a rapid-iteration humanoid robot learning pipeline built in 2 days for the Unitree G1. It combines immersive teleoperation, high-throughput tensor data infrastructure, and foundation-model fine-tuning to move from manual demonstration to autonomous policy testing — winning both the DeepLake and NomadicML tracks at Intelligence at the Frontier Hackathon.",
+    longDescription: `XG1 demonstrates a fast-track workflow for humanoid robot learning. The challenge: take a Unitree G1 humanoid from manual demonstration to autonomous policy testing in 36 hours, with reliable performance on complex tasks like walking to tables and pick-and-place maneuvers with beverages and apples.
 
-The improvement is provable: Run 1 scores 7/10, Run 2 recalls lessons and scores 8/10, Run 3 reaches 9/10. Each agent follows a recall-generate-store loop, querying HydraDB for relevant knowledge before generating output and storing artifacts back for future use.
+**Teleoperation Layer**: We integrated Meta Quest 3 with MuJoCo for intuitive 6DOF control, using NVIDIA Sonic to achieve low-latency control commands. This let us manually complete the target tasks (walking + pick-and-place) and capture high-fidelity demonstration data. Sonic's millisecond-class latency was critical — any teleop lag breaks operator confidence.
 
-Key features include a live agent thinking log showing every HydraDB query and storage operation, SSE streaming for real-time agent activation, run comparison views with score deltas and improvement badges, and a HydraDB memory explorer for browsing institutional memory with search and relevance scoring.
+**Data Strategy with DeepLake**: To handle high-throughput training, we used DeepLake to store and stream Lightwheel's G1 beverage organization data. The efficient tensor storage provided the fast I/O necessary to fine-tune models within tight time constraints. Without it, the training pipeline would have been I/O-bound rather than compute-bound — the entire fine-tuning loop would have stalled.
 
-Built during the Intelligence at the Frontier Hackathon (February 2026), the project won Best Overall Use of DeepLake for demonstrating institutional learning across AI agent runs.`,
-    tags: ["Next.js", "TypeScript", "DeepLake", "SSE", "Multi-Agent AI"],
-    category: "AI & Gen AI",
+**Policy Fine-Tuning with NVIDIA GR00T**: We fine-tuned NVIDIA GR00T on our collected data. Since Sonic's fine-tuning features were not yet released, we used Sonic primarily for high-fidelity data collection while running autonomous inference through GR00T. The 45 minutes of demonstration data (135,000 timesteps at 50Hz) was enough to produce a working policy in ~2 hours of training.
+
+**Diagnostics with Nomadic AI**: To understand why the fine-tuned agent struggled with specific task instructions, we used Nomadic AI as a diagnostic layer. This pinpointed failure modes in the model's reasoning — identifying which task instructions caused divergence, at what decision points, and what features the model was attending to incorrectly. The output was a concrete improvement path rather than vague hypotheses.
+
+**Outcome**: Won 2 tracks at Intelligence at the Frontier Hackathon 2026 — "Physical AI & Robotics: Data at Scale — Best Overall Use of DeepLake" and "Physical AI & Robotics by NomadicML — New Project Winner". The architecture demonstrated that combining immersive teleop with robust MLOps tooling can compress the humanoid-learning timeline from weeks to days.`,
+    tags: ["Robotics", "Unitree G1", "Meta Quest 3", "MuJoCo", "NVIDIA Sonic", "DeepLake", "NVIDIA GR00T", "Nomadic AI"],
+    category: "Physical AI & Robotics",
     highlights: [
-      "7 specialized AI agents with recall-generate-store loop for institutional learning",
-      "Provable improvement across runs: scores increase from 7 to 8 to 9 as lessons accumulate",
-      "Live agent thinking log with SSE streaming showing real-time HydraDB operations",
-      "Run comparison view with score deltas, recalled context diffs, and improvement badges",
-      "326 unit tests across 21 suites covering backend, frontend, API, and streaming",
+      "Meta Quest 3 + MuJoCo teleoperation with NVIDIA Sonic for low-latency control",
+      "DeepLake tensor storage for high-throughput streaming of G1 demonstration data",
+      "NVIDIA GR00T policy fine-tuning on 45 min of collected demonstrations (135K timesteps)",
+      "Nomadic AI diagnostics layer pinpointing fine-tuned agent failure modes",
+      "Successful execution: walking to tables, beverage and apple pick-and-place",
+      "Built in 36 hours from blank slate to autonomous policy testing",
     ],
-    metrics: ["Won Best Overall Use of DeepLake", "326 unit tests"],
+    metrics: [
+      "Won DeepLake track — Best Overall Use",
+      "Won NomadicML track — New Project Winner",
+    ],
+    links: [
+      { label: "Hackathon", url: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "hydraswarm",
+    title: "HydraSwarm — 7-Agent AI Software Company with HydraDB",
+    tagline:
+      "A 7-agent software engineering company where every agent queries HydraDB before acting and stores lessons back after. Score 7/10 first run, higher next run. Memory makes it real.",
+    description:
+      "HydraSwarm simulates a 7-agent software engineering company where every agent queries HydraDB before acting and stores lessons back after. Run a task once, score 7/10. Run a similar task again and agents recall what went wrong — score goes up. Uses 7 distinct HydraDB capabilities including knowledge ingestion, sub-tenants per agent, shared org memory, hybrid recall, graph relations, and inference.",
+    longDescription: `HydraSwarm is what multi-agent AI looks like when memory is treated as a first-class capability rather than an afterthought. Seven specialized agents — Product Manager, Architect, Developer, Reviewer, QA Engineer, SRE, and CTO — collaborate on tasks, with every agent following a strict recall-generate-store loop against HydraDB.
+
+The mechanism is simple but powerful: before an agent generates output, it queries HydraDB for relevant prior lessons. After it generates, it writes new lessons back. Run 1 of any task scores 7/10. Run 2 recalls Run 1's mistakes and scores 8/10. Run 3 reaches 9/10. The improvement is provable, measurable, and visible in the live dashboard.
+
+**Seven HydraDB capabilities used**:
+1. **Knowledge ingestion** — agents write structured lessons after every task
+2. **Sub-tenants per agent** — each role has isolated memory namespaces
+3. **Shared org memory** — cross-role context for institutional knowledge
+4. **Hybrid recall** — combines semantic search with structured filters
+5. **Graph relations** — explicit links between related lessons and tasks
+6. **Inference** — derived insights from accumulated lesson patterns
+7. **Memory explorer** — search and relevance scoring for browsing all stored knowledge
+
+**Live agent thinking log**: Every HydraDB query and storage operation streams to the UI via SSE. Judges and operators can watch the institutional memory get used and updated in real time — making the architecture legible rather than a black box.
+
+**Run comparison view**: Side-by-side diff of two runs of the same task, showing score deltas, recalled context differences, and improvement badges. This is what makes "institutional learning" concrete instead of hand-wavy.
+
+**Engineering rigor**: 325 unit tests across 21 suites covering backend logic, frontend rendering, API contracts, and SSE streaming. Fast tests (under 8 seconds full run) meant we could refactor the memory architecture at 2am without breaking agent communication.
+
+Won the "a fun hack day (promise)" virtual hackathon on Discord — a 178-attendee event focused on serious technical builds.`,
+    tags: ["Next.js", "TypeScript", "DeepLake", "HydraDB", "SSE", "Multi-Agent AI", "RAG"],
+    category: "AI & Multi-Agent Systems",
+    highlights: [
+      "7 specialized agents (PM, Architect, Developer, Reviewer, QA, SRE, CTO) with recall-generate-store loop",
+      "Provable improvement across runs: 7/10 → 8/10 → 9/10 as lessons accumulate",
+      "7 distinct HydraDB capabilities: ingestion, sub-tenants, shared memory, hybrid recall, graph relations, inference, explorer",
+      "Live agent thinking log with SSE streaming showing real-time HydraDB ops",
+      "Run comparison view with score deltas, recalled context diffs, improvement badges",
+      "325 unit tests across 21 suites — backend, frontend, API, streaming all covered",
+    ],
+    metrics: ["Hackathon Winner", "325 unit tests across 21 suites", "7/10 → 9/10 score improvement"],
     links: [
       { label: "GitHub", url: "https://github.com/sagarbpatel31/HydraSwarm" },
+      { label: "Hackathon", url: "https://luma.com/uv13n64x?tk=wjHDI0" },
     ],
-    featured: false,
+    featured: true,
     year: "2026",
   },
   {
