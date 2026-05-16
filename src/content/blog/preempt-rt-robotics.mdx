@@ -1,0 +1,336 @@
+---
+title: "Real-Time Linux for Robotics: PREEMPT_RT in Practice"
+date: "2026-05-15"
+tags: ["Linux", "PREEMPT_RT", "Real-Time", "Robotics", "Embedded", "Performance"]
+excerpt: "Standard Linux can have 10ms latency spikes. Real-time robotics needs sub-millisecond. PREEMPT_RT bridges that gap — here's how to actually deploy it, what changes in your code, and the gotchas nobody warns you about."
+---
+
+# Real-Time Linux for Robotics: PREEMPT_RT in Practice
+
+Standard Linux is not a real-time operating system. The scheduler is fair, not predictable. Interrupt handlers can be delayed. Memory allocation can block. None of this matters for a web server. All of it matters for a robot.
+
+PREEMPT_RT is the Linux real-time patchset that fixes these issues. After deploying it on Jetson-based robots and edge AI gateways at Ciena, here's what actually matters.
+
+## The Latency Problem
+
+A standard Linux kernel running a control loop at 1kHz looks like this:
+
+```
+Worst-case latency: ~10-50ms
+Typical latency:    ~50-200μs
+99th percentile:    ~2-10ms
+```
+
+For a robot arm that needs to react to sensor input within 1ms, this is unacceptable. Even rare 10ms spikes can cause physical damage — the control loop misses its window, the arm overshoots, hardware breaks.
+
+PREEMPT_RT transforms the latency distribution:
+
+```
+Worst-case latency: <500μs (typical) or <200μs (tuned)
+Typical latency:    ~10-30μs
+99th percentile:    ~100-200μs
+```
+
+The worst-case bound is the win. Real-time systems care less about average performance and more about guaranteed maximums.
+
+## What PREEMPT_RT Actually Does
+
+The standard kernel has non-preemptible sections — critical paths where the kernel can't be interrupted, leading to long latency spikes. PREEMPT_RT:
+
+1. **Makes spinlocks preemptible** (via rt_mutex)
+2. **Threads interrupt handlers** so they can be scheduled with priorities
+3. **Replaces blocking primitives** with priority-inheritance versions
+4. **Adds high-resolution timers** for sub-microsecond precision
+5. **Enables full preemption** so even kernel code can be preempted
+
+The cost: ~10-15% throughput reduction on benchmarks. The benefit: deterministic latency.
+
+## Installing PREEMPT_RT
+
+For Ubuntu 24.04 on x86_64:
+```bash
+sudo apt install linux-image-rt-amd64 linux-headers-rt-amd64
+# Reboot, select the RT kernel from GRUB
+```
+
+For Jetson Orin (custom kernel build required):
+```bash
+# Get NVIDIA's L4T source
+cd ~/jetson-build
+wget https://developer.nvidia.com/embedded/L4T/r35_Release_v4.1/sources/public_sources.tbz2
+
+# Apply RT patches matching kernel version
+cd kernel/kernel-jammy-src
+wget https://cdn.kernel.org/pub/linux/kernel/projects/rt/5.10/patch-5.10.104-rt62.patch.gz
+zcat patch-5.10.104-rt62.patch.gz | patch -p1
+
+# Configure with RT options
+make tegra_defconfig
+make menuconfig
+# Enable: CONFIG_PREEMPT_RT_FULL
+# Enable: CONFIG_HIGH_RES_TIMERS
+# Disable: CONFIG_DEBUG_PREEMPT (for production)
+
+# Build (this takes 30-60min on Jetson)
+make -j$(nproc) Image dtbs modules
+```
+
+Verify after boot:
+```bash
+uname -a
+# Should show "PREEMPT_RT" in the version string
+
+# Check preemption model
+cat /sys/kernel/debug/sched/preempt
+# Output: "none voluntary full" — "full" is selected
+```
+
+## What Changes in Your Code
+
+PREEMPT_RT alone doesn't make your code real-time. You have to write code that respects RT constraints.
+
+### Set Scheduling Policy
+
+By default, your process runs SCHED_OTHER (fair scheduler). Switch to SCHED_FIFO for real-time:
+
+```c
+#include <pthread.h>
+#include <sched.h>
+
+void set_realtime_priority(pthread_t thread, int priority) {
+    struct sched_param param;
+    param.sched_priority = priority;  // 1-99 for SCHED_FIFO
+    if (pthread_setschedparam(thread, SCHED_FIFO, &param) != 0) {
+        perror("pthread_setschedparam");
+        exit(1);
+    }
+}
+
+int main() {
+    set_realtime_priority(pthread_self(), 80);
+    // Now we run with SCHED_FIFO at priority 80
+    // Higher number = higher priority
+    // System threads usually at 50, leave headroom
+}
+```
+
+Equivalent shell-level:
+```bash
+chrt -f 80 ./my_control_program
+```
+
+### Lock All Memory
+
+Page faults cause unpredictable latency. Lock your process memory to RAM:
+
+```c
+#include <sys/mman.h>
+
+int main() {
+    // Lock current and future memory
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+        perror("mlockall");
+        exit(1);
+    }
+
+    // Pre-allocate stack to avoid faults
+    char stack_prealloc[64 * 1024];
+    memset(stack_prealloc, 0, sizeof(stack_prealloc));
+
+    // Pre-allocate heap
+    void* prealloc = malloc(8 * 1024 * 1024);
+    memset(prealloc, 0, 8 * 1024 * 1024);
+    free(prealloc);
+
+    // Now do real-time work
+}
+```
+
+Without `mlockall`, your process pages can get swapped or evicted from cache, causing 100μs+ latency on access.
+
+### Avoid Dynamic Allocation in Hot Paths
+
+`malloc()` is not real-time safe. It can block on locks, trigger page allocation, or coalesce free lists. In your control loop, use only pre-allocated memory:
+
+```c
+// BAD — allocates each iteration
+void control_loop_bad() {
+    while (running) {
+        SensorReading* reading = malloc(sizeof(SensorReading));
+        read_sensor(reading);
+        compute_control(reading);
+        free(reading);
+    }
+}
+
+// GOOD — uses pre-allocated buffer
+void control_loop_good(SensorReading* buffer) {
+    while (running) {
+        read_sensor(buffer);
+        compute_control(buffer);
+    }
+}
+```
+
+For dynamic structures, use object pools allocated at startup:
+
+```c
+typedef struct {
+    SensorReading buffer[POOL_SIZE];
+    bool in_use[POOL_SIZE];
+} ReadingPool;
+
+SensorReading* pool_acquire(ReadingPool* p) {
+    for (int i = 0; i < POOL_SIZE; i++) {
+        if (!p->in_use[i]) {
+            p->in_use[i] = true;
+            return &p->buffer[i];
+        }
+    }
+    return NULL;  // Pool exhausted — handle this case
+}
+```
+
+### Use clock_nanosleep, Not usleep
+
+`usleep` and `sleep` have low resolution. `clock_nanosleep` with `CLOCK_MONOTONIC` gives precise periodic timing:
+
+```c
+#include <time.h>
+
+#define PERIOD_NS (1000000)  // 1ms = 1kHz
+
+void periodic_task() {
+    struct timespec next;
+    clock_gettime(CLOCK_MONOTONIC, &next);
+
+    while (running) {
+        next.tv_nsec += PERIOD_NS;
+        if (next.tv_nsec >= 1000000000) {
+            next.tv_nsec -= 1000000000;
+            next.tv_sec += 1;
+        }
+
+        // Wait until exactly the next period
+        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+
+        // Do work — must complete before next period
+        do_control_step();
+    }
+}
+```
+
+The `TIMER_ABSTIME` flag is critical. Without it, sleep duration drifts because the time spent in `do_control_step` accumulates.
+
+## CPU Isolation
+
+The remaining latency source is interference from other processes and kernel threads. Isolate CPU cores for your real-time work:
+
+In `/etc/default/grub`:
+```bash
+GRUB_CMDLINE_LINUX="isolcpus=2,3 nohz_full=2,3 rcu_nocbs=2,3"
+```
+
+Then `sudo update-grub && reboot`. After boot:
+- Cores 0,1: handle OS, kernel threads, interrupts
+- Cores 2,3: isolated for your RT workloads
+
+Pin your RT threads to isolated cores:
+```c
+#include <sched.h>
+
+void pin_to_core(int core_id) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_id, &cpuset);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+}
+```
+
+Move interrupt handlers off the isolated cores:
+```bash
+# Find your NIC's IRQ
+cat /proc/interrupts | grep eth0
+
+# Bind it to cores 0-1 (avoid 2-3)
+echo 03 > /proc/irq/{IRQ_NUMBER}/smp_affinity  # 03 = binary 0011 = cores 0,1
+```
+
+## Measuring Real-Time Performance
+
+`cyclictest` is the standard tool for measuring latency:
+
+```bash
+sudo cyclictest -t1 -p 80 -i 1000 -l 100000 -h 1000 -q
+```
+
+Output:
+```
+T: 0 ( 1234) P:80 I:1000 C: 100000 Min: 8 Act: 12 Avg: 14 Max: 87
+```
+
+- **Min**: best-case latency (8μs)
+- **Avg**: typical latency (14μs)
+- **Max**: worst-case observed (87μs) ← this is what matters
+
+For a 1kHz control loop, you need Max < 1000μs (= 1ms). For 10kHz, Max < 100μs. Tune until you hit the target.
+
+## The Gotchas
+
+### Real-Time GPU Code
+
+GPU work is not real-time. CUDA kernels run on the GPU scheduler, which has its own (non-RT) timing characteristics. If your control loop calls into CUDA, you've broken real-time guarantees.
+
+Solution: run inference asynchronously, double-buffer results, control loop reads latest buffer. The control loop never blocks on GPU work.
+
+### ROS2 Default Executor
+
+The standard ROS2 executor (`SingleThreadedExecutor`, `MultiThreadedExecutor`) is not real-time. Use `StaticSingleThreadedExecutor` or write your own.
+
+### Disk I/O Kills Latency
+
+File reads/writes are NOT real-time. Log to memory buffers, flush asynchronously from a separate (non-RT) thread.
+
+### Memory Allocation in Libraries
+
+A library function you call might do `malloc` internally. Profile carefully — `ltrace` and `perf` help identify hidden allocations.
+
+### Printk in RT Threads
+
+`printk` in the kernel and `printf` in userspace both have unpredictable latency. Use ring buffers for logging from RT threads, processed by non-RT threads.
+
+## Production Deployment Checklist
+
+Before declaring your system real-time:
+
+```
+✓ PREEMPT_RT kernel installed and verified (uname -a shows PREEMPT_RT)
+✓ Process uses SCHED_FIFO priority (chrt -p $PID confirms)
+✓ Memory locked with mlockall(MCL_CURRENT | MCL_FUTURE)
+✓ Pre-allocated all memory used in hot path
+✓ Pinned to isolated CPU cores
+✓ Interrupts moved off isolated cores
+✓ cyclictest under load confirms Max < target
+✓ Profiled hot path with perf — no hidden malloc/syscalls
+✓ Logged to memory buffer, not disk
+✓ Tested under realistic system load (other processes running)
+```
+
+## When Not To Use PREEMPT_RT
+
+PREEMPT_RT is the answer for hard real-time on Linux. It's not always needed:
+
+- **Soft real-time (web servers, dashboards)**: standard Linux is fine
+- **Inference pipelines without control loops**: use a normal kernel, optimize throughput
+- **Robotics with 100Hz+ loops on dedicated MCUs**: use a real RTOS (Zephyr, FreeRTOS) on the MCU, Linux on the application processor
+- **Cloud workloads**: PREEMPT_RT doesn't help — your latency is dominated by network and storage
+
+For our edge gateways at Ciena, the 1kHz networking telemetry loops needed PREEMPT_RT. The AI inference workloads on the same hardware did not — they were throughput-bound, not latency-bound.
+
+## The Lesson
+
+Real-time Linux is mostly about discipline, not magic. The kernel does its job — bounded latency, deterministic scheduling. Your code has to do its job — no malloc, no syscalls, no surprises in the hot path.
+
+When both layers are right, you get sub-millisecond determinism on commodity hardware. When either is wrong, you get a system that mostly works until it doesn't.
+
+The "mostly works until it doesn't" mode is exactly what robotics can't tolerate. Get both layers right.

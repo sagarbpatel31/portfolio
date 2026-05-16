@@ -1,0 +1,296 @@
+---
+title: "Production RAG Patterns: Beyond the Tutorial"
+date: "2026-05-16"
+tags: ["RAG", "AI", "Vector DB", "Gen AI", "Production", "ChromaDB"]
+excerpt: "Most RAG tutorials show toy examples that fall apart in production. Here's what actually works at scale — chunk strategy, hybrid retrieval, reranking, and the operational realities nobody mentions."
+---
+
+# Production RAG Patterns: Beyond the Tutorial
+
+Retrieval-Augmented Generation looks simple in tutorials. Embed your documents, store in a vector DB, retrieve top-K, prepend to prompt. Done. Then you try it in production and accuracy is 60%. Latency is 4 seconds. Costs are unpredictable. The model hallucinates things that aren't in the retrieved context.
+
+After building RAG into FieldFix and several other systems, here's what actually works.
+
+## The Tutorial Pattern (And Why It Fails)
+
+The standard tutorial:
+
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+
+splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+chunks = splitter.split_documents(docs)
+
+store = Chroma.from_documents(chunks, OpenAIEmbeddings())
+results = store.similarity_search(query, k=5)
+
+prompt = f"Context: {results}\n\nQuestion: {query}"
+answer = llm.generate(prompt)
+```
+
+This pattern fails in production because:
+
+1. **Chunk boundaries cut concepts in half.** A 1000-character chunk might split a definition from its explanation.
+2. **Cosine similarity is not relevance.** A semantically similar chunk might not actually answer the question.
+3. **No reranking.** Top-5 by embedding similarity is rarely top-5 by usefulness.
+4. **No retrieval evaluation.** You don't know if your retrieval is actually finding the right chunks.
+5. **No structured fallback.** If retrieval finds nothing useful, the LLM still tries to answer.
+
+## Chunk Strategy: Semantic, Not Character-Based
+
+Fixed-size chunks split mid-sentence, mid-concept, mid-table. The fix is semantic chunking — splitting at natural boundaries.
+
+```python
+from llama_index.core.node_parser import MarkdownNodeParser, SentenceWindowNodeParser
+
+# For markdown docs: split on headers, preserve hierarchy
+md_parser = MarkdownNodeParser(
+    include_metadata=True,
+    include_prev_next_rel=True,
+)
+
+# For prose: window of N sentences centered on each sentence
+sentence_parser = SentenceWindowNodeParser.from_defaults(
+    window_size=3,
+    window_metadata_key="window",
+    original_text_metadata_key="original_sentence",
+)
+```
+
+Better: chunk by document structure (headers, sections, paragraphs), not character count. Each chunk should be a self-contained semantic unit.
+
+For FieldFix's repair docs, I chunked by procedure step — each step is one chunk, with metadata linking back to the parent procedure. Retrieval returns a single relevant step plus its procedure context.
+
+## Hybrid Retrieval: BM25 + Embeddings
+
+Embeddings capture semantic similarity. Keyword search captures exact term matches. Both signals matter — neither is sufficient alone.
+
+```python
+from rank_bm25 import BM25Okapi
+
+class HybridRetriever:
+    def __init__(self, chunks: list[str], embedder, vector_store):
+        # BM25 keyword index
+        tokenized = [c.lower().split() for c in chunks]
+        self.bm25 = BM25Okapi(tokenized)
+        self.chunks = chunks
+
+        # Vector index (existing)
+        self.vector_store = vector_store
+        self.embedder = embedder
+
+    def retrieve(self, query: str, k: int = 10) -> list[dict]:
+        # Vector retrieval
+        query_emb = self.embedder.encode(query)
+        vec_results = self.vector_store.query(query_emb, n_results=k)
+
+        # BM25 retrieval
+        bm25_scores = self.bm25.get_scores(query.lower().split())
+        bm25_top_idx = sorted(
+            range(len(bm25_scores)),
+            key=lambda i: bm25_scores[i],
+            reverse=True,
+        )[:k]
+
+        # Reciprocal Rank Fusion
+        return self._fuse(vec_results, bm25_top_idx, k=k)
+
+    def _fuse(self, vec_results, bm25_indices, k=5):
+        # RRF: score = sum(1 / (60 + rank_i)) across all ranking systems
+        scores = {}
+        for rank, idx in enumerate(vec_results.indices):
+            scores[idx] = scores.get(idx, 0) + 1 / (60 + rank)
+        for rank, idx in enumerate(bm25_indices):
+            scores[idx] = scores.get(idx, 0) + 1 / (60 + rank)
+
+        top = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:k]
+        return [{"index": i, "score": s, "text": self.chunks[i]} for i, s in top]
+```
+
+The hybrid approach catches cases where embeddings miss exact terminology (e.g. specific part numbers) and where keyword search misses semantic similarity (e.g. paraphrases).
+
+## Reranking: The Single Highest-Leverage Optimization
+
+After initial retrieval, rerank the top-K with a cross-encoder. The cross-encoder evaluates query-document pairs explicitly rather than using pre-computed embeddings.
+
+```python
+from sentence_transformers import CrossEncoder
+
+class Reranker:
+    def __init__(self, model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"):
+        self.model = CrossEncoder(model_name)
+
+    def rerank(self, query: str, candidates: list[dict], top_n: int = 3) -> list[dict]:
+        if not candidates:
+            return []
+        pairs = [(query, c["text"]) for c in candidates]
+        scores = self.model.predict(pairs)
+        scored = list(zip(candidates, scores))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        return [{"text": c["text"], "score": float(s), **c} for c, s in scored[:top_n]]
+```
+
+The full pipeline:
+1. Hybrid retrieve top 20 candidates (broad recall)
+2. Rerank to top 3-5 (precision)
+3. Pass to LLM
+
+In FieldFix testing, adding a reranker improved answer accuracy from 68% to 87% on the validation set. Single biggest quality win.
+
+## Retrieval Evaluation: Without It You're Flying Blind
+
+The core failure mode of RAG systems: you don't know if retrieval is working. The LLM produces fluent answers regardless. You only notice when accuracy is bad.
+
+Build retrieval evaluation into the pipeline:
+
+```python
+@dataclass
+class RetrievalEval:
+    query: str
+    expected_chunk_ids: set[str]
+    retrieved_chunk_ids: list[str]
+
+    @property
+    def recall_at_k(self) -> float:
+        if not self.expected_chunk_ids:
+            return 1.0
+        found = sum(
+            1 for cid in self.retrieved_chunk_ids
+            if cid in self.expected_chunk_ids
+        )
+        return found / len(self.expected_chunk_ids)
+
+    @property
+    def mrr(self) -> float:
+        """Mean Reciprocal Rank"""
+        for rank, cid in enumerate(self.retrieved_chunk_ids, start=1):
+            if cid in self.expected_chunk_ids:
+                return 1.0 / rank
+        return 0.0
+```
+
+Build a small eval set (50-100 queries with expected relevant chunks) and run it on every retrieval pipeline change. If recall@5 drops, something broke.
+
+This is the most important thing to set up early. Everything else is guessing without it.
+
+## Prompt Engineering for RAG
+
+The retrieved context should be structured, not dumped:
+
+```python
+PROMPT_TEMPLATE = """You are a repair diagnostics assistant. Use ONLY the provided context to answer.
+If the context doesn't contain the answer, say "I don't have information about that specific issue."
+
+Context:
+{context_blocks}
+
+Question: {query}
+
+Instructions:
+- Cite the specific source (e.g., [Source 1]) for each claim
+- If multiple sources conflict, note the conflict
+- If safety is mentioned in any source, prioritize that"""
+
+def build_context_blocks(retrieved: list[dict]) -> str:
+    blocks = []
+    for i, r in enumerate(retrieved, start=1):
+        source = r.get("metadata", {}).get("source", "unknown")
+        blocks.append(f"[Source {i} — {source}]\n{r['text']}\n")
+    return "\n".join(blocks)
+```
+
+Key elements:
+1. **Explicit grounding instruction** — "use ONLY the provided context"
+2. **Citation requirement** — forces the model to anchor to specific sources
+3. **Fallback instruction** — explicit "I don't know" path
+4. **Numbered sources** — makes citations parseable
+
+## Operational Realities
+
+### Embedding Drift
+
+If you upgrade your embedding model, every embedding in your store is now wrong. Plan for this:
+
+```python
+@dataclass
+class IndexedChunk:
+    text: str
+    embedding: list[float]
+    embedding_model: str  # ← track this
+    embedding_version: str  # ← and this
+    indexed_at: datetime
+```
+
+When you switch models, you need to re-embed everything. Have a versioning strategy.
+
+### Cost Modeling
+
+For self-hosted embeddings (like `all-MiniLM-L6-v2`):
+- Embedding generation: ~free at inference time
+- Storage: proportional to chunk count × embedding dim
+
+For API embeddings (like `text-embedding-3-small`):
+- Generation: $0.02 per 1M tokens (small)
+- One-time cost for initial indexing
+- Recurring cost for new docs and re-embedding
+
+For a 295-chunk knowledge base (FieldFix scale), local embeddings won. For a 10M-chunk enterprise corpus, API embeddings with caching is the better fit.
+
+### Latency Budget
+
+End-to-end RAG latency breakdown:
+
+```
+Query embedding              : 5ms (local) / 100ms (API)
+Vector retrieval (top-20)    : 50-200ms
+BM25 retrieval               : 10ms
+Reranking (cross-encoder)    : 200-400ms
+LLM generation (4B local)    : 1500-3000ms
+LLM generation (API)         : 800-2500ms
+─────────────────────────────────────────
+Total                        : 2-4s typical
+```
+
+If you need <1s latency, you're in trouble. The model generation is the bottleneck. Options:
+- Smaller model (Phi-3 mini, Gemma 2B)
+- Streaming output (perceived latency drops)
+- Speculative decoding
+- Caching common queries
+
+## When NOT to Use RAG
+
+RAG is hyped. It's not always the right answer:
+
+- **Small, static knowledge**: just put it in the system prompt. RAG adds infrastructure for no benefit.
+- **Frequently changing facts**: RAG needs re-indexing. Consider a structured DB + SQL retrieval instead.
+- **Tasks requiring reasoning across many documents**: standard RAG retrieves K chunks but can't reason about the union. You need agentic retrieval or graph-based approaches.
+- **Single-document Q&A**: just include the full document in context. Modern context windows are 100K+ tokens.
+
+## The Stack That Works
+
+After several production deployments, this stack reliably works:
+
+```
+Embeddings: all-MiniLM-L6-v2 (local) or text-embedding-3-small (API)
+Vector store: ChromaDB (local, embedded) or Pinecone (cloud)
+Hybrid: + BM25 via rank_bm25
+Reranker: ms-marco-MiniLM-L-6-v2 (cross-encoder)
+Eval: custom recall@k + MRR on hand-built eval set
+LLM: depends on use case (Gemma 4B local, GPT-4o or Claude API)
+```
+
+Nothing exotic. The differentiation isn't in the stack — it's in the chunk strategy, the eval discipline, and the reranking.
+
+## The Real Lesson
+
+RAG that works in production isn't built with a better vector database. It's built with:
+
+1. **Evaluation infrastructure** so you know what's broken
+2. **Hybrid retrieval** because no single signal is enough
+3. **Reranking** because initial retrieval is imprecise
+4. **Semantic chunking** because character chunks destroy meaning
+5. **Structured prompting** that forces grounding
+
+Skip any of these and you'll spend months tuning embedding models that aren't the problem. Include all five and the system actually works.

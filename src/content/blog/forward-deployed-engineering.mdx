@@ -1,0 +1,132 @@
+---
+title: "Forward Deployed Engineering: What the Role Actually Is"
+date: "2026-05-17"
+tags: ["Forward Deployed", "Engineering", "Career", "Customer-Facing", "Systems"]
+excerpt: "Forward Deployed Engineering isn't sales engineering with extra steps. It's the discipline of solving customer problems in the field by writing production code under time pressure. Here's what makes it different — and what makes someone good at it."
+---
+
+# Forward Deployed Engineering: What the Role Actually Is
+
+The Forward Deployed Engineer (FDE) role gets misunderstood often. Recruiters describe it as "customer-facing engineering" and candidates hear "sales engineering." Both miss what makes the work distinct — and what makes it interesting.
+
+I've been thinking about this carefully because the role aligns closely with what I already do: build production systems across the full stack, deploy them in environments with real constraints, and iterate based on what's actually happening on the ground.
+
+## The Core Loop
+
+An FDE's job is a tight loop:
+
+```
+Customer has problem
+    ↓
+FDE understands problem (technical depth + customer context)
+    ↓
+FDE builds solution (production code, not demos)
+    ↓
+FDE deploys solution (on customer infrastructure)
+    ↓
+FDE validates with customer
+    ↓
+[Loop on next problem]
+```
+
+Three things make this distinct from product engineering:
+
+1. **Time horizon** is days/weeks, not quarters. The customer needs the thing working now.
+2. **Scope** is one specific deployment. You solve their problem, not the general case.
+3. **Feedback** is direct. The customer tells you immediately if it works or doesn't.
+
+This is the opposite of building a feature for "users in general." It's intensely specific, intensely fast, and the criteria for success are unambiguous — does the customer's problem stop being a problem?
+
+## What Makes Someone Good At It
+
+After watching FDEs at Palantir, Anduril, Scale, and OpenAI work, and after doing similar work informally at Ciena and Cisco, the pattern of strong FDEs is consistent:
+
+### 1. Full-Stack Capability Across Layers
+
+The FDE has to write whatever code the problem requires. Today that might be a Python data pipeline. Tomorrow it's a React dashboard. Day after, it's debugging a kernel module on the customer's edge hardware.
+
+This isn't "knows many languages." It's "can drop into any layer of the stack and ship production-quality code in that layer." The difference matters — there's a huge gap between "I've used Linux device drivers" and "I can debug your custom driver's IRQ handler and have it fixed before lunch."
+
+### 2. Pragmatic Code Quality
+
+FDEs ship fast. But "fast" doesn't mean "sloppy." The right framing:
+
+- **Production quality**: it handles edge cases the customer actually encounters
+- **Maintainable**: another engineer can pick it up if you leave
+- **Specific**: it solves *this* customer's problem, not a generalized version
+- **Tested**: at minimum, you've verified it works under realistic conditions
+
+What you skip: extensive abstractions for future flexibility, premature optimization, gold-plating. The customer doesn't pay you for code that *might* be useful for *other* customers.
+
+### 3. Customer Translation
+
+Customers describe problems in their domain language. FDEs translate this to technical requirements and back to "what the solution does for you" without losing fidelity.
+
+Example: A logistics customer says "we're losing packages." After 30 minutes of conversation, you understand they mean their conveyor system loses tracking on packages between scanner zones, the loss rate is 3% during peak hours, and the operational impact is rerouting overhead. The technical problem isn't "lost packages" — it's "scanner data fusion under high throughput with intermittent occlusion."
+
+Strong FDEs do this translation reliably. Weak FDEs either over-promise (because they didn't translate carefully) or under-deliver (because they technical-jargoned the customer into agreeing to the wrong solution).
+
+### 4. Comfort With Incomplete Information
+
+Customer environments are messy. The data is incomplete. The systems weren't designed to integrate with what you're building. The documentation is out of date.
+
+Strong FDEs operate under this uncertainty without paralysis. They make reasonable assumptions, validate them quickly, and iterate. They don't wait for a full requirements document. They don't refuse to build until everything is specified.
+
+This is closer to research engineering than product engineering. You're often the first person to attempt this exact thing in this exact environment.
+
+### 5. Field Operations Skills
+
+Some FDE roles require literal field deployment — going to the customer's site, installing on their hardware, debugging when their network isn't what you assumed. This is closer to systems administration than software engineering, and a fair number of "software engineers" are uncomfortable with it.
+
+If you've ever:
+- Debugged a misbehaving sensor over UART at 3am with a multimeter
+- Set up a network bridge to make two incompatible systems talk
+- Recovered a corrupted boot partition over JTAG
+- Rebuilt a kernel module without a development machine
+
+You have the field operations instinct that distinguishes FDEs from pure software engineers.
+
+## What FDE Is Not
+
+**Sales engineering.** A sales engineer's primary deliverable is a sale. An FDE's primary deliverable is a working system. They overlap during pre-sales (FDE technical credibility helps close), but the work is different.
+
+**Solution architecture without coding.** Some FDE-titled roles drift into "design the solution, hand off to consultants." That's not what the role is at the companies that do it well. The FDE writes the code.
+
+**Customer success management.** CSM is about retention and growth. FDE is about technical delivery. They report to different orgs and have different incentives.
+
+**"Junior engineering with customers."** Strong FDE work requires senior-level engineering judgment, because you're making architectural decisions under time pressure with incomplete information. New grads can support FDEs but rarely lead the work.
+
+## Why This Role Exists
+
+Companies need FDEs when:
+
+1. **Product complexity** is high enough that customers can't self-serve
+2. **Customer environment variance** is high enough that one configuration doesn't work for all
+3. **Time-to-value** matters enough to pay for dedicated engineering attention
+4. **Iteration speed** advantages come from tight customer feedback loops
+
+These conditions describe a lot of enterprise infrastructure, AI/ML applications, and frontier technology categories. The role is growing because more product categories meet these conditions.
+
+## Why It's Interesting
+
+The work is engineering with unusually clear feedback:
+
+- **You see the impact directly.** Your code shipping to a customer means the customer's problem goes away. That's tangible in a way most software work isn't.
+- **You learn the customer's domain.** Two years as an FDE in logistics teaches you logistics. Two years building features for "users in general" teaches you... your codebase.
+- **The variety is real.** Different customers have different problems. You ship different things every month.
+- **The work is technically deep.** Production-quality code in any layer requires actual depth, not surface knowledge.
+
+The role isn't for everyone. If you want to optimize a single system over years, FDE is wrong for you. If you want to spike into different technical problems and ship working solutions, it's one of the best engineering disciplines available.
+
+## What I Bring
+
+I've done this work informally:
+
+- **Ciena**: debugging customer-specific deployment issues on logistics edge gateways, optimizing DMA paths under their specific traffic patterns
+- **Cisco**: integrating P4 pipelines with customer ASIC SDK configurations, debugging packet loss in their network topology
+- **Hackathons**: shipping production-quality systems in 36 hours, including the customer translation step (judges = customers)
+- **Side projects**: every one of Watchpoint, FieldFix, StepAhead, SignalForge solved a specific problem I'd identified in the field
+
+What I'd bring to an FDE role explicitly: technical breadth from silicon to multi-agent AI, comfort with field operations from embedded work, hackathon-tested ability to ship in days, customer translation skills developed across multiple engineering domains.
+
+The role aligns with how I already think about engineering. The title would just match the work.
