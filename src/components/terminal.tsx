@@ -5,10 +5,24 @@ import { profile } from "@/content/profile";
 import { skills } from "@/content/skills";
 import { experiences } from "@/content/experience";
 import { projects } from "@/content/projects";
+import { socials } from "@/content/socials";
+import { cycleTheme } from "@/lib/theme";
 
 interface OutputLine {
   text: string;
   type: "input" | "output" | "accent" | "muted";
+}
+
+function longestCommonPrefix(words: string[]): string {
+  if (words.length === 0) return "";
+  let prefix = words[0];
+  for (const word of words.slice(1)) {
+    while (!word.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
 }
 
 const COMMANDS: Record<string, () => OutputLine[]> = {
@@ -19,13 +33,17 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "  experience  — Deployment history", type: "output" },
     { text: "  projects    — Active processes", type: "output" },
     { text: "  contact     — Establish connection", type: "output" },
+    { text: "  socials     — Social links", type: "output" },
     { text: "  status      — System status", type: "output" },
     { text: "  resume      — Download resume", type: "output" },
+    { text: "  theme       — Cycle color theme", type: "output" },
     { text: "  neofetch    — System info (fancy)", type: "output" },
     { text: "  whoami      — Current user info", type: "output" },
     { text: "  ls          — List directory", type: "output" },
     { text: "  uname       — System info", type: "output" },
     { text: "  clear       — Clear terminal", type: "output" },
+    { text: "", type: "output" },
+    { text: "  tip: press Tab to autocomplete · ↑/↓ for history", type: "muted" },
   ],
   neofetch: () => [
     { text: "  *****    *    *****    *    **** ", type: "accent" },
@@ -110,6 +128,20 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: `GitHub:   github.com/sagarbpatel31`, type: "output" },
     { text: `LinkedIn: linkedin.com/in/sagarp31`, type: "output" },
   ],
+  socials: () =>
+    socials.map((s) => ({
+      text: `${s.name.padEnd(9)} ${s.url}`,
+      type: "output" as const,
+    })),
+  theme: () => {
+    const next = cycleTheme();
+    return [
+      { text: `theme → ${next}`, type: "accent" },
+      { text: "cycle: cyan → amber → green → light", type: "muted" },
+    ];
+  },
+  pwd: () => [{ text: "/home/visitor/sagar-os", type: "output" }],
+  date: () => [{ text: new Date().toString(), type: "output" }],
   status: () => [
     { text: `System:   ONLINE`, type: "accent" },
     { text: `Status:   ${profile.status}`, type: "output" },
@@ -186,6 +218,12 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
   ],
 };
 
+const COMPLETIONS = [
+  "about", "skills", "experience", "projects", "contact", "socials",
+  "status", "resume", "theme", "neofetch", "whoami", "ls", "uname",
+  "pwd", "date", "ping", "clear", "help",
+];
+
 export function Terminal() {
   const [history, setHistory] = useState<OutputLine[]>([
     { text: "Welcome to SAGAR_OS. Type 'help' for available commands.", type: "accent" },
@@ -257,6 +295,26 @@ export function Terminal() {
       } else {
         setHistoryIndex(newIndex);
         setInput(cmdHistory[newIndex]);
+      }
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      const prefix = input.trim().toLowerCase();
+      if (!prefix) return;
+      const matches = COMPLETIONS.filter((c) => c.startsWith(prefix));
+      if (matches.length === 1) {
+        setInput(matches[0]);
+      } else if (matches.length > 1) {
+        const common = longestCommonPrefix(matches);
+        if (common.length > prefix.length) {
+          setInput(common);
+        } else {
+          setHistory((prev) => [
+            ...prev,
+            { text: `visitor@sagar-os:~$ ${prefix}`, type: "input" },
+            { text: matches.join("   "), type: "muted" },
+            { text: "", type: "output" },
+          ]);
+        }
       }
     }
   };

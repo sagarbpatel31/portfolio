@@ -84,6 +84,9 @@ const personJsonLd = {
     .map((s) => s.url),
 };
 
+// Set the persisted theme before paint to avoid a flash of the default palette.
+const themeInitScript = `(function(){try{var t=localStorage.getItem('sagar-os-theme');var v=['cyan','amber','green','light'];document.documentElement.dataset.theme=(v.indexOf(t)>=0)?t:'cyan';}catch(e){document.documentElement.dataset.theme='cyan';}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -93,8 +96,10 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased overflow-x-hidden">
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
