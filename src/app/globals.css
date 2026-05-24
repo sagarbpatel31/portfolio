@@ -256,6 +256,7 @@ body {
   min-height: 200px;
   max-height: 350px;
   overflow-y: auto;
+  overflow-x: auto;
   font-size: 13px;
   line-height: 1.6;
 }

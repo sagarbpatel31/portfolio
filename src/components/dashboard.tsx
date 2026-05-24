@@ -56,7 +56,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
           </motion.div>
 
           {/* Main grid */}
-          <div className="grid gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             {/* Process monitor — 2 cols */}
             <motion.div variants={fadeIn("up", 0)} className="lg:col-span-2">
               <ProcessCard />
@@ -69,7 +69,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
           </div>
 
           {/* Second row */}
-          <div className="mt-3 grid gap-3 lg:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
             {/* Skills — 2 cols */}
             <motion.div variants={fadeIn("up", 0)} className="lg:col-span-2">
               <SkillsCard />
@@ -83,7 +83,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
           </div>
 
           {/* Third row */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {/* Education */}
             <motion.div variants={fadeIn("up", 0)}>
               <EduCard />

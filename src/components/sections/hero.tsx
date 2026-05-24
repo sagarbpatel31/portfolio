@@ -76,10 +76,10 @@ export function Hero() {
           variants={staggerContainer(0.1, 0.1)}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
-          className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-start"
+          className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12 items-start"
         >
           {/* Left: Profile info */}
-          <motion.div variants={fadeIn("up", 0)} className="space-y-6">
+          <motion.div variants={fadeIn("up", 0)} className="space-y-6 min-w-0">
             {/* Profile header */}
             <div className="flex items-center gap-4">
               <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-accent/30">
@@ -106,12 +106,12 @@ export function Hero() {
             </div>
 
             {/* Status */}
-            <div className="inline-flex items-center gap-2 rounded border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 font-mono text-xs text-accent-green">
-              <span className="relative flex h-1.5 w-1.5">
+            <div className="inline-flex max-w-full items-start gap-2 rounded border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 font-mono text-xs text-accent-green">
+              <span className="relative mt-1 flex h-1.5 w-1.5 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
               </span>
-              {profile.status}
+              <span className="min-w-0">{profile.status}</span>
             </div>
 
             {/* Typing role */}
