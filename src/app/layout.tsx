@@ -4,6 +4,9 @@ import { Analytics } from "@vercel/analytics/next";
 import { Navbar } from "@/components/layout/navbar";
 import { StatusBar } from "@/components/layout/status-bar";
 import { KonamiOverlay } from "@/components/konami-overlay";
+import { SITE_URL } from "@/lib/site";
+import { profile } from "@/content/profile";
+import { socials } from "@/content/socials";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,9 +20,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://sagarbpatel31.github.io/portfolio"
-  ),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "SAGAR_OS — Systems & AI Engineer",
     template: "%s | SAGAR_OS",
@@ -50,26 +51,37 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "SAGAR_OS",
     locale: "en_US",
-    images: [
-      {
-        url: "/profile.jpeg",
-        width: 592,
-        height: 592,
-        alt: "Sagar Patel — Systems & AI Engineer",
-      },
-    ],
+    url: SITE_URL,
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "SAGAR_OS — Systems & AI Engineer",
     description:
       "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
-    images: ["/profile.jpeg"],
   },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+const personJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: profile.name,
+  jobTitle: profile.title,
+  description: profile.shortBio,
+  url: SITE_URL,
+  image: `${SITE_URL}${profile.avatarUrl}`,
+  email: profile.email,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: profile.location,
+  },
+  knowsAbout: profile.focusAreas,
+  sameAs: socials
+    .filter((s) => !s.url.startsWith("mailto:"))
+    .map((s) => s.url),
 };
 
 export default function RootLayout({
@@ -83,6 +95,10 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased overflow-x-hidden">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
         <div className="scanline-overlay" aria-hidden="true" />
         <Navbar />
         <main className="flex-grow pt-14 pb-8">{children}</main>

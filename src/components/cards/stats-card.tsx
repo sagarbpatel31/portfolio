@@ -75,6 +75,7 @@ export function StatsCard({ metric, label, source, color = "cyan" }: StatsCardPr
     >
       <div className="dash-card-body flex flex-col items-start gap-1">
         <motion.span
+          aria-hidden="true"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={isInView ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
@@ -90,6 +91,7 @@ export function StatsCard({ metric, label, source, color = "cyan" }: StatsCardPr
             metric
           )}
         </motion.span>
+        <span className="sr-only">{metric}</span>
         <span className="text-sm text-foreground">{label}</span>
         <span className="font-mono text-xs text-muted">@ {source}</span>
       </div>

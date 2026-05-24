@@ -15,6 +15,10 @@ export async function GET() {
       }),
     ]);
 
+    if (!userRes.ok || !reposRes.ok) {
+      return NextResponse.json({ error: true });
+    }
+
     const user = await userRes.json();
     const repos = await reposRes.json();
 
@@ -32,6 +36,6 @@ export async function GET() {
       stars,
     });
   } catch {
-    return NextResponse.json({ repos: 0, followers: 0, stars: 0 });
+    return NextResponse.json({ error: true });
   }
 }

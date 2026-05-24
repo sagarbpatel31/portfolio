@@ -8,8 +8,17 @@ type FormState = "idle" | "sending" | "sent" | "error";
 
 export function ContactCard() {
   const [copied, setCopied] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", message: "", website: "" });
   const [status, setStatus] = useState<FormState>("idle");
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const showEmailError = form.email.trim().length > 0 && !emailValid;
+
+  const update = (field: keyof typeof form, value: string) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    // Clear a stale failure as soon as the user starts fixing the form.
+    setStatus((s) => (s === "error" ? "idle" : s));
+  };
 
   const copyEmail = () => {
     navigator.clipboard.writeText(profile.email);
@@ -19,7 +28,10 @@ export function ContactCard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) return;
+    if (!form.name.trim() || !emailValid || !form.message.trim()) {
+      setStatus("error");
+      return;
+    }
     setStatus("sending");
     try {
       const res = await fetch("/api/contact", {
@@ -29,7 +41,7 @@ export function ContactCard() {
       });
       if (res.ok) {
         setStatus("sent");
-        setForm({ name: "", email: "", message: "" });
+        setForm({ name: "", email: "", message: "", website: "" });
       } else {
         setStatus("error");
       }
@@ -65,6 +77,16 @@ export function ContactCard() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-2 font-mono text-sm">
+            <input
+              type="text"
+              name="website"
+              value={form.website}
+              onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="absolute -left-[9999px] h-0 w-0 opacity-0"
+            />
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted">
@@ -73,7 +95,7 @@ export function ContactCard() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) => update("name", e.target.value)}
                   placeholder="Your name"
                   className="w-full rounded border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none placeholder:text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
                   required
@@ -86,20 +108,26 @@ export function ContactCard() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) => update("email", e.target.value)}
                   placeholder="you@domain.com"
+                  aria-invalid={showEmailError}
                   className="w-full rounded border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none placeholder:text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
                   required
                 />
               </div>
             </div>
+            {showEmailError && (
+              <p className="text-xs text-accent-amber">
+                Enter a valid email address.
+              </p>
+            )}
             <div>
               <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted">
                 message
               </label>
               <textarea
                 value={form.message}
-                onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                onChange={(e) => update("message", e.target.value)}
                 placeholder="What are you building? Let's talk."
                 rows={3}
                 className="w-full resize-none rounded border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none placeholder:text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
@@ -108,7 +136,7 @@ export function ContactCard() {
             </div>
             {status === "error" && (
               <p className="text-xs text-accent-rose">
-                Transmission failed — try email directly.
+                Transmission failed — check your entries or email directly.
               </p>
             )}
             <div className="flex items-center justify-between gap-2 pt-1">
