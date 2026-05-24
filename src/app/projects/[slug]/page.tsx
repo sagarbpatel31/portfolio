@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { projects } from "@/content/projects";
 import { ProjectDetail } from "@/components/project-detail";
+import { SITE_URL } from "@/lib/site";
+import { profile } from "@/content/profile";
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>;
@@ -23,9 +25,23 @@ export async function generateMetadata({
     return { title: "Project Not Found" };
   }
 
+  const url = `${SITE_URL}/projects/${slug}`;
   return {
-    title: `${project.title} — SAGAR_OS`,
+    title: project.title,
     description: project.description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: project.title,
+      description: project.description,
+      url,
+      tags: project.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: project.title,
+      description: project.description,
+    },
   };
 }
 
@@ -37,5 +53,24 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound();
   }
 
-  return <ProjectDetail project={project} />;
+  const projectJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: project.title,
+    description: project.description,
+    keywords: project.tags.join(", "),
+    dateCreated: project.year,
+    url: `${SITE_URL}/projects/${slug}`,
+    creator: { "@type": "Person", name: profile.name, url: SITE_URL },
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd) }}
+      />
+      <ProjectDetail project={project} />
+    </>
+  );
 }

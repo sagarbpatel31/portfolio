@@ -33,7 +33,14 @@ export function SkillsCard() {
                 </span>
                 <span className="text-accent">{level}%</span>
               </div>
-              <div className="skill-bar">
+              <div
+                className="skill-bar"
+                role="progressbar"
+                aria-label={`${cat.category} proficiency`}
+                aria-valuenow={level}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
                 <motion.div
                   className="skill-bar-fill"
                   initial={{ width: 0 }}

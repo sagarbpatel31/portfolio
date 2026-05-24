@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { getAllSlugs, getPostBySlug } from "@/lib/blog";
 import { Container } from "@/components/ui/container";
 import { BlogPostContent } from "@/components/blog-post-content";
+import { SITE_URL } from "@/lib/site";
+import { profile } from "@/content/profile";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -14,11 +17,32 @@ export async function generateStaticParams() {
   return slugs.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: BlogPostPageProps) {
+export async function generateMetadata({
+  params,
+}: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return { title: "Post Not Found" };
-  return { title: `${post.title} — SAGAR_OS` };
+
+  const url = `${SITE_URL}/blog/${slug}`;
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.excerpt,
+      url,
+      publishedTime: post.date,
+      tags: post.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+    },
+  };
 }
 
 function formatDate(dateString: string): string {
@@ -37,8 +61,26 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound();
   }
 
+  const url = `${SITE_URL}/blog/${slug}`;
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    dateModified: post.date,
+    keywords: post.tags.join(", "),
+    url,
+    mainEntityOfPage: url,
+    author: { "@type": "Person", name: profile.name, url: SITE_URL },
+  };
+
   return (
     <section className="py-16 sm:py-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Container className="max-w-4xl">
         <nav aria-label="Back to dashboard">
           <Link

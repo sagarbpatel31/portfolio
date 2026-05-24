@@ -9,22 +9,28 @@ interface GitHubStats {
   stars: number;
 }
 
+type GitHubResponse = GitHubStats | { error: true };
+
 export function GitHubCard() {
   const [stats, setStats] = useState<GitHubStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     fetch("/api/github")
       .then((r) => r.json())
-      .then((data: GitHubStats) => {
-        setStats(data);
-        setLoading(false);
+      .then((data: GitHubResponse) => {
+        if ("error" in data) {
+          setState("error");
+        } else {
+          setStats(data);
+          setState("ready");
+        }
       })
-      .catch(() => setLoading(false));
+      .catch(() => setState("error"));
   }, []);
 
   const val = (n: number | undefined) =>
-    loading ? "—" : (n ?? 0).toString();
+    state === "loading" ? "—" : state === "error" ? "n/a" : (n ?? 0).toString();
 
   return (
     <div className="dash-card h-full">
@@ -71,7 +77,7 @@ export function GitHubCard() {
           </div>
         </div>
         <p className="mt-3 text-center font-mono text-[10px] text-muted">
-          live · updated hourly
+          {state === "error" ? "stats unavailable" : "live · updated hourly"}
         </p>
       </div>
     </div>

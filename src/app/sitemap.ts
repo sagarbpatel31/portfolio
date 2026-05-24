@@ -1,8 +1,9 @@
 import { MetadataRoute } from "next";
 import { projects } from "@/content/projects";
 import { getAllSlugs } from "@/lib/blog";
+import { SITE_URL } from "@/lib/site";
 
-const BASE_URL = "https://sagar-portfolio.vercel.app";
+const BASE_URL = SITE_URL;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const projectRoutes = projects.map((project) => ({
