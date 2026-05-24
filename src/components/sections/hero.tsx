@@ -19,6 +19,9 @@ const roles = [
   "Systems Programming",
 ];
 
+const AVATAR_BLUR =
+  "data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABQED/8QAHxAAAgICAQUAAAAAAAAAAAAAAQMCBAAREhQhMUFR/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAP/xAAaEQACAgMAAAAAAAAAAAAAAAAAEQECElFh/9oADAMBAAIRAxEAPwDezI9OGNAYwYhSsuNREBqOz5+DCaMpMOpjY9g5brpLnwX2AxnVPhJzo//Z";
+
 function TypingRoles() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayed, setDisplayed] = useState("");
@@ -26,19 +29,23 @@ function TypingRoles() {
 
   useEffect(() => {
     const current = roles[currentIndex];
-    const speed = isDeleting ? 40 : 80;
 
+    // Reached the full word — pause, then begin deleting.
     if (!isDeleting && displayed === current) {
       const pause = setTimeout(() => setIsDeleting(true), 2000);
       return () => clearTimeout(pause);
     }
 
+    // Finished deleting — advance to the next word after a short beat.
     if (isDeleting && displayed === "") {
-      setIsDeleting(false);
-      setCurrentIndex((prev) => (prev + 1) % roles.length);
-      return;
+      const next = setTimeout(() => {
+        setIsDeleting(false);
+        setCurrentIndex((prev) => (prev + 1) % roles.length);
+      }, 400);
+      return () => clearTimeout(next);
     }
 
+    const speed = isDeleting ? 40 : 80;
     const timer = setTimeout(() => {
       setDisplayed(
         isDeleting
@@ -80,8 +87,11 @@ export function Hero() {
                   src={profile.avatarUrl}
                   alt={profile.name}
                   fill
+                  sizes="64px"
                   className="object-cover"
                   priority
+                  placeholder="blur"
+                  blurDataURL={AVATAR_BLUR}
                 />
               </div>
               <div>

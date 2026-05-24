@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu, Github, Linkedin } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "./theme-toggle";
 import { XIcon } from "@/components/icons/x-icon";
 
 export function Navbar() {
@@ -51,8 +52,9 @@ export function Navbar() {
             </li>
           </ul>
 
-          {/* Social icons + mobile menu */}
+          {/* Theme toggle + social icons + mobile menu */}
           <div className="flex items-center gap-1">
+            <ThemeToggle />
             <a
               href="https://github.com/sagarbpatel31"
               target="_blank"

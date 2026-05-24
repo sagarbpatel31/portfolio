@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   --color-background: #0a0f1a;
   --color-foreground: #e2e8f0;
   --color-muted: #64748b;
@@ -18,6 +18,46 @@
   --color-surface: #0f172a;
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
+}
+
+/* Internal (non-utility) tokens that themes retune. --accent-rgb feeds the
+   cyan-tinted glows/grid so they track the active accent color. */
+:root {
+  --accent-rgb: 0, 255, 245;
+  --color-terminal-bg: #0c1222;
+}
+
+html[data-theme="amber"] {
+  --color-accent: #f59e0b;
+  --color-accent-dim: #d97706;
+  --color-accent-light: #fbbf24;
+  --color-accent-glow: rgba(245, 158, 11, 0.15);
+  --accent-rgb: 245, 158, 11;
+}
+
+html[data-theme="green"] {
+  --color-accent: #22c55e;
+  --color-accent-dim: #16a34a;
+  --color-accent-light: #4ade80;
+  --color-accent-glow: rgba(34, 197, 94, 0.15);
+  --accent-rgb: 34, 197, 94;
+}
+
+html[data-theme="light"] {
+  --color-background: #f6f8fc;
+  --color-foreground: #0f172a;
+  --color-muted: #64748b;
+  --color-muted-foreground: #475569;
+  --color-border: #d6deeb;
+  --color-card: #ffffff;
+  --color-card-hover: #eef2f8;
+  --color-surface: #eef2f8;
+  --color-accent: #0891b2;
+  --color-accent-dim: #0e7490;
+  --color-accent-light: #06b6d4;
+  --color-accent-glow: rgba(8, 145, 178, 0.12);
+  --accent-rgb: 8, 145, 178;
+  --color-terminal-bg: #eef3f9;
 }
 
 html {
@@ -64,8 +104,8 @@ body {
 
 .bg-grid {
   background-image:
-    linear-gradient(to right, rgba(0, 255, 245, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 255, 245, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(var(--accent-rgb), 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--accent-rgb), 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -86,7 +126,7 @@ body {
 /* ─── GLOW EFFECTS ─── */
 
 .glow-accent {
-  box-shadow: 0 0 20px var(--color-accent-glow), 0 0 60px rgba(0, 255, 245, 0.05);
+  box-shadow: 0 0 20px var(--color-accent-glow), 0 0 60px rgba(var(--accent-rgb), 0.05);
 }
 
 .glow-line {
@@ -95,7 +135,7 @@ body {
 }
 
 .glow-text {
-  text-shadow: 0 0 10px var(--color-accent-glow), 0 0 40px rgba(0, 255, 245, 0.1);
+  text-shadow: 0 0 10px var(--color-accent-glow), 0 0 40px rgba(var(--accent-rgb), 0.1);
 }
 
 /* ─── TEXT EFFECTS ─── */
@@ -149,8 +189,8 @@ body {
 }
 
 .dash-card:hover {
-  border-color: rgba(0, 255, 245, 0.2);
-  box-shadow: 0 0 20px rgba(0, 255, 245, 0.05);
+  border-color: rgba(var(--accent-rgb), 0.2);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.05);
 }
 
 .dash-card-header {
@@ -189,7 +229,7 @@ body {
 /* ─── TERMINAL ─── */
 
 .terminal-window {
-  background: #0c1222;
+  background: var(--color-terminal-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
@@ -239,7 +279,7 @@ body {
 
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 4px var(--color-accent-glow); }
-  50% { box-shadow: 0 0 12px var(--color-accent-glow), 0 0 24px rgba(0, 255, 245, 0.1); }
+  50% { box-shadow: 0 0 12px var(--color-accent-glow), 0 0 24px rgba(var(--accent-rgb), 0.1); }
 }
 
 .animate-pulse-glow {
@@ -284,7 +324,7 @@ body {
 }
 
 .process-row:hover {
-  background: rgba(0, 255, 245, 0.03);
+  background: rgba(var(--accent-rgb), 0.03);
 }
 
 .process-header {
