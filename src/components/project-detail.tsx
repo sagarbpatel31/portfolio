@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { fadeIn, staggerContainer } from "@/lib/motion";
 import type { Project } from "@/types";
 
