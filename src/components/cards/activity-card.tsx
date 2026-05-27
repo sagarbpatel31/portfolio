@@ -50,7 +50,12 @@ export function ActivityCard({ blogEntries }: { blogEntries: BlogEntry[] }) {
     <div className="dash-card">
       <div className="dash-card-header">
         <span>system log</span>
-        <span className="text-muted">{feed.length} entries</span>
+        <Link
+          href="/blog"
+          className="text-accent transition-colors hover:text-accent-light"
+        >
+          view all →
+        </Link>
       </div>
       <div className="dash-card-body space-y-2 max-h-[280px] overflow-y-auto">
         {feed.map((entry, i) => {

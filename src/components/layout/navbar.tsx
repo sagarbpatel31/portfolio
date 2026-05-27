@@ -46,6 +46,16 @@ export function Navbar() {
               </a>
             </li>
             <li>
+              <a href="/blog" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /blog
+              </a>
+            </li>
+            <li>
+              <a href="/uses" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /uses
+              </a>
+            </li>
+            <li>
               <a href="/resume.pdf" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent" download>
                 /resume
               </a>
