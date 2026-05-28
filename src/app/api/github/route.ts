@@ -6,7 +6,7 @@ export const revalidate = 3600; // cache 1 hour
 // Used when the live fetch is rate-limited (Vercel shared IPs hit
 // GitHub's 60 req/hr unauthenticated limit quickly) so the card never
 // shows a broken 0/0/0 or "n/a" state.
-const FALLBACK = { repos: 59, followers: 2, stars: 13 };
+const FALLBACK = { repos: 60, followers: 2, stars: 13 };
 
 interface GitHubUser {
   public_repos?: number;

@@ -2,6 +2,104 @@ import { Project } from "@/types";
 
 export const projects: Project[] = [
   {
+    slug: "offline-ota",
+    title: "Offline OTA Update System — Signed Updates for Edge Linux",
+    tagline:
+      "Local-first OTA for Linux edge devices — signed bundles, staged installs, health-check promotion, automatic rollback. No cloud required.",
+    description:
+      "An offline-first OTA update system for Linux edge devices. Delivers signed update bundles over USB or local HTTP, verifies integrity and authenticity before install, stages releases safely, promotes only after health checks pass, and rolls back automatically on failure — with a local dashboard for status and audit history.",
+    longDescription: `Most OTA systems assume cloud connectivity. Field-deployed edge hardware — industrial gateways, agricultural controllers, remote sensors — often has none. Offline OTA Update System is built for exactly that: deliver and apply firmware/app updates with full cryptographic safety and automatic rollback, entirely offline.
+
+**Signed bundle delivery**: Updates ship as signed bundles delivered over USB or local HTTP. The device agent validates version, target, file hashes, and signature against a trusted public key before anything touches the active system. An update that fails verification never gets staged.
+
+**Staged installs with symlink switching**: Releases are staged into inactive directories. The agent only switches the active release (via atomic symlink swap) after the new version is fully written and verified, then restarts the service. The previous release stays intact on disk.
+
+**Health-check promotion + automatic rollback**: After switching, the agent runs health checks against the new release. If they pass, the update is promoted. If they fail — or the service crashes — the agent automatically rolls back to the last known-good release by switching the symlink back. This is the core safety guarantee: a bad update can't brick the device.
+
+**Components**: a device updater daemon and state machine (\`agent/\`), a release builder + demo app for Raspberry Pi (\`demo_service/\`), a local dashboard and API for status and audit history (\`server/\`), a manifest + signing tool (\`signer/\`), and systemd units for device integration (\`device/\`).
+
+The full workflow: build a release bundle with manifest and signatures → deliver over USB or local HTTP → device validates version/target/hashes/signature → stage to inactive location → switch active release and restart → health checks confirm success or trigger rollback.`,
+    tags: ["Python", "Embedded Linux", "OTA", "Cryptography", "Raspberry Pi", "systemd"],
+    category: "Embedded & Systems",
+    highlights: [
+      "Signed bundle verification — version, target, hashes, and signature checked before any install",
+      "Staged releases with atomic symlink switching — previous release stays intact on disk",
+      "Health-check based promotion: bad updates trigger automatic rollback to last known-good",
+      "Offline delivery over USB or local HTTP — zero cloud dependency",
+      "Local dashboard with full update history and audit trail",
+      "Device updater daemon + state machine, signing tool, and systemd integration units",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/offline-ota-update-system" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "embodipedia",
+    title: "Embodipedia — The AI-Maintained Wikipedia of Humanoid Robotics",
+    tagline:
+      "A self-maintaining encyclopedia for humanoid robotics — no human editors. Agents read tweets, papers, and news, extract typed claims, route them into bull/bear/canonical lanes, and synthesize cited prose.",
+    description:
+      "Embodipedia is the first self-maintaining encyclopedia for the humanoid-robotics industry. Autonomous agents ingest tweets, papers, podcasts, and news; extract typed claims with confidence scores; route each claim into a perspective lane (canonical / bull / bear) via HydraDB sub-tenants; and synthesize Wikipedia-style prose with inline citations. Built for WikiThon 2026.",
+    longDescription: `Embodipedia is what an encyclopedia looks like when AI agents — not humans — write and maintain every article. Agents read tweets, papers, podcasts, and news; extract typed claims with confidence scores; route each into a perspective lane; and synthesize Wikipedia-grade prose with inline citations. When evidence is too thin to ground a sentence, the system renders a clean \`[unverified]\` badge instead of inventing a fact.
+
+**The architectural distinctive — three perspective sub-tenants**: Where ordinary RAG collapses all evidence into one corpus, Embodipedia keeps optimistic ("bull"), skeptical ("bear"), and measured ("canonical") claims in separate HydraDB lanes. Routing happens per-claim, not per-source — a single interview can contribute a canonical deployment fact and a bull forward-looking projection at once. The Talk page then recalls each lane separately and renders a real debate between agents that read the same world but reached different conclusions.
+
+**The pipeline**: Ingest (tweets, papers, podcasts, news) → Extract (GPT-4o-mini produces typed claims + confidence) → Route (perspective router assigns canonical/bull/bear HydraDB sub-tenants) → Synthesize (GPT-4o writes Wikipedia prose with footnotes and [unverified] badges).
+
+**Surfaces**: a portal homepage, entity articles with infoboxes and hover tooltips, a time-travel slider that re-renders an article using only claims published by a past date, self-healing stale banners, Talk pages with bull-vs-bear debate sections, revision history, "What Links Here," a live recent-changes feed, a ⌘K palette that synthesizes cited answers and draws entity graphs, and a live-ingest surface that turns any pasted text into typed claims in real time.
+
+Built on Next.js 15 (App Router + RSC) with a FastAPI backend, HydraDB temporal context graph, and GPT-4o. Built for WikiThon 2026.`,
+    tags: ["Next.js", "TypeScript", "Python", "HydraDB", "GPT-4o", "Multi-Agent AI", "RAG"],
+    category: "AI & Multi-Agent Systems",
+    highlights: [
+      "Self-maintaining encyclopedia — autonomous agents read, extract, route, and synthesize with zero human editors",
+      "Three perspective sub-tenants (canonical / bull / bear) in HydraDB — Talk pages render real agent debates",
+      "Per-claim routing: one source can feed multiple perspective lanes simultaneously",
+      "[unverified] badges instead of hallucination when evidence is too thin",
+      "Time-travel slider re-renders articles using only claims published by a chosen past date",
+      "⌘K palette synthesizes cited answers + draws SVG entity graphs; live-ingest turns pasted text into claims",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/EMBODIPEDIA" },
+      { label: "WikiThon", url: "https://luma.com/6pybuh79?tk=5RGaoS" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
+    slug: "codebaseos",
+    title: "CodebaseOS — Origin Story for Any Line of Code",
+    tagline:
+      "Right-click any line. Ask why. Get the full origin story across commits, PRs, issues, and decisions — in 200ms. A VS Code extension backed by a temporal context graph.",
+    description:
+      "CodebaseOS is a VS Code extension that explains the origin story of any line of code — surfacing the commits, PRs, issues, and decisions behind it in ~200ms with clickable links to the real sources. Backed by a HydraDB temporal context graph with Merkle-chain verified ingestion. Built for Agents Under Pressure (AI Valley 48-hour hackathon).",
+    longDescription: `Every line of code has a story — why it was written, what PR introduced it, what issue it fixed, what decision shaped it. That story is normally scattered across git history, closed PRs, and stale issues. CodebaseOS reconstructs it on demand: right-click any line, ask "why," and get a graph-grounded answer with clickable links to the real PR, commit, or issue — in about 200ms.
+
+**How it works**: CodebaseOS ingests a repository's history into a HydraDB temporal context graph — commits, PRs, issues, and the relationships between them. Ingestion is Merkle-chain verified, so you can prove the graph matches the source history (\`make verify\` → ✓ Merkle chain intact). Small repos are ingested completely (and report coverage, e.g. "✓ complete: 38/38 commits"); large repos are sampled (latest N) and flagged honestly.
+
+**In the editor**: hover a line or click the 🧬 Why? / 📜 Origin story CodeLens to get a graph-grounded answer. Other commands — "Explain this file" (what it does, who owns it, key decisions), "What changed" (everything touching a file in a date range), and "Bus factor" (who holds the knowledge and the risk if they leave). Any answer can be copied as Markdown to paste into a PR or doc. No graph database to operate, no query language to learn — just ask.
+
+**Architecture**: a VS Code extension (hover, CodeLens, webviews), a FastAPI backend, and a dashboard with a force-directed graph, chaos view, and time-travel. Built for the "Agents Under Pressure — Build your own OS" 48-hour hackathon at AI Valley. Published to the VS Code Marketplace.`,
+    tags: ["TypeScript", "Python", "VS Code Extension", "HydraDB", "FastAPI", "OpenAI"],
+    category: "AI & Developer Tools",
+    highlights: [
+      "Right-click any line → full origin story across commits, PRs, issues, and decisions in ~200ms",
+      "Graph-grounded answers with clickable links to the real PR / commit / issue",
+      "Merkle-chain verified ingestion — prove the context graph matches source history",
+      "Honest coverage: small repos ingested completely, large repos sampled and flagged",
+      "Editor commands: Why?, Explain this file, What changed, Bus factor — copy any answer as Markdown",
+      "VS Code extension + FastAPI backend + force-graph dashboard, published to the Marketplace",
+    ],
+    links: [
+      { label: "GitHub", url: "https://github.com/sagarbpatel31/CodeBaseOS" },
+      { label: "VS Marketplace", url: "https://marketplace.visualstudio.com/items?itemName=CodeBaseOS.codebaseos" },
+    ],
+    featured: true,
+    year: "2026",
+  },
+  {
     slug: "stepahead",
     title: "StepAhead — AI Baby Motor Development Tracker",
     tagline: "Peace of mind every step of the way — AI-powered infant motor milestone tracking with real-time movement analysis.",
@@ -25,38 +123,6 @@ StepAhead is built around three principles: accessible (no specialist equipment 
     ],
     links: [
       { label: "Live Demo", url: "https://step-ahead-website.vercel.app" },
-    ],
-    featured: true,
-    year: "2026",
-  },
-  {
-    slug: "fieldfix",
-    title: "FieldFix — Offline AI Repair Assistant for Field Technicians",
-    tagline: "Full AI-powered repair guidance with zero cloud dependency — runs entirely on a local laptop, accessible from any device on the network.",
-    description:
-      "FieldFix is an offline-first repair intelligence system for field technicians. A FastAPI backend runs Gemma 3 4B locally via Ollama, backed by a RAG knowledge base of 295 expert-written repair documents. Accessible from phones and tablets over local WiFi — no internet required.",
-    longDescription: `FieldFix was built for the environments where repair problems actually happen: agricultural fields, industrial facilities, remote construction sites — places with no cloud connectivity and no time to search through manuals. A technician speaks or types a symptom, and FieldFix returns structured repair guidance: ranked probable causes, step-by-step instructions, required tools, and safety stop conditions.
-
-The AI backbone is Gemma 3 4B running through Ollama with Metal GPU acceleration on the host laptop. The model never touches the cloud — all inference is local. A RAG layer (ChromaDB with all-MiniLM-L6-v2 embeddings, 295 semantic chunks) grounds the model's responses in 37 expert-written repair documents spanning Robotics, Electronics, Emergency Equipment, Household systems, and Safety Guides.
-
-The multi-agent pipeline processes each symptom through five specialized agents: a diagnosis agent identifies probable causes, a cause ranker orders them by likelihood, a repair planner generates RAG-augmented step-by-step instructions, a question agent surfaces clarifying questions, and a verification agent produces stop conditions and prevention tips.
-
-Safety is handled deterministically — before any AI agent sees a query, a rules-based guardrail layer classifies it against 9 hard-stop categories (gas leaks, electrical fire, lithium battery failure, high-voltage exposure, etc.). Hard stops return an immediate warning with no AI processing. This design choice — no model for safety decisions — is intentional.
-
-A per-device SQLite history store lets the system recall previous repairs on the same device, improving diagnostic accuracy for recurring issues. The frontend is a Next.js app served over the local network, accessible from iOS Safari on any phone connected to the same WiFi.`,
-    tags: ["Python", "FastAPI", "Next.js", "Gemma 3", "Ollama", "ChromaDB", "RAG", "TypeScript"],
-    category: "AI & Embedded Tools",
-    highlights: [
-      "Fully offline — Gemma 3 4B via Ollama with Metal GPU, zero cloud calls",
-      "5-agent pipeline: diagnosis, cause ranking, repair planning, Q&A, verification",
-      "RAG knowledge base: 295 chunks from 37 expert docs across 5 repair categories",
-      "Deterministic safety guardrails run before any AI processing — 9 hard-stop categories",
-      "Per-device SQLite repair history improves accuracy for recurring issues",
-      "Mobile-accessible over local WiFi — works on iOS Safari with no app install",
-      "115 unit tests + 9 orchestrator tests across safety, RAG, routing, and API layers",
-    ],
-    links: [
-      { label: "GitHub", url: "https://github.com/patilgayatri22/fieldfix-ai" },
     ],
     featured: true,
     year: "2026",
@@ -157,7 +223,7 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
     links: [
       { label: "Hackathon", url: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484" },
     ],
-    featured: true,
+    featured: false,
     year: "2026",
   },
   {
@@ -202,64 +268,7 @@ Won the "a fun hack day (promise)" virtual hackathon on Discord — a 178-attend
       { label: "GitHub", url: "https://github.com/sagarbpatel31/HydraSwarm" },
       { label: "Hackathon", url: "https://luma.com/uv13n64x?tk=wjHDI0" },
     ],
-    featured: true,
-    year: "2026",
-  },
-  {
-    slug: "medassist",
-    title: "MedAssist — AI Medication Verification & Dispensing",
-    tagline:
-      "Robotic dispensing agent that closes the sense-reason-act loop for medication safety.",
-    description:
-      "An AI-powered medication verification and dispensing system built at the Robotic Agents Hackathon. Uses computer vision, Claude AI reasoning, and a SO-101 robotic arm to autonomously verify and pick medications.",
-    longDescription: `MedAssist addresses a critical healthcare problem: approximately 1.5 million people are harmed by medication errors in the US each year. The system closes the full sense-reason-act loop — a camera sees what's on the tray, an AI agent reasons about what should be there for a specific patient, and a robotic arm physically executes the verified pick or refuses to move if anything is wrong.
-
-The Sense stage uses the SO-101 robotic arm's camera to scan the medication tray, with Claude Vision identifying each vial by drug name, dosage, expiry, and tray position. The Reason stage runs a Toolhouse agent that performs a 10-check safety sequence in strict priority order against the patient medication record. The Act stage calls the Cyberwave robot skill to execute the verified pick, with ElevenLabs providing real-time voice narration.
-
-Built at the Robotic Agents Hackathon (March 2026) in the Cyberwave × Toolhouse track, with teammates Aaryan Mahipal, Anna Saltveit, and Gayatri Patil.`,
-    tags: ["Python", "Claude AI", "Computer Vision", "Robotics", "ElevenLabs"],
-    category: "Robotics & AI",
-    highlights: [
-      "Complete sense-reason-act loop: camera vision, AI reasoning, and robotic arm execution",
-      "10-check safety sequence with strict priority ordering — first failure halts the process",
-      "Claude Vision for medication identification: drug name, dosage, expiry, tray position",
-      "Toolhouse agent integration with Cyberwave robot skills for autonomous picking",
-      "Real-time ElevenLabs voice narration of dispensing actions",
-    ],
-    links: [
-      { label: "GitHub", url: "https://github.com/sagarbpatel31/med-assist" },
-    ],
     featured: false,
     year: "2026",
-  },
-  {
-    slug: "plastic-debris-detection",
-    title: "Plastic Debris Detection via Satellite Imagery",
-    tagline:
-      "Detecting plastic debris in the Mediterranean Sea using Sentinel-2 satellite data and spectral analysis.",
-    description:
-      "An Omdena open-source project for detecting plastic debris through satellite imagery in the Italian and Mediterranean Seas, using Sentinel-2 data, atmospheric correction, and spectral index filtering.",
-    longDescription: `This Omdena open-source collaboration tackles environmental monitoring by detecting marine plastic debris using satellite imagery. The project processes Sentinel-2 multispectral data through a pipeline that includes atmospheric correction via ACOLITE, cloud masking with s2cloudless, and spectral index computation.
-
-The detection workflow generates patch/mask pairs from satellite tiles, filtering detections using spectral indices including NDVI (Normalized Difference Vegetation Index) and FDI (Floating Debris Index). The pipeline integrates with MARIDA-type dataset workflows for training data preparation and uses NetCDF windrow filtering for debris candidate identification.
-
-Key contributions include implementing the ACOLITE correction workflow, RGB patch generation, mask rasterization, cloud detection integration, and patch-level processing within the process_tile loop. The work demonstrates rigorous data pipeline engineering applied to environmental satellite remote sensing.`,
-    tags: ["Python", "Jupyter", "Sentinel-2", "Remote Sensing", "Computer Vision"],
-    category: "Applied ML",
-    highlights: [
-      "Sentinel-2 satellite data processing with ACOLITE atmospheric correction",
-      "Cloud masking integration using s2cloudless for clean imagery",
-      "Spectral index filtering with NDVI and FDI for debris detection",
-      "Patch/mask pair generation pipeline with NetCDF windrow filtering",
-      "MARIDA-type dataset workflow integration for training data preparation",
-    ],
-    links: [
-      {
-        label: "GitHub",
-        url: "https://github.com/sagarbpatel31/Sagar_TriesteItalyChapter_PlasticDebrisDetection",
-      },
-    ],
-    featured: false,
-    year: "2025",
   },
 ];

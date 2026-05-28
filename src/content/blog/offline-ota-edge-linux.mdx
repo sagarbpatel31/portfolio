@@ -1,0 +1,193 @@
+---
+title: "Safe OTA Updates for Offline Edge Linux: Signing, Staging, Rollback"
+date: "2026-05-27"
+tags: ["Embedded Linux", "OTA", "Cryptography", "Edge Computing", "systemd", "Reliability"]
+excerpt: "Field-deployed edge devices often have no cloud connectivity — but they still need updates that can't brick them. Here's how to build OTA with signed bundles, atomic staging, health-check promotion, and automatic rollback, fully offline."
+---
+
+# Safe OTA Updates for Offline Edge Linux: Signing, Staging, Rollback
+
+Cloud OTA is a solved problem. Offline OTA is not. The moment you deploy Linux devices into agricultural fields, industrial floors, or remote infrastructure, two facts collide: they have no reliable network, and a bad update that bricks one of them means a truck roll to a site hours away.
+
+The constraint forces good engineering. You can't lean on a server to coordinate; the device itself has to verify, stage, validate, and roll back. Here's the architecture I've been building.
+
+## The Non-Negotiables
+
+An offline OTA system has to guarantee four things, in order:
+
+1. **Authenticity** — the update came from you, not an attacker with a USB stick
+2. **Integrity** — the bytes weren't corrupted in transit
+3. **Atomicity** — the device is never left in a half-updated state
+4. **Recoverability** — a bad update automatically reverts to the last working version
+
+Miss any one and you have a field-bricking machine.
+
+## Signed Bundles
+
+Every update ships as a bundle with a manifest. The manifest lists files, their SHA-256 hashes, the target version, and the target device class. The manifest itself is signed with an Ed25519 private key held only by the build system. The device holds the corresponding public key.
+
+```python
+# signer/sign.py — sign the manifest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+import json, hashlib, base64
+
+def build_manifest(bundle_dir: Path, version: str) -> dict:
+    files = {}
+    for f in sorted(bundle_dir.rglob("*")):
+        if f.is_file():
+            rel = str(f.relative_to(bundle_dir))
+            files[rel] = hashlib.sha256(f.read_bytes()).hexdigest()
+    return {"version": version, "target": "edge-gw-v2", "files": files}
+
+def sign_manifest(manifest: dict, key: Ed25519PrivateKey) -> str:
+    payload = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    sig = key.sign(payload)
+    return base64.b64encode(sig).decode()
+```
+
+On the device, verification happens before anything is written to the active system:
+
+```python
+# agent/verify.py
+def verify_bundle(manifest: dict, signature: str, bundle_dir: Path,
+                  pub_key: Ed25519PublicKey) -> bool:
+    # 1. Signature over the canonical manifest
+    payload = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    try:
+        pub_key.verify(base64.b64decode(signature), payload)
+    except InvalidSignature:
+        return False
+
+    # 2. Every file hash matches the manifest
+    for rel, expected in manifest["files"].items():
+        actual = hashlib.sha256((bundle_dir / rel).read_bytes()).hexdigest()
+        if actual != expected:
+            return False
+
+    # 3. Target device class matches
+    return manifest["target"] == read_device_class()
+```
+
+An update that fails any check never gets staged. The signature check defeats a malicious USB stick; the hash check defeats corruption; the target check defeats installing the wrong firmware on the wrong hardware.
+
+## Staged Releases with Symlink Switching
+
+The cardinal rule: **never modify the running release in place.** Stage the new release into an inactive directory, then switch atomically.
+
+```
+/opt/app/
+├── releases/
+│   ├── 1.0.0/          ← previous (known-good)
+│   ├── 1.1.0/          ← newly staged
+│   └── ...
+├── current -> releases/1.1.0    ← atomic symlink
+└── .last-good -> releases/1.0.0
+```
+
+The switch is a single atomic operation — `rename(2)` on a symlink is atomic on Linux:
+
+```python
+def switch_release(version: str):
+    new = RELEASES_DIR / version
+    tmp = APP_DIR / ".current.tmp"
+    # symlink + atomic rename — no window where 'current' is missing
+    os.symlink(new, tmp)
+    os.rename(tmp, APP_DIR / "current")  # atomic
+```
+
+Because the rename is atomic, there's no instant where `current` points at nothing or at a half-written directory. A power loss mid-switch leaves you on either the old or the new release — never in between.
+
+## Health-Check Promotion
+
+Switching the symlink isn't the end. The new release has to prove it works before you trust it. The agent restarts the service against `current`, then runs health checks:
+
+```python
+def promote_or_rollback(version: str) -> bool:
+    switch_release(version)
+    restart_service()
+
+    if run_health_checks(timeout=60):
+        mark_last_good(version)
+        prune_old_releases(keep=3)
+        return True
+
+    # Failed — revert to last known-good
+    rollback()
+    return False
+
+def run_health_checks(timeout: int) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if (service_responds_on_port(8080)
+                and not service_crash_looping()
+                and self_test_passes()):
+            return True
+        time.sleep(2)
+    return False
+```
+
+Health checks are application-specific, but the pattern is universal: does the service start, stay up, and pass a self-test within a deadline? If not, the update failed — regardless of whether verification passed.
+
+## Automatic Rollback
+
+Rollback is just switching the symlink back:
+
+```python
+def rollback():
+    last_good = os.readlink(APP_DIR / ".last-good")
+    version = Path(last_good).name
+    switch_release(version)
+    restart_service()
+    log_incident("rollback", to=version)
+```
+
+The previous release is still sitting in `releases/` — we never deleted it. Rolling back is as cheap and atomic as rolling forward.
+
+## The systemd Watchdog Layer
+
+For defense in depth, wire systemd's watchdog so even a hung agent triggers recovery:
+
+```ini
+# /etc/systemd/system/app.service
+[Service]
+ExecStart=/opt/app/current/run.sh
+Restart=on-failure
+WatchdogSec=30
+# After 3 failed starts in 60s, run the rollback unit
+StartLimitIntervalSec=60
+StartLimitBurst=3
+OnFailure=app-rollback.service
+```
+
+If the service crash-loops past the limit, systemd fires `app-rollback.service` automatically — a safety net beneath the agent's own health-check logic.
+
+## Delivery: USB and Local HTTP
+
+With no cloud, bundles arrive two ways:
+
+- **USB**: a udev rule detects the drive, the agent scans for a `*.bundle` matching the device class, copies it to a staging area, and begins verification.
+- **Local HTTP**: a technician's laptop on the same LAN serves bundles; the agent polls a known local endpoint.
+
+Both paths feed the same verify → stage → switch → health-check → promote/rollback state machine. The delivery mechanism is irrelevant to the safety guarantees — verification happens regardless of how the bytes arrived.
+
+## The State Machine
+
+The agent is fundamentally a state machine:
+
+```
+IDLE → bundle detected → VERIFYING
+VERIFYING → ok → STAGING       | fail → IDLE (log, reject)
+STAGING → done → SWITCHING
+SWITCHING → done → HEALTH_CHECK
+HEALTH_CHECK → pass → PROMOTED  | fail → ROLLING_BACK
+ROLLING_BACK → done → IDLE (on last-good)
+PROMOTED → IDLE (on new version)
+```
+
+Every transition is logged to a local audit history surfaced in a small dashboard. When a device comes back from the field, you can read exactly what it tried to install, when, and whether it succeeded or rolled back — without any cloud telemetry.
+
+## Why This Matters
+
+The discipline here isn't exotic — signed manifests, atomic symlink swaps, health gates, and rollback are all well-understood individually. What makes offline OTA hard is that you can't paper over a weak spot with server-side coordination. The device is on its own.
+
+That constraint is clarifying. It forces every layer to be correct on its own terms: verify before you stage, stage before you switch, prove health before you promote, and always keep a way back. Get those right and a field device can update itself a thousand miles from the nearest engineer — and never brick.

@@ -203,10 +203,10 @@ describe("Projects section", () => {
   it("renders project titles", () => {
     expect(screen.getAllByText(/Watchpoint/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/HydraSwarm/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/MedAssist/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Plastic Debris Detection/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Offline OTA/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Embodipedia/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CodebaseOS/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/StepAhead/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/FieldFix/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/SignalForge/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/XG1/).length).toBeGreaterThan(0);
   });
@@ -220,8 +220,8 @@ describe("Projects section", () => {
 
   it("filters projects by category", async () => {
     const user = userEvent.setup();
-    await user.click(screen.getByText("Applied ML"));
-    expect(screen.getByText(/Plastic Debris Detection/)).toBeInTheDocument();
+    await user.click(screen.getByText("Physical AI & Robotics"));
+    expect(screen.getAllByText(/XG1/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Watchpoint/)).not.toBeInTheDocument();
   });
 

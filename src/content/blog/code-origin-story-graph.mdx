@@ -1,0 +1,144 @@
+---
+title: "Why Does This Line Exist? Building a Temporal Context Graph for Code"
+date: "2026-05-26"
+tags: ["Developer Tools", "Knowledge Graph", "VS Code", "HydraDB", "AI", "Git"]
+excerpt: "git blame tells you who. It doesn't tell you why. Building CodebaseOS — a VS Code extension that reconstructs the full origin story of any line across commits, PRs, issues, and decisions in 200ms."
+---
+
+# Why Does This Line Exist? Building a Temporal Context Graph for Code
+
+`git blame` answers "who changed this line and when." It never answers the question you actually have: *why does this line exist?* The why is scattered — across the commit that introduced it, the PR that reviewed it, the issue it fixed, and the design decision nobody wrote down. CodebaseOS reconstructs that story on demand: right-click a line, ask why, get a graph-grounded answer with clickable links to the real sources, in about 200ms.
+
+Here's how the temporal context graph works.
+
+## The Problem with Linear History
+
+Git history is a linear log of diffs. But the *meaning* of a change lives in a graph:
+
+```
+commit abc123 ──introduces──> function authenticate()
+   │
+   ├──part of──> PR #412 "Add OAuth2 support"
+   │                │
+   │                └──closes──> Issue #389 "Sessions expire too early"
+   │
+   └──reviewed by──> @maintainer (3 comments on token expiry)
+```
+
+The line `if token.expires_at <= now:` exists because Issue #389 reported early session expiry, PR #412 fixed it, and a reviewer specifically flagged the boundary condition. None of that is in `git blame` — it's spread across four systems. The graph captures the relationships; the linear log throws them away.
+
+## Ingesting Into a Temporal Graph
+
+CodebaseOS ingests a repo's history into HydraDB as a temporal context graph — nodes for commits, PRs, issues, files, and people; edges for the relationships between them, each stamped with when it happened.
+
+```python
+def ingest_repo(owner: str, repo: str, mode: str = "auto"):
+    commits = github.list_commits(owner, repo)
+    prs = github.list_pull_requests(owner, repo, state="all")
+    issues = github.list_issues(owner, repo, state="all")
+
+    # Size the ingest honestly to the repo
+    if mode == "auto" and len(commits) > LARGE_THRESHOLD:
+        commits = commits[:SAMPLE_N]  # sampled, flagged to the user
+
+    for c in commits:
+        graph.add_node("commit", c.sha, {
+            "message": c.message, "author": c.author, "date": c.date,
+        })
+        for f in c.files:
+            graph.add_edge(c.sha, "touches", f.path, at=c.date)
+
+    for pr in prs:
+        graph.add_node("pr", pr.number, {"title": pr.title, "body": pr.body})
+        for sha in pr.commit_shas:
+            graph.add_edge(pr.number, "contains", sha, at=pr.merged_at)
+        for issue_num in pr.closes:
+            graph.add_edge(pr.number, "closes", issue_num, at=pr.merged_at)
+```
+
+The key word is **temporal**. Every edge carries a timestamp, so the graph can be queried as of any point in time — you can ask what a file's story looked like six months ago, before a refactor rewrote half of it.
+
+## Honest Coverage
+
+A claim that quietly lies is worse than no claim. CodebaseOS ingests small repos *completely* and reports it:
+
+```
+✓ complete: 38/38 commits, 12/12 PRs, 9/9 issues
+```
+
+Large repos get sampled (latest N) and the UI flags it honestly — "sampled: latest 500 of 14,203 commits." You always know whether the answer is grounded in the full history or a recent slice. The system never pretends to certainty it doesn't have.
+
+## Merkle-Chain Verification
+
+How do you trust that the graph actually matches the source history and wasn't silently corrupted or tampered with? Merkle chaining. Each ingested node is hashed together with the previous node's hash, forming a chain. Re-running `verify` recomputes the chain and confirms it matches:
+
+```python
+def compute_chain(nodes: list[Node]) -> str:
+    h = hashlib.sha256(b"genesis").hexdigest()
+    for node in sorted(nodes, key=lambda n: n.timestamp):
+        h = hashlib.sha256(f"{h}{node.canonical()}".encode()).hexdigest()
+    return h
+
+def verify(stored_root: str, nodes: list[Node]) -> bool:
+    return compute_chain(nodes) == stored_root
+```
+
+```bash
+$ make verify
+✓ Merkle chain intact — 38 nodes, root a3f9c2...
+```
+
+If a single node changed, the root hash diverges and verification fails loudly. The graph is provably the history it claims to be.
+
+## Answering "Why" in 200ms
+
+When you hover a line and ask why, the query walks the graph from the line's current commit outward through the relationship edges, collects the connected PRs/issues/decisions, and hands the subgraph to an LLM to synthesize a grounded answer:
+
+```python
+def origin_story(file: str, line: int) -> Answer:
+    commit = graph.commit_for_line(file, line)        # which commit introduced it
+    context = graph.walk(commit, depth=2, edges=[      # pull the surrounding story
+        "part_of", "closes", "reviewed_by", "references",
+    ])
+    # Synthesize — but ground every claim in a real node
+    return llm.synthesize(
+        question=f"Why does line {line} of {file} exist?",
+        context=context,
+        require_citations=True,   # every claim links to a real PR/commit/issue
+    )
+```
+
+The 200ms target is hit because the heavy work — ingestion, graph construction, embedding — happened up front. At query time it's a bounded graph walk plus one LLM call over a small, relevant subgraph. The answer comes back with clickable links to the actual PR, commit, or issue, so you can verify the synthesis against the source.
+
+## Editor Commands That Fall Out of the Graph
+
+Once the graph exists, useful commands become trivial:
+
+- **Why? / Origin story** — walk from a line to its introducing commit and connected context
+- **Explain this file** — aggregate all commits/PRs touching a file; summarize what it does and key decisions
+- **What changed** — query edges within a date range
+- **Bus factor** — count distinct authors per file; flag files where one person holds all the knowledge
+
+```python
+def bus_factor(file: str) -> dict:
+    authors = graph.authors_touching(file)
+    top = max(authors.items(), key=lambda kv: kv[1])
+    concentration = top[1] / sum(authors.values())
+    return {
+        "primary_owner": top[0],
+        "knowledge_concentration": concentration,  # 1.0 = single point of failure
+        "risk": "high" if concentration > 0.8 else "moderate",
+    }
+```
+
+Bus factor is just a graph aggregation — but it surfaces a real organizational risk that's normally invisible until the person who knows the auth code leaves.
+
+## No Graph DB to Operate
+
+The deliberate design choice: the developer never operates a graph database or learns a query language. The graph lives behind a FastAPI backend; the VS Code extension talks to it over HTTP; answers come back as plain prose with links. The whole interface is "right-click, ask, read." All the graph machinery is an implementation detail.
+
+## The Takeaway
+
+`git blame` is a linear answer to a graph-shaped question. Code's real history is a web of commits, reviews, issues, and decisions connected by typed, timestamped relationships. Model it as a temporal graph — verified, honestly scoped, queryable as of any date — and "why does this line exist?" becomes a 200ms lookup instead of a 30-minute archaeology session.
+
+The story was always there. It was just never connected.

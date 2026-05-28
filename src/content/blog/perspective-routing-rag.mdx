@@ -1,0 +1,143 @@
+---
+title: "Perspective-Routed RAG: When One Corpus Isn't Enough"
+date: "2026-05-25"
+tags: ["RAG", "AI", "Multi-Agent AI", "Gen AI", "HydraDB", "Knowledge Systems"]
+excerpt: "Standard RAG collapses all evidence into one corpus, averaging away disagreement. Building Embodipedia — an AI-maintained encyclopedia that keeps optimistic, skeptical, and neutral claims in separate lanes so agents can debate."
+---
+
+# Perspective-Routed RAG: When One Corpus Isn't Enough
+
+Standard RAG has a hidden assumption: that all your evidence belongs in one pile. Retrieve the top-k chunks, hand them to the model, get an answer. It works fine when the corpus agrees with itself. It fails quietly when the corpus *disagrees* — because retrieval averages the disagreement away and the model produces a confident, mushy consensus that nobody actually holds.
+
+Building Embodipedia — a self-maintaining encyclopedia of humanoid robotics written entirely by AI agents — forced me to confront this. The humanoid-robotics industry is *all disagreement*: bullish funding projections, skeptical timelines, and a thin layer of established fact, often from the same source on the same day. Collapsing that into one corpus destroys the most interesting signal. So we route claims into perspective lanes instead.
+
+## The Core Idea: Route Per-Claim, Not Per-Source
+
+The naive approach is to tag whole sources as optimistic or skeptical. That's wrong, because a single source contains multiple perspectives. One Brett Adcock interview can simultaneously state:
+
+- a **canonical** fact: "Figure robots are deployed at BMW Spartanburg"
+- a **bull** projection: "tens of thousands of robots by 2026"
+
+Tag the whole interview as "bull" and you lose the deployment fact. Tag it "canonical" and you launder a forward-looking projection into established truth. The unit of perspective is the **claim**, not the document.
+
+So the pipeline extracts typed claims first, then routes each one:
+
+```
+Ingest          Extract              Route                  Synthesize
+tweets/papers → GPT-4o-mini      → perspective_router   → GPT-4o
+podcasts/news   typed claims       canonical/bull/bear    cited prose
+                + confidence       (HydraDB sub-tenants)  + [unverified]
+```
+
+## Typed Claim Extraction
+
+Each source is decomposed into discrete, typed claims with a confidence score:
+
+```python
+def extract_claims(text: str, source: Source) -> list[Claim]:
+    raw = llm_mini.extract(
+        text,
+        schema={
+            "claims": [{
+                "subject": "entity the claim is about",
+                "predicate": "what is asserted",
+                "claim_type": "deployment | funding | capability | timeline | opinion",
+                "confidence": "0.0–1.0",
+                "temporal": "as_of date if the claim is time-bound",
+            }]
+        },
+    )
+    return [Claim(**c, source=source) for c in raw["claims"]]
+```
+
+A claim is atomic: subject, predicate, type, confidence, and the source it came from. This granularity is what makes per-claim routing possible.
+
+## The Perspective Router
+
+Each claim is routed into one of three HydraDB sub-tenants — separate memory lanes that never get blended at retrieval time:
+
+```python
+def route(claim: Claim) -> str:
+    # canonical: established, verifiable, present-tense fact
+    if claim.claim_type in ("deployment", "funding") and claim.confidence > 0.8:
+        return "canonical"
+    # bull: optimistic, forward-looking projections
+    if claim.claim_type == "timeline" and is_forward_looking(claim):
+        return "bull" if sentiment(claim) > 0 else "bear"
+    # bear: skeptical, risk-flagging, or contrarian
+    if expresses_doubt(claim) or flags_risk(claim):
+        return "bear"
+    return "canonical"
+
+# Store in the routed sub-tenant — lanes stay isolated
+hydradb.store(claim, sub_tenant=route(claim))
+```
+
+The three lanes — `canonical` (measured/established), `bull` (optimistic), `bear` (skeptical) — are first-class HydraDB sub-tenants. Crucially, retrieval queries one lane at a time. They're never merged into a single ranked list, which is exactly what preserves the disagreement.
+
+## Synthesis With Grounding Discipline
+
+When rendering an article, the canonical lane drives the main prose. Every sentence must be grounded in a stored claim. When the evidence is too thin, the system refuses to invent:
+
+```python
+def synthesize_section(entity: str, lane: str = "canonical") -> str:
+    claims = hydradb.recall(entity, sub_tenant=lane, k=12)
+    if not claims:
+        return ""  # no section rather than a fabricated one
+    return llm.write(
+        entity=entity,
+        claims=claims,
+        rules=[
+            "Every sentence must cite a claim by id",
+            "If a sub-point lacks a grounding claim, mark it [unverified]",
+            "Do not interpolate facts between claims",
+        ],
+    )
+```
+
+The `[unverified]` badge is the honesty valve. Instead of the model smoothing over a gap with a plausible-sounding fabrication, the gap is made visible. A reader sees exactly where the evidence runs out.
+
+## The Talk Page: Rendering the Debate
+
+This is where perspective routing pays off. The Talk page recalls the **bull** and **bear** lanes separately and runs them through a debate synthesizer:
+
+```python
+def build_talk_page(entity: str) -> TalkPage:
+    bull = hydradb.recall(entity, sub_tenant="bull", k=10)
+    bear = hydradb.recall(entity, sub_tenant="bear", k=10)
+    return TalkPage(
+        bull_section=summarize(bull, stance="optimistic"),
+        bear_section=summarize(bear, stance="skeptical"),
+        supersession_log=find_superseded_claims(entity),
+    )
+```
+
+Because the lanes were kept separate from ingestion onward, the Talk page can render a genuine bull-vs-bear debate between agents that read the same sources and reached different conclusions. A single-corpus RAG system literally cannot produce this — the disagreement was averaged away before retrieval.
+
+## Temporal Recall: Time-Travel
+
+Every claim carries an `as_of` timestamp. That makes the whole article queryable as of a past date:
+
+```python
+def article_as_of(entity: str, date: datetime) -> Article:
+    claims = hydradb.recall(
+        entity, sub_tenant="canonical",
+        filter={"published_at": {"$lte": date}},  # only claims known by then
+    )
+    return render(entity, claims)
+```
+
+Drag the time-travel slider to six months ago and the article re-renders using only claims that existed then — projections that have since been falsified reappear as live predictions. It's a way to audit what the consensus *was*, not just what it became.
+
+## When To Use This
+
+Perspective routing is overkill for a corpus that agrees with itself — internal docs, a product manual, a codebase. Use it when the domain is genuinely contested:
+
+- **Markets and forecasts** — bulls and bears on the same asset
+- **Emerging tech** — hype vs. skepticism on the same capability
+- **Policy and research** — competing interpretations of the same data
+- **Anything with a "Talk page" worth having** — where the disagreement is the point
+
+The cost is real: per-claim extraction, a routing model, and multiple isolated retrieval lanes instead of one. But for contested domains, that cost buys the one thing single-corpus RAG can't deliver — a system that knows people disagree, and shows you the disagreement instead of hiding it behind false consensus.
+
+The world rarely speaks with one voice. Your retrieval layer shouldn't pretend it does.
