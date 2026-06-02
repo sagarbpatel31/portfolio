@@ -149,9 +149,9 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
   ],
   resume: () => {
     if (typeof window !== "undefined") {
-      window.open("/resume.pdf", "_blank");
+      window.open("/resume", "_blank");
     }
-    return [{ text: "Opening resume.pdf...", type: "accent" }];
+    return [{ text: "Opening resume...", type: "accent" }];
   },
   // ── Easter eggs ──────────────────────────────────────
   "sudo hire sagar": () => [

@@ -1,15 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { X, Github, Linkedin, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fadeIn } from "@/lib/motion";
 
 const navLinks = [
-  { label: "/home", href: "#hero" },
-  { label: "/dashboard", href: "#dashboard" },
+  { label: "/home", href: "/" },
+  { label: "/dashboard", href: "/#dashboard" },
   { label: "/blog", href: "/blog" },
   { label: "/uses", href: "/uses" },
-  { label: "/resume", href: "/resume.pdf" },
+  { label: "/projects", href: "/projects" },
+  { label: "/resume", href: "/resume" },
 ];
 
 interface MobileNavProps {
@@ -47,18 +49,21 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
 
           <nav className="flex flex-col items-center justify-center gap-6 px-4 pt-16">
             {navLinks.map((link, index) => (
-              <motion.a
+              <motion.div
                 key={link.href}
-                href={link.href}
-                onClick={onClose}
                 variants={fadeIn("up", 0)}
                 initial="hidden"
                 animate="visible"
                 transition={{ delay: index * 0.05 }}
-                className="font-mono text-2xl text-muted-foreground transition-colors hover:text-accent"
               >
-                {link.label}
-              </motion.a>
+                <Link
+                  href={link.href}
+                  onClick={onClose}
+                  className="font-mono text-2xl text-muted-foreground transition-colors hover:text-accent"
+                >
+                  {link.label}
+                </Link>
+              </motion.div>
             ))}
 
             <div className="mt-8 flex items-center gap-4">

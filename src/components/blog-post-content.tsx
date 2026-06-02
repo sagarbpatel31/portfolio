@@ -20,7 +20,14 @@ function parseInline(text: string): string {
       // Links
       .replace(
         /\[(.+?)\]\((.+?)\)/g,
-        '<a href="$2" class="text-accent underline underline-offset-4 hover:text-accent/80 transition-colors" target="_blank" rel="noopener noreferrer">$1</a>'
+        (_match, label, href) => {
+          const isExternal = /^https?:\/\//.test(href);
+          const attrs = isExternal
+            ? ' target="_blank" rel="noopener noreferrer"'
+            : "";
+
+          return `<a href="${href}" class="text-accent underline underline-offset-4 hover:text-accent/80 transition-colors"${attrs}>${label}</a>`;
+        }
       )
       // Italic
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
@@ -127,11 +134,11 @@ export function BlogPostContent({ content }: BlogPostContentProps) {
 
       <div className="mt-12 pt-6 border-t border-border">
         <Link
-          href="/"
+          href="/blog"
           className="inline-flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-accent transition-colors"
         >
           <ArrowLeft size={14} aria-hidden="true" />
-          cd ~/dashboard
+          cd ~/blog
         </Link>
       </div>
     </motion.div>

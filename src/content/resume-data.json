@@ -1,0 +1,132 @@
+{
+  "name": "Sagar Patel",
+  "title": "Systems & AI Engineer",
+  "location": "Riverside, CA, USA",
+  "email": "sagar@myjobemails.com",
+  "status": "Open to Physical AI, Forward Deployed, Embedded Software, and Gen AI roles",
+  "shortBio": "Systems engineer focused on production software across embedded Linux, high-performance networking, edge AI, and multi-agent AI. I ship across the boundary between hardware and software, with experience in Yocto, RTOS, CUDA, TensorRT, BlueField DPUs, ROS2, and full-stack product delivery.",
+  "summary": "I write software across the full stack of physical AI. At Ciena, I engineer embedded Linux networking firmware for logistics edge gateways and deploy edge AI inference on NVIDIA Jetson Orin. At Cisco, I built P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs. I started my career at TCS writing bare-metal RTOS firmware for ARM-based telecom edge nodes. On the side, I build Watchpoint, StepAhead, FieldFix, SignalForge, HydraSwarm, and XG1.",
+  "keywords": "Embedded Linux, Yocto, Buildroot, RTOS, Device Drivers, C, C++, Python, CUDA, TensorRT, DeepStream, Jetson Orin, BlueField DPU, P4, DOCA, ROS2, MuJoCo, FastAPI, Next.js, PostgreSQL, Graph/RAG systems, CI/CD, secure boot, MISRA-C, high-performance networking, edge AI, multi-agent AI",
+  "focusAreas": [
+    "Physical AI & Robotics",
+    "Forward Deployed Engineering",
+    "Gen AI & Multi-Agent Systems",
+    "Embedded Linux & BSP",
+    "Edge AI & GPU Inference",
+    "High-Performance Networking",
+    "Systems Programming (C/C++)"
+  ],
+  "openTo": [
+    "Physical AI / Robotics engineering",
+    "Forward Deployed Engineer roles",
+    "Gen AI / Multi-Agent software",
+    "Embedded software engineering",
+    "Edge AI & inference optimization",
+    "Early-stage & high-ownership roles"
+  ],
+  "skills": [
+    {
+      "category": "Programming",
+      "items": ["C", "C++", "Python", "Bash", "TypeScript"]
+    },
+    {
+      "category": "Embedded",
+      "items": ["Embedded Linux", "RTOS", "Yocto", "Buildroot", "Device Drivers", "Secure Boot"]
+    },
+    {
+      "category": "Networking",
+      "items": ["P4", "DPDK", "DMA Optimization", "TCP/IP", "BlueField DPU", "Telemetry"]
+    },
+    {
+      "category": "Edge AI",
+      "items": ["CUDA", "TensorRT", "DeepStream", "ONNX", "Jetson Orin", "Nsight Systems"]
+    },
+    {
+      "category": "Robotics",
+      "items": ["ROS2", "MuJoCo", "Physical AI", "Control Systems", "Sensor Fusion"]
+    },
+    {
+      "category": "Web / Infra",
+      "items": ["Next.js", "FastAPI", "PostgreSQL", "Docker", "CI/CD", "GitHub Actions"]
+    }
+  ],
+  "experience": [
+    {
+      "role": "Senior Embedded Software Engineer",
+      "company": "Ciena",
+      "period": "May 2024 - Present",
+      "location": "Remote, USA",
+      "summary": "Embedded Linux networking firmware for logistics edge gateways and edge AI inference on NVIDIA Jetson Orin.",
+      "bullets": [
+        "Optimized packet processing, DMA transfer paths, and interrupt handling to improve sustained throughput by 31% during peak fulfillment operations.",
+        "Led Yocto-based platform work including BSP upgrades, secure boot integration, CI validation, and release management, reducing bring-up and deployment timelines by 24%.",
+        "Built CUDA and TensorRT inference pipelines on Jetson Orin to detect conveyor and sorter anomalies in real time, reducing unplanned downtime by 22%."
+      ]
+    },
+    {
+      "role": "Embedded Software Engineer",
+      "company": "Cisco Systems",
+      "period": "Jan 2023 - Apr 2024",
+      "location": "Austin, TX, USA",
+      "summary": "Switching firmware with P4-programmable data-plane pipelines and AI-assisted traffic intelligence on NVIDIA BlueField DPUs.",
+      "bullets": [
+        "Integrated P4-programmable pipelines with switching ASIC SDKs, improving forwarding stability and reducing packet loss by 31% in large-scale validation.",
+        "Implemented NVIDIA BlueField DPU workflows with DOCA and ONNX inference to improve encrypted anomaly classification accuracy by 24%.",
+        "Optimized DPU offload scheduling and inference workloads, reducing host CPU utilization by 29% while maintaining throughput under peak traffic."
+      ]
+    },
+    {
+      "role": "Embedded Software Engineer",
+      "company": "Tata Consultancy Services",
+      "period": "Jul 2020 - Aug 2021",
+      "location": "Remote, India",
+      "summary": "Bare-metal RTOS firmware and embedded Linux for ARM-based telecom edge nodes in carrier-grade networking environments.",
+      "bullets": [
+        "Developed bare-metal RTOS firmware for ARM-based telecom edge nodes, implementing multicast packet replication and QoS shaping to boost reliable delivery by 28%.",
+        "Wrote custom kernel modules and device drivers for high-speed Ethernet interfaces, cutting packet jitter by 35% in distributed deployments.",
+        "Integrated bootloader development with firmware authentication and MISRA-C compliant coding, streamlining secure deployment across platforms."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "title": "Offline OTA Update System",
+      "category": "Embedded Linux",
+      "year": "2026",
+      "summary": "Signed bundles, atomic staging, health-check promotion, rollback, and audit history for offline edge Linux devices.",
+      "impact": [
+        "Offline delivery over USB/local HTTP",
+        "Automatic rollback on health-check failure",
+        "Local audit history and dashboard"
+      ]
+    },
+    {
+      "title": "Embodipedia",
+      "category": "AI / Multi-Agent Systems",
+      "year": "2026",
+      "summary": "Self-maintaining encyclopedia with typed claims, perspective routing, citations, and temporal views.",
+      "impact": [
+        "Canonical/bull/bear routing",
+        "Cited prose with unverified badges",
+        "Live ingest and revision history"
+      ]
+    },
+    {
+      "title": "XG1",
+      "category": "Physical AI / Robotics",
+      "year": "2026",
+      "summary": "Humanoid robot learning pipeline for Unitree G1 combining teleop, DeepLake data, and GR00T fine-tuning.",
+      "impact": [
+        "Won 2 hackathon tracks",
+        "Meta Quest 3 + MuJoCo teleop",
+        "DeepLake streaming for fast training"
+      ]
+    }
+  ],
+  "education": [
+    "M.S. in Computer Science, Sofia University, Oct 2025 - Jun 2027",
+    "M.S. in Embedded and Cyber Physical Systems, University of California, Irvine, Sep 2021 - Dec 2022",
+    "B.Tech, Charotar University of Science and Technology, Jul 2017 - Jun 2021"
+  ],
+  "certifications": ["NVIDIA-Certified Associate: Generative AI LLMs (NCA-GENL)"]
+}

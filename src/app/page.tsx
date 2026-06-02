@@ -1,4 +1,5 @@
 import { Hero } from "@/components/sections/hero";
+import { HiringSignal } from "@/components/sections/hiring-signal";
 import { Dashboard } from "@/components/dashboard";
 import { BootWrapper } from "@/components/boot-wrapper";
 import { getAllPosts } from "@/lib/blog";
@@ -16,6 +17,7 @@ export default function Home() {
   return (
     <BootWrapper>
       <Hero />
+      <HiringSignal />
       <Dashboard blogEntries={blogEntries} />
     </BootWrapper>
   );

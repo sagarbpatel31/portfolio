@@ -62,6 +62,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const url = `${SITE_URL}/blog/${slug}`;
+  const relatedPosts = getAllSlugs()
+    .map((relatedSlug) => getPostBySlug(relatedSlug))
+    .filter((related): related is NonNullable<typeof related> => Boolean(related))
+    .filter((related) => related.slug !== slug)
+    .filter((related) => related.tags.some((tag) => post.tags.includes(tag)))
+    .slice(0, 3);
+
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
@@ -82,13 +89,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
       <Container className="max-w-4xl">
-        <nav aria-label="Back to dashboard">
+        <nav aria-label="Back to blog">
           <Link
-            href="/"
+            href="/blog"
             className="inline-flex items-center gap-2 font-mono text-xs text-muted-foreground hover:text-accent transition-colors mb-8"
           >
             <ArrowLeft size={14} aria-hidden="true" />
-            cd ~/dashboard
+            cd ~/blog
           </Link>
         </nav>
 
@@ -123,6 +130,40 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <BlogPostContent content={post.content} />
           </div>
         </div>
+
+        {relatedPosts.length > 0 && (
+          <section className="mt-8">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="font-mono text-xs uppercase tracking-widest text-muted">
+                related reading
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {relatedPosts.map((related) => (
+                <Link
+                  key={related.slug}
+                  href={`/blog/${related.slug}`}
+                  className="dash-card group transition-colors hover:border-accent/30"
+                >
+                  <div className="dash-card-body flex h-full flex-col gap-2">
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                      {related.readingTime}
+                    </p>
+                    <h2 className="font-semibold leading-snug text-foreground transition-colors group-hover:text-accent">
+                      {related.title}
+                    </h2>
+                    <p className="line-clamp-3 text-xs leading-relaxed text-muted-foreground">
+                      {related.excerpt}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </Container>
     </section>
   );

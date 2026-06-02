@@ -1,6 +1,6 @@
 export const profile = {
   name: "Sagar Patel",
-  title: "Software Engineer",
+  title: "Systems & AI Engineer",
   tagline:
     "Building production software from silicon to multi-agent AI — embedded firmware, edge inference, physical AI, and the systems that ship them.",
   shortBio:

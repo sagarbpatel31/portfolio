@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Menu, Github, Linkedin } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
@@ -20,8 +21,8 @@ export function Navbar() {
           aria-label="Main navigation"
         >
           {/* Logo */}
-          <a
-            href="#hero"
+          <Link
+            href="/"
             className="flex items-center gap-2 transition-opacity hover:opacity-80"
             aria-label="SAGAR_OS — Back to top"
           >
@@ -31,34 +32,39 @@ export function Navbar() {
             <span className="font-mono text-xs font-medium text-foreground tracking-wider">
               SAGAR<span className="text-accent">_</span>OS
             </span>
-          </a>
+          </Link>
 
           {/* Desktop nav links */}
           <ul className="hidden items-center gap-1 md:flex font-mono text-xs" role="list">
             <li>
-              <a href="#hero" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+              <Link href="/" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /home
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#dashboard" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+              <Link href="/#dashboard" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /dashboard
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/blog" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+              <Link href="/blog" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /blog
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/uses" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+              <Link href="/uses" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /uses
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="/resume.pdf" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent" download>
+              <Link href="/projects" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /projects
+              </Link>
+            </li>
+            <li>
+              <Link href="/resume" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /resume
-              </a>
+              </Link>
             </li>
           </ul>
 

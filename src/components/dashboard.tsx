@@ -25,7 +25,7 @@ export function Dashboard({ blogEntries }: { blogEntries: BlogEntry[] }) {
   const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
-    <section id="dashboard" ref={ref} className="py-8 pb-16">
+    <section id="dashboard" ref={ref} className="scroll-mt-20 py-8 pb-16">
       <Container>
         <motion.div
           variants={staggerContainer(0.08, 0.1)}

@@ -12,10 +12,22 @@ import { projects } from "@/content/projects";
 
 const categories = ["All", ...Array.from(new Set(projects.map((p) => p.category)))];
 
-export function Projects() {
+interface ProjectsProps {
+  compact?: boolean;
+}
+
+export function Projects({ compact = false }: ProjectsProps) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-50px" });
   const [activeCategory, setActiveCategory] = useState("All");
+  const featuredProject = projects.find((project) => project.featured) ?? projects[0];
+  const categoryCounts = new Map<string, number>();
+  projects.forEach((project) => {
+    categoryCounts.set(project.category, (categoryCounts.get(project.category) ?? 0) + 1);
+  });
+  const topCategories = [...categoryCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
 
   const filtered =
     activeCategory === "All"
@@ -23,25 +35,115 @@ export function Projects() {
       : projects.filter((p) => p.category === activeCategory);
 
   return (
-    <section id="projects" ref={ref} className="py-24 sm:py-32">
+    <section
+      id="projects"
+      ref={ref}
+      className={compact ? "py-12 sm:py-16" : "py-24 sm:py-32"}
+    >
       <Container>
         <motion.div
           variants={staggerContainer(0.1, 0.1)}
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
         >
-          <motion.div variants={fadeIn("up", 0)} className="mb-10">
-            <div className="section-bar mb-4" />
-            <h2 className="font-mono text-sm font-semibold uppercase tracking-widest text-accent">
-              projects
-            </h2>
-            <p className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-              Things I&apos;ve built from prototype to production.
-            </p>
-          </motion.div>
+          {!compact && (
+            <>
+              <motion.div variants={fadeIn("up", 0)} className="mb-10">
+                <div className="section-bar mb-4" />
+                <h2 className="font-mono text-sm font-semibold uppercase tracking-widest text-accent">
+                  projects
+                </h2>
+                <p className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+                  Things I&apos;ve built from prototype to production.
+                </p>
+              </motion.div>
+
+              {/* Featured project + archive summary */}
+              <div className="grid gap-3 lg:grid-cols-[1.4fr_0.6fr]">
+                <motion.div variants={fadeIn("up", 0)} className="dash-card group">
+                  <Link href={`/projects/${featuredProject.slug}`} className="block h-full">
+                    <div className="dash-card-body flex h-full flex-col gap-4">
+                      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted">
+                        <span className="rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-accent">
+                          Featured project
+                        </span>
+                        <span>{featuredProject.year}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-bold tracking-tight text-foreground transition-colors group-hover:text-accent sm:text-3xl">
+                          {featuredProject.title}
+                        </h3>
+                        <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                          {featuredProject.tagline}
+                        </p>
+                      </div>
+                      {featuredProject.metrics && featuredProject.metrics.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {featuredProject.metrics.map((metric) => (
+                            <Badge key={metric}>{metric}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {featuredProject.tags.slice(0, 5).map((tag) => (
+                          <Badge key={tag} variant="outline">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-sm text-accent">
+                        Open project detail
+                        <ArrowRight
+                          size={14}
+                          className="transition-transform group-hover:translate-x-1"
+                        />
+                      </span>
+                    </div>
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={fadeIn("up", 0)} className="dash-card">
+                  <div className="dash-card-header">
+                    <span>archive signals</span>
+                    <span>{projects.length} total</span>
+                  </div>
+                  <div className="dash-card-body space-y-4">
+                    <div>
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                        Top categories
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {topCategories.map(([category, count]) => (
+                          <span
+                            key={category}
+                            className="rounded border border-border bg-surface/60 px-2.5 py-1 font-mono text-[11px] text-muted-foreground"
+                          >
+                            {category} · {count}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-surface/40 p-4">
+                      <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                        Reading map
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        Start with the featured project, then narrow by category to compare
+                        systems, robotics, and AI work side by side.
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
 
           {/* Filter tabs */}
-          <motion.div variants={fadeIn("up", 0)} className="mt-8 flex flex-wrap gap-2">
+          <motion.div
+            variants={fadeIn("up", 0)}
+            className={compact ? "flex flex-wrap gap-2" : "mt-8 flex flex-wrap gap-2"}
+          >
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -58,7 +160,7 @@ export function Projects() {
           </motion.div>
 
           {/* Project grid */}
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={compact ? "mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" : "mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"}>
             <AnimatePresence mode="popLayout">
               {filtered.map((project) => (
                 <motion.div

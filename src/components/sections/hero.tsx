@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
 import { Download, Github, Linkedin } from "lucide-react";
@@ -70,7 +71,7 @@ export function Hero() {
   const isInView = useInView(ref, { once: true });
 
   return (
-    <section id="hero" ref={ref} className="relative py-8 lg:py-12">
+    <section id="hero" ref={ref} className="relative scroll-mt-20 py-8 lg:py-12">
       <Container>
         <motion.div
           variants={staggerContainer(0.1, 0.1)}
@@ -134,10 +135,10 @@ export function Hero() {
                 </a>
               </Button>
               <Button asChild variant="outline" size="sm" className="font-mono text-xs">
-                <a href={profile.resumeUrl} download>
+                <Link href="/resume">
                   <Download size={14} className="mr-1.5" aria-hidden="true" />
                   Resume
-                </a>
+                </Link>
               </Button>
               <a
                 href="https://github.com/sagarbpatel31"
@@ -157,6 +158,75 @@ export function Hero() {
               >
                 <Linkedin size={14} />
               </a>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted">
+                Quick links
+              </span>
+              <Link
+                href="/blog"
+                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              >
+                /blog
+              </Link>
+              <Link
+                href="/uses"
+                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              >
+                /uses
+              </Link>
+              <Link
+                href="/projects"
+                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              >
+                /projects
+              </Link>
+              <Link
+                href="#hiring"
+                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              >
+                /hiring
+              </Link>
+            </div>
+
+            <div className="dash-card max-w-xl">
+              <div className="dash-card-header">
+                <span>recruiter snapshot</span>
+                <span className="text-accent-green">open now</span>
+              </div>
+              <div className="dash-card-body grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    Best fit
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">
+                    {profile.focusAreas[0]}, {profile.focusAreas[1]}, and shipping production systems.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    Location
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">{profile.location}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    Open to
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">
+                    {profile.openTo.slice(0, 2).join(" • ")}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    Hire signal
+                  </p>
+                  <p className="mt-1 text-sm text-foreground">
+                    End-to-end owner, strong systems bias, comfortable at the edge of hardware and AI.
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.div>
 

@@ -55,9 +55,14 @@ describe("Navbar", () => {
 
   it("nav links use correct hrefs", () => {
     const homeLink = screen.getByText("/home").closest("a");
-    expect(homeLink).toHaveAttribute("href", "#hero");
+    expect(homeLink).toHaveAttribute("href", "/");
     const dashLink = screen.getByText("/dashboard").closest("a");
-    expect(dashLink).toHaveAttribute("href", "#dashboard");
+    expect(dashLink).toHaveAttribute("href", "/#dashboard");
+  });
+
+  it("resume link points to the ATS resume page", () => {
+    const resumeLink = screen.getByText("/resume").closest("a");
+    expect(resumeLink).toHaveAttribute("href", "/resume");
   });
 
   it("has GitHub social link", () => {

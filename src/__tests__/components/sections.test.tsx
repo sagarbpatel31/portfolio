@@ -99,7 +99,7 @@ describe("Hero section", () => {
   });
 
   it("has Resume download CTA", () => {
-    expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("href", "/resume.pdf");
+    expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("href", "/resume");
   });
 
   it("has GitHub and LinkedIn social links", () => {

@@ -140,7 +140,7 @@ export default function UsesPage() {
     <Container>
       <div className="py-8">
         <Link
-          href="/"
+          href="/#dashboard"
           className="mb-6 inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent"
         >
           <ArrowLeft size={12} />
