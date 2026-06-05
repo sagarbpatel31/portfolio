@@ -64,6 +64,9 @@ jest.mock("@/components/terminal", () => ({
 }));
 
 import { Hero } from "@/components/sections/hero";
+import { SelectedImpact } from "@/components/sections/selected-impact";
+import { StackMap } from "@/components/sections/stack-map";
+import { CaseStudies } from "@/components/sections/case-studies";
 import { Highlights } from "@/components/sections/highlights";
 import { About } from "@/components/sections/about";
 import { Experience } from "@/components/sections/experience";
@@ -137,6 +140,50 @@ describe("Highlights section", () => {
 
   it("has section id", () => {
     expect(document.getElementById("highlights")).toBeTruthy();
+  });
+});
+
+describe("Selected impact section", () => {
+  beforeEach(() => render(<SelectedImpact />));
+
+  it("renders selected_impact heading", () => {
+    expect(screen.getByText("selected_impact")).toBeInTheDocument();
+  });
+
+  it("renders the strongest metrics", () => {
+    expect(screen.getByText("31%")).toBeInTheDocument();
+    expect(screen.getByText("73%")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
+});
+
+describe("Stack map section", () => {
+  beforeEach(() => render(<StackMap />));
+
+  it("renders stack_map heading", () => {
+    expect(screen.getByText("stack_map")).toBeInTheDocument();
+  });
+
+  it("renders the major technical domains", () => {
+    expect(screen.getByText("Embedded")).toBeInTheDocument();
+    expect(screen.getByText("Networking")).toBeInTheDocument();
+    expect(screen.getByText("Edge AI")).toBeInTheDocument();
+    expect(screen.getByText("Robotics")).toBeInTheDocument();
+    expect(screen.getByText("Full-Stack Systems")).toBeInTheDocument();
+  });
+});
+
+describe("Case studies section", () => {
+  beforeEach(() => render(<CaseStudies />));
+
+  it("renders case_studies heading", () => {
+    expect(screen.getByText("case_studies")).toBeInTheDocument();
+  });
+
+  it("renders the selected case studies", () => {
+    expect(screen.getByText(/Offline OTA Update System/)).toBeInTheDocument();
+    expect(screen.getByText(/Watchpoint/)).toBeInTheDocument();
+    expect(screen.getByText(/XG1/)).toBeInTheDocument();
   });
 });
 

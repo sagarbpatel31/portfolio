@@ -14,7 +14,9 @@ import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { fadeIn, staggerContainer } from "@/lib/motion";
 import { projects as allProjects } from "@/content/projects";
+import { caseStudies } from "@/content/hiring";
 import type { Project } from "@/types";
+import { CaseStudyPanel } from "@/components/case-study-panel";
 
 interface ProjectDetailProps {
   project: Project;
@@ -65,22 +67,7 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
-  const caseStudyCards = [
-    {
-      label: "Problem",
-      value: leadParagraph,
-    },
-    {
-      label: "Build",
-      value: project.description,
-    },
-    {
-      label: "Evidence",
-      value:
-        project.metrics?.join(" · ") ||
-        project.highlights.slice(0, 2).join(" · "),
-    },
-  ];
+  const caseStudy = caseStudies.find((study) => study.slug === project.slug);
 
   return (
     <div className="py-16 sm:py-20">
@@ -140,18 +127,36 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
             {project.tagline}
           </motion.p>
 
-          <motion.div variants={fadeIn("up", 0)} className="mt-8 grid gap-3 sm:grid-cols-3">
-            {caseStudyCards.map((card) => (
-              <div key={card.label} className="rounded-xl border border-border bg-surface/40 p-4">
+          {caseStudy ? (
+            <AnimatedSection className="mt-8">
+              <CaseStudyPanel study={caseStudy} />
+            </AnimatedSection>
+          ) : (
+            <motion.div variants={fadeIn("up", 0)} className="mt-8 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-surface/40 p-4">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  {card.label}
+                  Problem
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">{leadParagraph}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-surface/40 p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                  Build
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-foreground">
-                  {card.value}
+                  {project.description}
                 </p>
               </div>
-            ))}
-          </motion.div>
+              <div className="rounded-xl border border-border bg-surface/40 p-4">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                  Evidence
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">
+                  {project.metrics?.join(" · ") || project.highlights.slice(0, 2).join(" · ")}
+                </p>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Description */}
