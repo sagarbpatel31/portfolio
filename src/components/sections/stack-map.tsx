@@ -29,15 +29,24 @@ export function StackMap() {
             </p>
           </motion.div>
 
-          <div className="grid gap-3 lg:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {stackMap.map((group) => (
-              <motion.div key={group.domain} variants={fadeIn("up", 0)} className="dash-card">
+              <motion.div
+                key={group.domain}
+                variants={fadeIn("up", 0)}
+                className="dash-card overflow-hidden"
+              >
                 <div className="dash-card-header">
                   <span>{group.domain}</span>
-                  <span>{group.items.length}</span>
+                  <span>{group.items.length} tools</span>
                 </div>
-                <div className="dash-card-body space-y-3">
-                  <p className="text-sm leading-relaxed text-muted-foreground">{group.summary}</p>
+                <div className="dash-card-body space-y-4 bg-gradient-to-b from-surface/80 to-transparent">
+                  <div className="rounded-lg border border-accent/10 bg-accent/5 px-3 py-2">
+                    <p className="font-mono text-[10px] uppercase tracking-widest text-accent">
+                      domain brief
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-foreground">{group.summary}</p>
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
                     {group.items.map((item) => (
                       <Badge key={item} variant="outline">

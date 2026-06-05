@@ -21,6 +21,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: "/",
+  },
+  applicationName: "SAGAR_OS",
   title: {
     default: "SAGAR_OS — Systems & AI Engineer",
     template: "%s | SAGAR_OS",
@@ -44,6 +48,13 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Sagar Patel" }],
   creator: "Sagar Patel",
+  publisher: "Sagar Patel",
+  category: "technology",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   openGraph: {
     title: "SAGAR_OS — Systems & AI Engineer",
     description:
@@ -52,16 +63,33 @@ export const metadata: Metadata = {
     siteName: "SAGAR_OS",
     locale: "en_US",
     url: SITE_URL,
+    images: [
+      {
+        url: `${SITE_URL}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: "SAGAR_OS — Systems & AI Engineer",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "SAGAR_OS — Systems & AI Engineer",
     description:
       "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+    creator: "@sagarp31",
+    images: [`${SITE_URL}/opengraph-image`],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -84,6 +112,21 @@ const personJsonLd = {
     .map((s) => s.url),
 };
 
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "SAGAR_OS",
+  alternateName: "Sagar Patel Portfolio",
+  url: SITE_URL,
+  description:
+    "Portfolio and resume for Sagar Patel, a Systems & AI Engineer building embedded Linux, networking, edge AI, and robotics systems.",
+  author: {
+    "@type": "Person",
+    name: profile.name,
+  },
+  inLanguage: "en-US",
+};
+
 // Set the persisted theme before paint to avoid a flash of the default palette.
 const themeInitScript = `(function(){try{var t=localStorage.getItem('sagar-os-theme');var v=['cyan','amber','green','light'];document.documentElement.dataset.theme=(v.indexOf(t)>=0)?t:'cyan';}catch(e){document.documentElement.dataset.theme='cyan';}})();`;
 
@@ -103,6 +146,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <div className="scanline-overlay" aria-hidden="true" />
         <Navbar />
