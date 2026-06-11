@@ -1,0 +1,165 @@
+---
+title: "Latency Budgets for Robotics Pipelines: Stop Optimizing Kernels Before You Budget the System"
+date: "2026-06-05"
+tags: ["Robotics", "Edge AI", "CUDA", "Systems", "Real-Time", "Performance"]
+excerpt: "Robotics teams often jump straight to model or kernel optimization, but most missed deadlines come from unbudgeted end-to-end latency across sensing, transport, inference, control, and actuation. The first job is building a budget the whole pipeline can obey."
+---
+
+# Latency Budgets for Robotics Pipelines: Stop Optimizing Kernels Before You Budget the System
+
+When a robotics system misses timing, teams often react at the most visible hotspot: the model is too slow, the CUDA kernel needs work, the inference engine needs tuning. Sometimes that is true. Often it is not the first-order problem.
+
+The bigger issue is usually that the pipeline never had a real latency budget in the first place.
+
+If you do not know how much time each stage is allowed to spend, “optimize the model” is just a guess with good branding.
+
+## End-to-End Latency Is a Chain
+
+A perception-to-action loop is not one number. It is a chain:
+
+1. sensor capture
+2. frame transport
+3. preprocessing
+4. inference
+5. postprocessing
+6. planner / controller
+7. command dispatch
+8. actuator response
+
+If your deadline is 50 ms and one stage casually eats 22 ms because “it was still under the profiler radar,” the whole system is already in trouble.
+
+## Start With a Budget Table
+
+Before tuning anything, write the system budget down:
+
+```text
+Target control-loop budget: 50 ms
+
+- sensor capture:       6 ms
+- transport / copy:     4 ms
+- preprocess:           5 ms
+- inference:           12 ms
+- postprocess:          5 ms
+- planner / control:    8 ms
+- dispatch / actuation: 6 ms
+- slack / jitter:       4 ms
+```
+
+This table is not just documentation. It is an engineering contract.
+
+If a stage cannot stay inside its budget, you now know whether to optimize it, parallelize it, decimate it, or redesign the data path entirely.
+
+## Measure Reality, Not Intent
+
+Budgets are useful only if every stage emits timing data in the same frame of reference.
+
+```cpp
+struct StageTiming {
+  const char* name;
+  uint64_t start_ns;
+  uint64_t end_ns;
+};
+
+void record_stage(StageTiming& t, const char* name, uint64_t start_ns, uint64_t end_ns) {
+  t.name = name;
+  t.start_ns = start_ns;
+  t.end_ns = end_ns;
+}
+```
+
+For robotics pipelines, I want:
+
+- per-stage latency
+- queue wait time
+- dropped-frame count
+- p50 / p95 / p99 timing
+- cross-stage correlation for the same frame or control tick
+
+Without queue wait and tail latency, the system can look fine in averages while still missing real deadlines.
+
+## The Common Hidden Costs
+
+Teams underestimate the same categories over and over:
+
+### Memory Movement
+
+A “fast” inference stage can still live inside a slow pipeline if the frame bounces between CPU and GPU memory three times before the controller sees it.
+
+### Queueing
+
+A model that takes 10 ms on paper can feel like 25 ms in practice if upstream frames pile up and downstream consumers cannot keep up.
+
+### Serialization Boundaries
+
+Cross-process hops, message copies, and oversized payloads quietly destroy budgets, especially in ROS-heavy stacks that were assembled for flexibility first.
+
+### Synchronization
+
+One blocking call in the wrong thread can erase the gains from every micro-optimization below it.
+
+## Budget Violations Need a Policy
+
+Real-time-ish robotics systems need to decide what happens when a stage exceeds its budget.
+
+```python
+def on_budget_violation(frame: Frame, stage: str, latency_ms: float):
+    if stage == "inference" and latency_ms > 12:
+        return "drop_frame"
+    if stage == "transport" and latency_ms > 4:
+        return "switch_to_degraded_mode"
+    if rolling_p99("controller") > 8:
+        return "reduce_input_rate"
+    return "continue"
+```
+
+Not every frame is worth saving. In many control systems, a stale result is worse than a dropped one.
+
+That is why budget policy matters as much as the budget itself.
+
+## Optimize in the Right Order
+
+Once the measurements are real, the optimization order becomes much clearer:
+
+1. remove needless copies
+2. reduce queue depth and backpressure
+3. simplify synchronization boundaries
+4. fuse cheap preprocessing stages
+5. tune inference or kernels only after the system path is disciplined
+
+This order is less glamorous than “we accelerated the model by 18%,” but it is usually more effective.
+
+An end-to-end loop that drops 8 ms of copy and queue overhead beats a kernel-only win that ignores the rest of the pipeline.
+
+## Slack Is Not Waste
+
+Engineers sometimes build budgets that sum exactly to the deadline. That is not a budget. That is wishful thinking.
+
+You need slack for:
+
+- scheduler jitter
+- occasional I/O variance
+- thermal effects
+- interrupt noise
+- transient synchronization delays
+
+If the deadline is 50 ms, a design that budgets 50 ms exactly is already over-committed.
+
+## What Good Looks Like
+
+A healthy robotics latency discipline looks like this:
+
+- every stage has an owner
+- every stage has a numeric budget
+- the pipeline emits per-frame timing traces
+- p95 and p99 matter more than average
+- degraded behavior is defined before the first field test
+
+At that point, performance work stops being folklore and starts being systems engineering.
+
+## The Practical Rule
+
+Kernel optimization, TensorRT tuning, and model compression all matter. But they matter in the context of a pipeline that already knows what its deadline is and how that deadline is allocated.
+
+If the system does not have a budget, you are not optimizing a pipeline. You are chasing hotspots one at a time and hoping the stopwatch eventually agrees.
+
+For robotics, hope is too expensive. Budget the full loop first. Then optimize the stage that is actually breaking the contract.

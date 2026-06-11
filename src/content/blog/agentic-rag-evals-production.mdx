@@ -1,0 +1,171 @@
+---
+title: "Agentic RAG in Production: The Eval Loop Matters More Than the Demo"
+date: "2026-06-09"
+tags: ["RAG", "AI", "Multi-Agent AI", "Evaluation", "Gen AI", "Production Systems"]
+excerpt: "Most agentic RAG demos fail the moment they hit production because the system can retrieve, plan, and write, but nobody can prove when it was right, wrong, or expensive. The missing piece is an eval loop wired into the architecture from day one."
+---
+
+# Agentic RAG in Production: The Eval Loop Matters More Than the Demo
+
+Agentic RAG looks impressive in a demo because the visible behavior is flashy: the system searches, plans, calls tools, synthesizes an answer, and sounds far more capable than a plain chat bot. The hard part starts after the demo, when you need to answer operational questions like:
+
+- Did the answer cite the right evidence?
+- Was the tool sequence actually necessary?
+- Did the agent converge, or just loop until a token cap stopped it?
+- Did latency and cost stay inside budget?
+
+If you cannot answer those questions with data, you do not have a production system. You have a persuasive prototype.
+
+## The Failure Mode
+
+Most teams instrument agentic systems like APIs: request in, response out, maybe a latency histogram and a total token count. That is enough for uptime, but not enough for correctness. Agentic failures are structural:
+
+1. the retriever returns weak evidence
+2. the planner over-calls tools
+3. one tool returns partial or stale data
+4. the final answer sounds coherent anyway
+
+By the time the response reaches the user, the mistake is already compressed into one confident paragraph. Without step-level evaluation, you cannot tell whether the bug lived in retrieval, planning, tool use, ranking, or synthesis.
+
+## What To Evaluate
+
+The simplest mistake is evaluating only the final answer. Production agentic RAG needs three layers of measurement:
+
+### 1. Retrieval Quality
+
+Did the system fetch the evidence it should have fetched?
+
+```python
+def retrieval_recall(expected_ids: set[str], retrieved_ids: list[str]) -> float:
+    if not expected_ids:
+        return 1.0
+    hits = sum(1 for doc_id in retrieved_ids if doc_id in expected_ids)
+    return hits / len(expected_ids)
+```
+
+This metric is crude, but useful. If the gold evidence never showed up in the retrieved set, the model was asked to answer from the wrong pile of facts.
+
+### 2. Tool-Use Efficiency
+
+Did the agent need all the steps it took?
+
+```python
+def tool_efficiency(run: AgentRun) -> dict[str, float]:
+    successful = sum(1 for step in run.steps if step.ok)
+    useful = sum(1 for step in run.steps if step.used_in_final_answer)
+    return {
+        "success_rate": successful / max(len(run.steps), 1),
+        "useful_step_rate": useful / max(len(run.steps), 1),
+    }
+```
+
+An agent that calls eight tools to use two of them is not being thorough. It is being expensive.
+
+### 3. Grounded Answer Quality
+
+Did the final answer stay anchored to retrieved evidence?
+
+```python
+def grounded_sentence_ratio(answer: Answer) -> float:
+    grounded = sum(1 for s in answer.sentences if s.citation_ids)
+    return grounded / max(len(answer.sentences), 1)
+```
+
+You can argue about the perfect metric later. The point is to make “sounds right” unacceptable as an evaluation standard.
+
+## The Trace Is the Product
+
+In practice, the most valuable artifact is not the answer. It is the trace.
+
+Every run should persist:
+
+- the user query
+- the planner output
+- every retrieval set
+- every tool call and response
+- the final answer
+- the citations actually used
+- latency and token cost per step
+
+That turns a fuzzy AI bug into a debuggable systems problem.
+
+```json
+{
+  "query": "Summarize the latest DPU offload architecture changes",
+  "plan": ["search docs", "fetch release note", "compare prior version", "draft answer"],
+  "steps": [
+    {"tool": "search", "latency_ms": 82, "ok": true},
+    {"tool": "fetch_doc", "latency_ms": 144, "ok": true},
+    {"tool": "compare", "latency_ms": 39, "ok": true}
+  ],
+  "retrieved_ids": ["doc_128", "doc_941", "release_4_2"],
+  "final_citations": ["release_4_2", "doc_128"],
+  "cost_usd": 0.0142
+}
+```
+
+When a user reports a bad answer, this trace is what lets you ask the right next question. Did the system retrieve the wrong thing, interpret the right thing badly, or waste the budget before it got to the right evidence?
+
+## Eval Sets Need To Look Like Real Work
+
+A common anti-pattern is building evals from clean, textbook prompts. Real users do not speak like benchmarks. They ask:
+
+- ambiguous questions
+- underspecified questions
+- rushed operational questions
+- questions that mix multiple intents
+
+Production eval sets should include:
+
+- **direct factual prompts**: “what changed in version X?”
+- **synthesis prompts**: “compare the new architecture to the old one”
+- **troubleshooting prompts**: “why did this rollout fail?”
+- **ambiguous prompts**: “is this safe to ship?”
+
+The eval corpus should feel like incident review and engineering chat, not like a Kaggle dataset.
+
+## Budget Guards Are Part of Correctness
+
+Cost and latency are not secondary concerns in agentic systems. They are part of behavior.
+
+If an answer is “correct” only after 17 seconds, 11 tool calls, and 180k tokens, that answer is operationally broken.
+
+So production systems need policy:
+
+```python
+def enforce_budget(run: AgentRun) -> Decision:
+    if run.total_latency_ms > 5000:
+        return Decision(fallback="summarize_best_evidence")
+    if run.total_tool_calls > 6:
+        return Decision(stop_reason="tool_budget_exceeded")
+    if run.total_cost_usd > 0.03:
+        return Decision(stop_reason="cost_budget_exceeded")
+    return Decision(continue_run=True)
+```
+
+This is not pessimism. It is systems engineering. Budgets turn agent behavior from “keep trying” into “solve the problem within constraints.”
+
+## Human Review Should Target Drift, Not Every Answer
+
+The goal is not to put a human in the loop for every response. The goal is to put a human in the loop when the system shows signs of drift:
+
+- retrieval recall drops
+- tool count rises
+- grounded sentence ratio falls
+- latency spikes on a previously stable task class
+
+That is when you review traces, update prompts, rebalance retrievers, or adjust tool policy. The human should supervise the system’s health, not manually perform the system’s job.
+
+## The Practical Standard
+
+For production agentic RAG, I care less about whether the agent can execute a fancy multi-step plan and more about whether the team can answer these five questions every week:
+
+1. What percent of queries retrieved the right evidence?
+2. What percent of answers were fully grounded?
+3. How many tool calls were actually useful?
+4. What was the p95 latency and cost by query class?
+5. Which failures were increasing instead of random?
+
+If you can answer those, the system can improve. If you cannot, the architecture is still in demo mode.
+
+Agentic RAG does not become real when it writes a compelling answer. It becomes real when you can measure why that answer was good, why the bad ones failed, and what changed between last week and this week.
