@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { fadeIn, staggerContainer } from "@/lib/motion";
 import { profile } from "@/content/profile";
+import { heroSignals } from "@/content/hiring";
 import { Terminal } from "@/components/terminal";
 
 const roles = [
@@ -123,15 +124,31 @@ export function Hero() {
             </div>
 
             {/* Tagline */}
-            <p className="text-sm leading-relaxed text-muted-foreground max-w-md">
+            <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               {profile.tagline}
             </p>
+
+            <div className="flex flex-wrap gap-2">
+              {heroSignals.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 font-mono text-[11px] text-accent"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
 
             {/* CTA buttons */}
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm" className="font-mono text-xs bg-accent text-background hover:bg-accent-dim">
                 <a href="#dashboard">
-                  View Dashboard
+                  View Hiring Story
+                </a>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="font-mono text-xs">
+                <a href="#proud-work">
+                  Work I&apos;m Proud Of
                 </a>
               </Button>
               <Button asChild variant="outline" size="sm" className="font-mono text-xs">
@@ -201,7 +218,7 @@ export function Hero() {
                     Best fit
                   </p>
                   <p className="mt-1 text-sm text-foreground">
-                    {profile.focusAreas[0]}, {profile.focusAreas[1]}, and shipping production systems.
+                    Embedded Linux, edge AI, robotics, and networking systems with direct production ownership.
                   </p>
                 </div>
                 <div>
@@ -215,7 +232,7 @@ export function Hero() {
                     Open to
                   </p>
                   <p className="mt-1 text-sm text-foreground">
-                    {profile.openTo.slice(0, 2).join(" • ")}
+                    Systems roles • Robotics / Physical AI • Edge AI / inference
                   </p>
                 </div>
                 <div>
@@ -223,7 +240,7 @@ export function Hero() {
                     Hire signal
                   </p>
                   <p className="mt-1 text-sm text-foreground">
-                    End-to-end owner, strong systems bias, comfortable at the edge of hardware and AI.
+                    End-to-end owner with a systems-first bias: observability, rollback paths, latency discipline, and real deployment constraints.
                   </p>
                 </div>
               </div>

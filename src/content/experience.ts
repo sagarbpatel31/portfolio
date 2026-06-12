@@ -7,14 +7,14 @@ export const experiences: Experience[] = [
     period: "May 2024 – Present",
     location: "Remote, USA",
     description:
-      "Engineering embedded Linux networking firmware for logistics edge gateways and deploying edge AI inference on NVIDIA Jetson Orin.",
+      "Own embedded Linux networking firmware and edge AI infrastructure for logistics gateways where throughput, recovery behavior, and deployment reliability directly affect warehouse operations.",
     highlights: [
-      "Engineered embedded Linux networking firmware for logistics edge gateways, optimizing packet processing pipelines, DMA transfer paths, and interrupt handling to improve sustained throughput by 31% during peak fulfillment operations",
-      "Led development of the embedded Linux platform using Yocto, performing BSP upgrades, secure boot integration, CI validation, and release management, reducing hardware bring-up and deployment timelines by 24%",
-      "Implemented system reliability mechanisms including watchdog recovery, failover handling, and deterministic latency validation under varying power, thermal, and network conditions",
-      "Developed edge AI inference pipelines on NVIDIA Jetson Orin using CUDA and TensorRT to detect conveyor and sorter anomalies in real time, reducing unplanned operational downtime by 22%",
-      "Built DeepStream-based video and telemetry pipelines integrating multi-sensor data streams, improving fault localization accuracy by 27% during high-throughput warehouse processing",
-      "Conducted GPU and system-level profiling using NVIDIA Nsight Systems to analyze memory bandwidth and kernel execution, optimizing AI inference pipelines and networking tasks for deterministic latency",
+      "Improved sustained gateway throughput by 31% during peak fulfillment windows by reworking packet-processing paths, DMA movement, and interrupt behavior in embedded Linux networking firmware",
+      "Owned Yocto platform work across BSP upgrades, secure boot, CI validation, and release readiness, cutting hardware bring-up and deployment timelines by 24%",
+      "Added watchdog recovery, failover handling, and deterministic latency validation so the platform stayed predictable under power, thermal, and network stress",
+      "Built Jetson Orin inference pipelines with CUDA and TensorRT for conveyor and sorter anomaly detection, reducing unplanned operational downtime by 22%",
+      "Integrated DeepStream video and telemetry flows across multiple sensors, improving fault-localization accuracy by 27% in high-throughput warehouse environments",
+      "Used Nsight Systems and system-level profiling to turn GPU and networking work into a measurable latency budget rather than a best-effort pipeline",
     ],
     tags: [
       "Embedded Linux",
@@ -33,13 +33,13 @@ export const experiences: Experience[] = [
     period: "Jan 2023 – Apr 2024",
     location: "Austin, TX",
     description:
-      "Built switching firmware with P4-programmable data-plane pipelines and AI-assisted traffic intelligence on NVIDIA BlueField DPUs.",
+      "Built switching and telemetry systems across the host, data plane, and DPU boundary, with a focus on carrier-grade stability, policy isolation, and traffic intelligence.",
     highlights: [
-      "Engineered switching firmware integrating P4-programmable data-plane pipelines with switching ASIC SDKs, improving forwarding stability and reducing packet loss by 31% during large-scale network validation",
-      "Developed embedded Linux platform components using Yocto, including secure boot configuration, telemetry drivers, and CI pipelines, accelerating multi-router platform readiness by 21% for carrier certification",
-      "Implemented AI-assisted traffic intelligence using NVIDIA BlueField DPUs, integrating DOCA pipelines and ONNX inference models to improve encrypted anomaly classification accuracy by 24%",
-      "Integrated real-time inference with streaming gRPC telemetry pipelines, enabling predictive congestion detection and reducing root-cause analysis time by 34% across distributed carrier networks",
-      "Optimized DPU offload scheduling and inference workloads through DOCA profiling tools, reducing host CPU utilization by 29% while maintaining stable throughput under peak traffic conditions",
+      "Improved forwarding stability and reduced packet loss by 31% in large-scale validation by integrating P4-programmable pipelines with switching ASIC SDK behavior more cleanly",
+      "Shipped Yocto-based platform components spanning secure boot, telemetry drivers, and CI flows, moving multi-router readiness forward by 21% for carrier certification",
+      "Built AI-assisted traffic intelligence on BlueField DPUs with DOCA pipelines and ONNX models, improving encrypted anomaly classification accuracy by 24%",
+      "Connected real-time inference to streaming gRPC telemetry so congestion issues surfaced earlier, cutting root-cause time by 34% across distributed carrier networks",
+      "Reduced host CPU utilization by 29% through better DPU offload scheduling and profiling-driven workload placement while maintaining stable throughput under peak traffic",
     ],
     tags: [
       "P4",
@@ -58,13 +58,13 @@ export const experiences: Experience[] = [
     period: "Jul 2020 – Aug 2021",
     location: "Remote, India",
     description:
-      "Developed bare-metal RTOS firmware and embedded Linux systems for ARM-based telecom edge nodes in carrier-grade networking environments.",
+      "Worked close to the hardware on telecom edge nodes, building firmware, drivers, and secure deployment paths for carrier-grade ARM systems.",
     highlights: [
-      "Developed bare-metal RTOS firmware for ARM-based telecom edge nodes, implementing multicast packet replication and QoS traffic shaping to boost reliable delivery rates by 28% under bursty carrier loads",
-      "Wrote custom kernel modules and device drivers for high-speed Ethernet interfaces, enabling efficient memory management and DMA engines that cut packet jitter by 35% in distributed network deployments",
-      "Integrated bootloader development with firmware authentication and MISRA-C compliant coding, streamlining secure deployment across multi-vendor platforms and advancing field rollout by 18 days",
-      "Optimized Layer 2/3 networking stacks with fault injection testing and JTAG debugging, enhancing protocol stability and reducing error rates by 26% during stress-tested edge scenarios",
-      "Configured embedded Linux using Buildroot and device tree overlays for real-time IPC mechanisms, improving cross-process coordination and cutting synchronization overhead by 32% in carrier-grade environments",
+      "Improved reliable delivery by 28% under bursty carrier traffic by implementing multicast replication and QoS shaping in bare-metal RTOS firmware",
+      "Cut packet jitter by 35% by writing kernel modules and Ethernet drivers that used memory and DMA paths more efficiently on ARM-based edge hardware",
+      "Moved secure field rollout forward by 18 days by tying bootloader work, firmware authentication, and MISRA-C discipline into the deployment path",
+      "Reduced protocol error rates by 26% through Layer 2/3 stack tuning, fault injection, and JTAG-driven debugging on stress-tested network scenarios",
+      "Lowered cross-process synchronization overhead by 32% using Buildroot-based Linux configuration and device-tree-backed real-time IPC paths",
     ],
     tags: [
       "RTOS",

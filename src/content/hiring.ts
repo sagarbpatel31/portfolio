@@ -16,6 +16,62 @@ export const selectedImpact = [
   },
 ];
 
+export const heroSignals = [
+  "4+ years shipping production systems",
+  "Embedded Linux + CUDA + DPDK + ROS2",
+  "Open to systems, robotics, and edge AI roles",
+];
+
+export const specializationSignals = [
+  "Embedded Linux & BSP",
+  "Edge AI inference",
+  "Robotics pipelines",
+  "Networking / DPU / DPDK",
+  "Forward-deployed systems",
+];
+
+export const proudWork = [
+  {
+    title: "Shipped under hard operational constraints",
+    label: "field systems",
+    description:
+      "Built systems that had to survive offline updates, hardware variability, noisy telemetry, and failure modes where truck rolls were the backup plan.",
+    proof: "Offline OTA, watchdog recovery, deterministic latency validation, and edge observability workflows.",
+  },
+  {
+    title: "Built end-to-end instead of handing off halfway",
+    label: "ownership",
+    description:
+      "The strongest work spans architecture, implementation, validation, profiling, and the tooling needed to keep it reliable after first release.",
+    proof: "From BSP and firmware layers to inference pipelines, replay tooling, dashboards, and deployment-safe release paths.",
+  },
+  {
+    title: "Production systems, not prompt demos",
+    label: "systems bias",
+    description:
+      "AI work is framed as a systems problem: retrieval quality, latency budgets, observability, rollout safety, and measurable behavior under load.",
+    proof: "RAG evaluation loops, edge inference tuning, DPU traffic intelligence, and incident-intelligence tooling for robotics teams.",
+  },
+];
+
+export const engineeringPrinciples = [
+  {
+    title: "Systems first",
+    description:
+      "I care about architectures that stay observable, recoverable, and fast under real-world constraints, not just benchmark-friendly prototypes.",
+  },
+  {
+    title: "Ownership over handoffs",
+    description:
+      "The best work usually happens when one engineer can follow the problem from vague requirement to shipped behavior and debugging evidence.",
+  },
+  {
+    title: "Proof over claims",
+    description:
+      "I trust traces, latency budgets, rollback paths, and quantified outcomes more than polished demos or generic AI language.",
+  },
+];
+
 export const stackMap = [
   {
     domain: "Embedded",

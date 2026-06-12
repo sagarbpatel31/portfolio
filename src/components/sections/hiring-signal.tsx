@@ -101,7 +101,7 @@ export function HiringSignal() {
                     Best fit
                   </p>
                   <p className="mt-1 text-sm leading-relaxed text-foreground">
-                    Physical AI, Forward Deployed, Embedded Software, and Gen AI systems roles.
+                    Systems-heavy roles in physical AI, robotics, edge inference, forward-deployed engineering, and embedded software.
                   </p>
                 </div>
                 <div>
@@ -182,7 +182,7 @@ export function HiringSignal() {
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
                       Proof
                     </p>
-                    <p className="mt-1 text-sm text-foreground">Production shipping + hackathon wins</p>
+                    <p className="mt-1 text-sm text-foreground">Production shipping, systems depth, and measurable reliability / performance wins</p>
                   </div>
                   <div className="rounded-lg border border-border bg-surface/50 p-4">
                     <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
