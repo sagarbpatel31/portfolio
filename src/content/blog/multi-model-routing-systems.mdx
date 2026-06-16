@@ -1,0 +1,180 @@
+---
+title: "Multi-Model Routing for AI Systems: Use the Cheapest Model That Can Defend the Answer"
+date: "2026-06-12"
+tags: ["AI", "Gen AI", "Routing", "Production Systems", "Evaluation", "Multi-Agent AI"]
+excerpt: "A lot of AI products overspend because every task gets sent to the strongest model by default. In production, the better approach is routing: use the cheapest model that can complete the subtask correctly, and escalate only when the evidence or difficulty requires it."
+---
+
+# Multi-Model Routing for AI Systems: Use the Cheapest Model That Can Defend the Answer
+
+A common production anti-pattern is simple: every request goes to the biggest model because nobody wants to risk a worse answer. It feels safe, but it is usually lazy architecture.
+
+The better question is:
+
+**What is the weakest model that can still complete this subtask correctly and defend the result?**
+
+That framing changes AI systems from “call the expensive model and hope” into a routing problem.
+
+## Not Every Step Deserves the Same Model
+
+A production AI workflow usually contains steps with very different cognitive demands:
+
+- classification
+- extraction
+- retrieval planning
+- summarization
+- synthesis
+- critique or verification
+
+Treating those steps as equal is wasteful.
+
+You do not need your most expensive model to:
+
+- clean metadata
+- classify a document type
+- extract timestamps or issue IDs
+- decide whether a request belongs to one of a few known buckets
+
+But you might need a stronger model to:
+
+- synthesize conflicting evidence
+- write a nuanced final answer
+- plan through ambiguous tool decisions
+- critique whether the result is actually supported
+
+## Routing Should Follow Task Risk
+
+The routing problem gets much easier when you score each step by risk:
+
+```python
+def choose_model(task: str, ambiguity: float, blast_radius: str) -> str:
+    if blast_radius == "high":
+        return "strong"
+    if task in {"classification", "extraction"} and ambiguity < 0.3:
+        return "small"
+    if task in {"summary", "rewrite"} and ambiguity < 0.5:
+        return "medium"
+    return "strong"
+```
+
+This is intentionally operational, not academic.
+
+The key inputs are:
+
+- **task type**: what kind of reasoning is required
+- **ambiguity**: how uncertain or under-specified the input is
+- **blast radius**: how bad the result is if the answer is wrong
+
+That is enough to build a useful first router.
+
+## Strong Models Should Be the Escalation Path
+
+Many teams start by asking the strongest model for everything, then try to optimize cost later. In practice, you get cleaner systems if you invert it:
+
+1. start with a cheaper model for bounded work
+2. evaluate whether confidence is sufficient
+3. escalate only if uncertainty stays high
+
+```python
+def route_with_escalation(prompt: str) -> str:
+    answer = small_model(prompt)
+    if confidence(answer) > 0.85 and is_grounded(answer):
+        return answer
+
+    revised = medium_model(prompt)
+    if confidence(revised) > 0.9 and is_grounded(revised):
+        return revised
+
+    return strong_model(prompt)
+```
+
+This is not just cost optimization. It creates a more legible system. You learn which tasks actually require the strong model instead of assuming all of them do.
+
+## Verification Changes the Economics
+
+Routing gets better when one model can verify another cheaply.
+
+Examples:
+
+- small model extracts fields
+- medium model checks schema consistency
+- strong model is called only if the check fails or ambiguity stays high
+
+Or:
+
+- medium model drafts a response
+- small verifier checks citation coverage and formatting
+- strong model only handles unsupported or conflicting cases
+
+This is why I like the phrase “defend the answer.” The job is not just to produce text. The job is to produce text that survives cheap verification.
+
+## The Router Needs Ground Truth, Not Vibes
+
+Routing policies go bad when they are tuned from intuition alone. You need eval data:
+
+- which task classes fail on the small model
+- which tasks escalate unnecessarily
+- where the strong model meaningfully improves outcomes
+- what the latency and cost differences actually are
+
+```json
+{
+  "task_class": "doc_extraction",
+  "small_success_rate": 0.94,
+  "medium_success_rate": 0.97,
+  "strong_success_rate": 0.98,
+  "small_cost": 0.001,
+  "medium_cost": 0.006,
+  "strong_cost": 0.028
+}
+```
+
+If the strong model buys only marginal accuracy for a narrow extraction task, routing it there by default is just budget leakage.
+
+## Escalation Criteria Should Be Visible
+
+One of the easiest ways to make routing trustworthy is to surface why escalation happened:
+
+- low confidence
+- conflicting retrieved evidence
+- too many unresolved entities
+- schema validation failure
+- unsupported claim density
+
+That makes debugging much easier. If a task always escalates, the issue may be the prompt, the retriever, or the task decomposition rather than the model tier itself.
+
+## Where Routing Usually Pays Off
+
+The biggest wins are often in:
+
+- document extraction pipelines
+- support and ticket classification
+- multi-step RAG systems
+- report generation where only the final synthesis is truly hard
+- agentic workflows with many cheap intermediary decisions
+
+The common pattern is that most of the pipeline is repetitive, while only a small fraction needs the strongest model’s reasoning.
+
+## The Real Goal
+
+Multi-model routing is not about bragging that you reduced cost by some percent. That is a side effect.
+
+The real goal is architectural discipline:
+
+- the easy tasks stay cheap
+- the hard tasks get the right model
+- verification catches overconfidence
+- escalation is explicit
+- the system can explain why a more expensive path was used
+
+That is how you keep AI products both credible and economically sane.
+
+## A Useful Default Rule
+
+If I had to reduce the whole idea to one rule, it would be:
+
+**Use the cheapest model that can complete the step correctly and defend the result under lightweight verification.**
+
+Everything beyond that is refinement.
+
+Production AI systems improve when they stop treating model choice as branding and start treating it as workload placement.

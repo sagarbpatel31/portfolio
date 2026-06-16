@@ -1,0 +1,195 @@
+---
+title: "Robotics Observability Without the Cloud: What to Capture on the Device"
+date: "2026-06-14"
+tags: ["Robotics", "Observability", "ROS2", "Edge AI", "Operations", "Systems"]
+excerpt: "Robotics systems often operate in places where cloud-native observability assumptions break down. If you want useful debugging in the field, the device itself has to preserve the traces, summaries, and replayable context that matter before anyone asks for them."
+---
+
+# Robotics Observability Without the Cloud: What to Capture on the Device
+
+Modern software teams are used to the cloud observability pattern: metrics flow centrally, traces are queryable later, logs can be searched forever, and dashboards are always one tab away. Robotics systems do not always get that luxury.
+
+A robot in a warehouse, a lab, a farm, or a customer environment might have:
+
+- weak connectivity
+- partial local storage
+- multiple processes with different clocks
+- sensor streams too large to persist continuously
+- failures that are expensive to reproduce
+
+That changes the observability problem. The goal is not “collect everything.” The goal is to collect **the right evidence before the moment is gone**.
+
+## Debugging Starts Before the Incident
+
+The biggest robotics observability mistake is treating debugging as something you do after the failure. In practice, the system needs to decide ahead of time what evidence is worth preserving.
+
+You cannot retroactively recover:
+
+- the exact sensor ordering before a crash
+- the queue depths leading into a missed control tick
+- the model version and thresholds active at the time
+- the previous N seconds of state that explain why the failure happened
+
+If the device did not save it, it does not exist anymore.
+
+## Capture the Layers, Not Just the Logs
+
+A robotics incident usually spans multiple layers:
+
+1. hardware / sensors
+2. middleware / transport
+3. perception
+4. planning / control
+5. operator interaction
+
+So the evidence model should be layered too.
+
+### Hardware and Sensor Health
+
+At minimum:
+
+- sensor heartbeat status
+- drop counts
+- synchronization skew
+- device temperature / power state
+- camera or LiDAR disconnect markers
+
+### Middleware and Runtime
+
+For ROS2 or similar stacks:
+
+- topic latency summaries
+- queue depth snapshots
+- callback execution timing
+- process restarts and crash loops
+- CPU / GPU / memory pressure
+
+### Perception and Policy
+
+You need enough context to know what the system believed:
+
+- active model version
+- inference latency distribution
+- confidence summaries
+- notable classifications or detections
+- fallback mode if one was engaged
+
+## Ring Buffers Beat Constant Full Capture
+
+Continuous full-fidelity recording is usually too expensive. The practical pattern is a rolling buffer that promotes the recent window when a trigger fires.
+
+```python
+class RingBuffer:
+    def __init__(self, seconds: int):
+        self.seconds = seconds
+        self.frames = []
+
+    def append(self, frame):
+        self.frames.append(frame)
+        self.frames = self.frames[-self.seconds:]
+
+    def snapshot(self):
+        return list(self.frames)
+```
+
+You keep the last 30 to 120 seconds of the right signals:
+
+- control loop timing
+- top-level state transitions
+- selected sensor summaries
+- critical operator events
+
+When a trigger happens, the system freezes and persists that window.
+
+## Trigger Conditions Should Be Operational, Not Academic
+
+The best trigger logic usually does not sound fancy. It sounds practical:
+
+```python
+def should_capture_incident(signal: RuntimeSignal) -> bool:
+    return any([
+        signal.control_deadline_miss,
+        signal.process_restart,
+        signal.sensor_drop_rate > 0.15,
+        signal.inference_p99_ms > signal.inference_budget_ms,
+        signal.operator_pressed_emergency_stop,
+    ])
+```
+
+These conditions are meaningful because they correspond to real operational boundaries. They mark the moments where the system’s story changed.
+
+## Timestamps Need One Reality
+
+Robotics debugging gets messy fast when every process logs in its own time domain. If you cannot align events, the trace becomes narrative fiction.
+
+The device needs a consistent timestamp strategy:
+
+- monotonic clock for interval reasoning
+- wall-clock timestamp for human correlation
+- frame / tick IDs for cross-process alignment
+
+This is especially important when comparing:
+
+- sensor arrival
+- inference completion
+- controller output
+- actuation dispatch
+
+One bad timestamp model can make healthy components look guilty and guilty ones look invisible.
+
+## Summaries Matter More Than Raw Volume
+
+Raw logs are not enough. The device should emit compact summaries that survive even when storage is tight:
+
+```json
+{
+  "incident_id": "inc_2041",
+  "robot_state": "navigation_degraded",
+  "control_deadline_misses": 14,
+  "camera_drop_rate": 0.11,
+  "inference_p99_ms": 37.8,
+  "active_model": "nav-perception-v7",
+  "trigger": "deadline_miss"
+}
+```
+
+The raw artifacts help deep debugging. The summaries help triage and indexing. Both matter.
+
+## Replayability Is the Gold Standard
+
+If the evidence bundle lets another engineer replay the scenario, the observability system is doing real work.
+
+Replayability might include:
+
+- selected sensor windows
+- configuration snapshot
+- model version and runtime metadata
+- controller inputs and outputs
+- timeline of state transitions
+
+This is why I care about “portable incident bundles” instead of generic logs. A replayable artifact shortens the path from “something weird happened” to “here is what the system saw.”
+
+## What the Device Should Always Know
+
+At any moment, a fielded robotics system should be able to answer:
+
+1. What mode am I in?
+2. What version am I running?
+3. What is unhealthy right now?
+4. What happened just before that?
+5. What evidence can I preserve before restarting?
+
+If the device cannot answer those questions locally, the observability model is still too dependent on infrastructure the robot may not have.
+
+## The Practical Rule
+
+Robotics observability without the cloud is not about collecting less. It is about collecting with intent.
+
+Capture:
+
+- the right layers
+- the right window
+- the right summaries
+- the right trigger conditions
+
+Do that well and the device becomes its own first incident responder. That is the standard worth designing for.
