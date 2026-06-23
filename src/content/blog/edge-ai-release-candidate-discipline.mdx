@@ -1,0 +1,182 @@
+---
+title: "Edge AI Release Candidate Discipline: What to Prove Before a Field Rollout"
+date: "2026-06-22"
+tags: ["Edge AI", "Release Engineering", "Embedded Linux", "Reliability", "Production Systems", "MLOps"]
+excerpt: "A model that looks ready in the lab is not automatically ready for the field. For edge AI, a release candidate needs proof across rollback behavior, hardware variance, latency budgets, and evidence capture before it deserves deployment."
+---
+
+# Edge AI Release Candidate Discipline: What to Prove Before a Field Rollout
+
+There is a predictable moment in almost every edge AI program where a team says some version of: “the model looks good, let’s ship it to devices.” That is the right instinct for momentum and the wrong standard for a release.
+
+A field rollout is not an accuracy milestone. It is an operational claim.
+
+When you promote a release candidate to field hardware, you are asserting at least four things:
+
+1. the software behaves correctly on real devices, not just lab hardware
+2. the system can explain itself when it fails
+3. the release can recover from bad states without heroics
+4. the operational cost of support stays acceptable
+
+If you cannot defend those claims, you do not have a release candidate yet.
+
+## Model Readiness Is Only One Slice
+
+Teams often reduce release readiness to a handful of model-side questions:
+
+- did the validation score improve?
+- is the quantized model stable?
+- is inference faster than before?
+
+Those matter, but they are not enough. A fieldable edge AI release is a combination of:
+
+- model artifact
+- runtime stack
+- device image
+- configuration
+- telemetry and observability behavior
+- rollback policy
+
+If any of those are weak, the release is weak.
+
+## The Minimum Proof Set
+
+For edge systems, I want a release candidate to clear a small but strict proof set.
+
+### 1. Hardware Variance
+
+The release has to run on the actual device classes it targets, not just a single well-behaved validation unit.
+
+That means verifying:
+
+- accelerator initialization behavior
+- thermal performance over time
+- sensor enumeration and startup order
+- storage and filesystem assumptions
+- degraded behavior under reduced power or unstable peripherals
+
+Lab confidence is often just confidence in one happy path.
+
+### 2. Latency Budget Compliance
+
+The release must fit inside the end-to-end timing contract.
+
+```python
+def release_budget_ok(signal: dict) -> bool:
+    return all([
+        signal["inference_p95_ms"] <= 18,
+        signal["pipeline_p95_ms"] <= 45,
+        signal["control_deadline_miss_rate"] < 0.01,
+    ])
+```
+
+A faster model is not a win if the full pipeline still misses deadlines because transport, queueing, or postprocessing drifted upward.
+
+### 3. Recovery Behavior
+
+You need to see how the release behaves when it is not healthy.
+
+I want explicit tests for:
+
+- process restart after crash
+- degraded mode activation
+- stale sensor input
+- loss of one non-critical dependency
+- rollback after failed health checks
+
+If the first real rollback happens in production, the team is learning too late.
+
+### 4. Evidence Capture
+
+When the release misbehaves, it should leave behind enough structured context to debug the incident later:
+
+- version and config
+- recent latency summaries
+- sensor health
+- last recovery action
+- incident trigger
+
+If a release fails but cannot explain how, the support burden compounds immediately.
+
+## Release Candidates Need Promotion Rules
+
+One useful discipline is to treat release promotion like a state machine rather than a human mood.
+
+```python
+class CandidateState:
+    LAB_VALIDATED = "lab_validated"
+    STAGING_VALIDATED = "staging_validated"
+    FIELD_CANARY = "field_canary"
+    BROAD_ROLLOUT = "broad_rollout"
+    REJECTED = "rejected"
+```
+
+Promotion should require evidence, not optimism.
+
+For example:
+
+- `LAB_VALIDATED` only if accuracy and pipeline budgets pass
+- `STAGING_VALIDATED` only if hardware variance and restart tests pass
+- `FIELD_CANARY` only if rollback and observability checks pass
+- `BROAD_ROLLOUT` only if canary incidents stay within tolerance
+
+This reduces the chance that a release gets advanced because everyone is tired and wants it done.
+
+## Canary Scope Should Be Operationally Meaningful
+
+Field canaries are often too small or too clean to teach anything.
+
+If the canary set does not include:
+
+- a few noisy devices
+- realistic usage windows
+- at least some connectivity and thermal messiness
+- support paths that resemble reality
+
+then the canary is mostly theater.
+
+The goal is not to “avoid risk entirely.” The goal is to take a bounded amount of risk in a way that teaches you something.
+
+## The Wrong Metric: “No One Complained”
+
+Silence after rollout is not necessarily success. It may just mean:
+
+- the issue is intermittent
+- operators worked around it manually
+- the device lacks enough telemetry to reveal the degradation
+- the failure hasn’t been triggered yet
+
+Better rollout signals include:
+
+- p95 / p99 latency remaining inside budget
+- degraded-mode entry rate staying within expectations
+- rollback rate near zero
+- incident bundle completeness staying high
+- device support load not rising after rollout
+
+Those metrics tell you whether the release is actually stable rather than merely quiet.
+
+## What I Want in the Release Review
+
+A strong release review for edge AI is short and direct:
+
+1. What changed?
+2. What device classes were exercised?
+3. What failure modes were tested?
+4. What recovery behavior was verified?
+5. What evidence will exist if the canary goes wrong?
+
+That review should sound more like systems engineering than model marketing.
+
+## The Practical Standard
+
+For edge AI, a release candidate earns trust when it proves:
+
+- the happy path works
+- the unhappy path is bounded
+- the rollback path is credible
+- the device can explain the incident later
+
+Accuracy, throughput, and quantization wins matter. They just matter inside a release process that treats field behavior as the real benchmark.
+
+The system deserves rollout only after the recovery story is as real as the model story.

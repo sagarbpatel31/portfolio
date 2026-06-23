@@ -1,0 +1,175 @@
+---
+title: "Robotics Integration Checklists: The Boring Discipline That Prevents Expensive Failures"
+date: "2026-06-20"
+tags: ["Robotics", "Systems", "Integration", "Reliability", "ROS2", "Operations"]
+excerpt: "Many robotics failures are not novel research problems. They are integration mistakes repeated under deadline pressure. A good checklist does not replace engineering judgment, but it stops teams from rediscovering the same avoidable failures during deployment."
+---
+
+# Robotics Integration Checklists: The Boring Discipline That Prevents Expensive Failures
+
+Robotics culture often celebrates the hard problems: perception, control, simulation, reinforcement learning, teleoperation, planning. Those deserve the attention they get. But a surprising amount of real-world pain comes from much less glamorous sources:
+
+- a topic name changed and nobody updated the subscriber
+- timestamps drifted and downstream logic silently degraded
+- the launch order changed and one node came up without its dependency
+- the model version advanced but calibration assumptions did not
+- the operator path differed from the test harness in one subtle way
+
+These are not deep scientific failures. They are integration failures.
+
+The fix is rarely more intelligence. It is usually better discipline.
+
+## Checklists Sound Unsophisticated Because They Work
+
+Engineering teams sometimes resist checklists because they sound procedural or bureaucratic. In practice, checklists are what let good teams keep their attention available for genuinely hard problems.
+
+A checklist is not a substitute for systems understanding. It is a way to avoid wasting systems understanding on the same preventable mistakes every week.
+
+For robotics, the integration surface is wide enough that memory alone is not a safe strategy.
+
+## What the Checklist Should Cover
+
+A useful robotics integration checklist should follow the actual chain of failure.
+
+### 1. Startup Assumptions
+
+Before behavior matters, the process graph has to come up cleanly.
+
+Check:
+
+- node startup order
+- dependency availability
+- sensor enumeration
+- parameter loading
+- health topic visibility
+
+If startup is inconsistent, every later measurement is suspect.
+
+### 2. Time and Synchronization
+
+One of the fastest ways to destroy confidence in a robotics system is to ignore time coherence.
+
+Check:
+
+- monotonic timestamp alignment
+- frame IDs and coordinate assumptions
+- sync tolerance between sensor streams
+- queue depth and buffering behavior
+
+The system can look functional while already violating the assumptions that make downstream reasoning valid.
+
+### 3. Model and Runtime Pairing
+
+For any AI-heavy robotics workflow, confirm:
+
+- model artifact version
+- inference runtime version
+- preprocessing assumptions
+- calibration files
+- confidence thresholds
+
+People often treat the model as the release unit. It rarely is.
+
+### 4. Operator and Safety Path
+
+The operator interface and safety controls should be part of the integration check, not postscript concerns.
+
+Check:
+
+- emergency stop path
+- degraded-mode signaling
+- UI or command path consistency
+- behavior after manual interruption
+
+The question is not only “can the robot act?” It is also “can a human interrupt, understand, and recover it cleanly?”
+
+## Use Checklists to Force Explicit Ownership
+
+A checklist becomes much more useful when items have owners instead of vague team responsibility.
+
+```yaml
+integration_check:
+  startup_graph: platform
+  sensor_sync: perception
+  control_deadline: robotics
+  inference_config: ai
+  operator_safety_path: systems
+```
+
+This matters because integration failures often live between teams. If no one owns the exact boundary, the boundary becomes where incidents hide.
+
+## The Best Checklist Items Are Observable
+
+Avoid checklist items like:
+
+- “system looks stable”
+- “robot seems fine”
+- “AI behavior acceptable”
+
+Prefer items that can be checked directly:
+
+- topic publish rate within range
+- control loop p95 below threshold
+- active model hash matches release manifest
+- emergency stop observed end-to-end
+- fallback mode emits explicit state transition
+
+The more measurable the item, the less likely the team is to confuse optimism for evidence.
+
+## Checklists Should Survive Incidents
+
+One of the best uses of an incident review is updating the checklist so the same mistake becomes harder to repeat.
+
+If a bug escapes because:
+
+- a config mismatch went unnoticed
+- a timing assumption was never verified
+- a launch dependency was implicit
+
+then the checklist should change.
+
+That feedback loop is what makes the list more than paperwork. It turns the checklist into a memory of operational pain.
+
+## Where Teams Usually Go Wrong
+
+There are three predictable failure modes:
+
+### 1. The List Is Too Generic
+
+If every item could apply equally well to a web app and a robot, the checklist is not specific enough to protect the system.
+
+### 2. The List Is Too Long
+
+A 200-line ritual nobody actually completes is worse than a 20-line list that people trust and use.
+
+### 3. The List Has No Trigger Point
+
+The team should know exactly when it is used:
+
+- before demo day
+- before field deployment
+- before changing model/runtime pairings
+- after major launch graph changes
+
+If the trigger is ambiguous, the checklist becomes optional by default.
+
+## A Good Default Structure
+
+For most robotics stacks, I like a compact pre-deployment structure:
+
+1. startup graph healthy
+2. clocks and frames aligned
+3. sensor and queue health within bounds
+4. model/runtime/config tuple verified
+5. operator interrupt and fallback path verified
+6. incident bundle path confirmed
+
+That catches a large percentage of painful failures without turning deployment into ceremony.
+
+## The Practical Point
+
+The most expensive robotics failures are often not exotic. They are avoidable mismatches that nobody noticed because everyone was focused on something more intellectually interesting.
+
+Checklists help by protecting attention. They let the team spend its scarce concentration on real system behavior instead of repeated preventable integration errors.
+
+That is not glamorous work. It is also the kind of work that keeps robots from embarrassing you in front of customers.
