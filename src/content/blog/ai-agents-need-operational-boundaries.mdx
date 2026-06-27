@@ -1,0 +1,122 @@
+---
+title: "AI Agents Need Operational Boundaries, Not Just Better Prompts"
+date: "2026-06-27"
+tags: ["AI", "Agents", "Production Systems", "Reliability", "Evaluation", "Gen AI"]
+excerpt: "A lot of agent systems fail for the same reason distributed systems fail: they have unclear boundaries, weak supervision, and no disciplined fallback path. Better prompts help, but operational boundaries matter more."
+---
+
+# AI Agents Need Operational Boundaries, Not Just Better Prompts
+
+When an agent workflow behaves badly, the first instinct is usually prompt surgery. Tweak the system prompt, add more instructions, restate the output contract, maybe add a few examples. Sometimes that helps. Often it only delays the real question:
+
+**What is this agent actually allowed to do, and what happens when it starts doing the wrong thing?**
+
+That is not a prompt question. That is an operational boundary question.
+
+## The Core Failure Mode
+
+Many agent systems are assembled as if reasoning quality alone will create reliability. But real failures are usually structural:
+
+- the agent is allowed to keep exploring long after the marginal value has gone to zero
+- the tool set is too broad for the task class
+- the success condition is vague
+- the fallback path is nonexistent
+- one weak intermediate step contaminates the whole run
+
+The result is a system that looks intelligent during the happy path and expensive during everything else.
+
+## Boundaries Create Legibility
+
+An agent becomes easier to trust when its operating surface is small enough to explain:
+
+1. what tools it can call
+2. what budget it can spend
+3. what output shape it is expected to produce
+4. what triggers escalation or fallback
+
+Without those boundaries, debugging becomes literary criticism instead of engineering.
+
+## A Good Agent Contract Is Narrow
+
+I prefer agent contracts that feel more like service definitions than like open-ended instructions.
+
+```python
+class AgentPolicy:
+    max_tool_calls = 5
+    max_latency_ms = 4500
+    max_cost_usd = 0.03
+    allowed_tools = ["search_docs", "fetch_doc", "summarize"]
+    fallback = "return_best_grounded_summary"
+```
+
+This does not make the agent less capable. It makes the system more governable.
+
+## Boundaries Beat Heroics
+
+The easiest way to waste tokens is to let the agent keep trying because “maybe one more step will solve it.” In practice, strong systems are willing to stop.
+
+Examples:
+
+- if retrieval confidence stays low after two attempts, stop and say evidence is insufficient
+- if the cost budget is exhausted, return the best supported partial answer
+- if the tool sequence is looping, terminate and surface the loop reason
+
+Stopping early is often better than improvising late.
+
+## Tool Scope Should Match Task Scope
+
+One major anti-pattern is giving every agent every tool. That feels flexible, but it destroys controllability.
+
+If the job is “summarize the latest architecture changes,” the tool set should not look like:
+
+- web search
+- code execution
+- repo mutation
+- spreadsheet export
+- browser automation
+
+That is too much surface area for too little task definition.
+
+A narrow task deserves a narrow tool belt.
+
+## Supervisors Need Signals, Not Vibes
+
+The supervising layer should not evaluate the run by asking “did the answer seem useful?” It should evaluate:
+
+- groundedness
+- tool efficiency
+- loop rate
+- escalation frequency
+- latency and cost by task class
+
+```python
+def should_escalate(run):
+    return any([
+        run.grounded_sentence_ratio < 0.8,
+        run.tool_calls > 5,
+        run.loop_detected,
+        run.total_latency_ms > 4500,
+    ])
+```
+
+These are the signals that turn supervision into operations instead of taste.
+
+## Fallback Is Part of the Design
+
+Agent systems often pretend that fallback is failure. It is not. Fallback is how the system remains useful when the full workflow is not justified.
+
+Good fallback patterns include:
+
+- return a grounded summary instead of a synthesized recommendation
+- return the top evidence with caveats instead of continuing to speculate
+- hand the task to a stronger model only after bounded attempts fail
+
+The point is to preserve value while reducing chaos.
+
+## The Practical Rule
+
+If an agent is important enough to run in production, it is important enough to constrain.
+
+Prompts matter. Model quality matters. But operational boundaries are what keep the system from drifting into expensive, hard-to-debug behavior.
+
+The best agent systems do not just reason well. They know where their authority ends.

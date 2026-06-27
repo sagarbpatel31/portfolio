@@ -1,0 +1,108 @@
+---
+title: "Field Debugging Needs Portable Evidence, Not Just Better Dashboards"
+date: "2026-06-24"
+tags: ["Systems", "Reliability", "Observability", "Edge Computing", "Robotics", "Operations"]
+excerpt: "Dashboards are useful when connectivity is good and incidents are reproducible. Field systems rarely get both. For edge and robotics work, the stronger pattern is portable evidence bundles that preserve enough context to debug failures away from the device."
+---
+
+# Field Debugging Needs Portable Evidence, Not Just Better Dashboards
+
+When teams talk about improving observability, the default answer is often “we need better dashboards.” That works well for centralized systems with stable connectivity and large historical retention. It works less well when the system lives on a device in the field.
+
+Field systems are awkward:
+
+- the network may be intermittent
+- the device may not retain full history
+- the failure may disappear after reboot
+- reproducing the issue may take days
+
+In that environment, the question is not only “what can we view live?” It is “what evidence can travel back with us after the moment is gone?”
+
+## The Problem With Live-Only Thinking
+
+Live dashboards assume:
+
+1. the device is still reachable
+2. the right signals were already being sent
+3. the failure is still happening or recently happened
+
+Field incidents often violate all three assumptions.
+
+That is why a live dashboard is not the whole answer. It is only one surface.
+
+## Portable Evidence Changes the Workflow
+
+A portable evidence bundle is a structured snapshot that can be examined elsewhere. It should capture enough context that another engineer can reason about the incident without access to the live device.
+
+At minimum, I want:
+
+- release and config version
+- health state transitions
+- recent logs from key services
+- latency summaries
+- sensor and dependency status
+- the trigger that caused capture
+
+```json
+{
+  "bundle_id": "bundle_1042",
+  "release": "2026.06.24",
+  "state_before_capture": "degraded",
+  "trigger": "process_restart_loop",
+  "recent_inference_p99_ms": 39.1,
+  "recent_queue_depth_max": 7
+}
+```
+
+This changes debugging from “can someone keep the device online while we poke around?” to “we already have the core evidence we need.”
+
+## Evidence Needs a Trigger Strategy
+
+Portable evidence is only useful if capture happens at the right moments.
+
+Common triggers:
+
+- restart loops
+- deadline misses
+- sensor disconnects
+- degraded-mode entry
+- operator safety intervention
+
+The trigger set should reflect real operational boundaries, not generic “error happened” events.
+
+## Bundles Should Be Small Enough to Matter
+
+One mistake is trying to save everything. That usually leads to bundles so large they are slow to store, hard to move, and rarely reviewed.
+
+A better approach is selective capture:
+
+- compact summaries for every incident
+- richer artifacts only for high-severity or rare failure classes
+
+This keeps the evidence path usable.
+
+## Replayability Is Better Than Raw Volume
+
+If I had to choose between:
+
+- fifty megabytes of unstructured logs
+- a smaller bundle that lets me replay the critical path
+
+I would take replayability almost every time.
+
+That might include:
+
+- selected sensor windows
+- ordered state transitions
+- model/runtime metadata
+- timestamps aligned across stages
+
+This is the difference between “we have data” and “we can actually reason about the incident.”
+
+## The Practical Standard
+
+Dashboards still matter. They are just not enough on their own.
+
+For field systems, observability gets much stronger when the architecture assumes the best debugging may happen later, elsewhere, and without the device still being in front of you.
+
+That is why portable evidence matters. It turns a fleeting incident into something the engineering team can examine with discipline instead of memory.
