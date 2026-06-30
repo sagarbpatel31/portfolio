@@ -1,0 +1,128 @@
+---
+title: "Robotics Safety Modes Should Be Explicit, Observable, and Boring"
+date: "2026-06-30"
+tags: ["Robotics", "Safety", "Reliability", "Systems", "Operations", "Physical AI"]
+excerpt: "When a robotics system enters a degraded or safety state, everyone involved should be able to tell immediately. Safety modes should not be implicit side effects buried in logs. They should be explicit operational states with predictable behavior."
+---
+
+# Robotics Safety Modes Should Be Explicit, Observable, and Boring
+
+One of the most uncomfortable classes of robotics failure is the one where the system is technically no longer healthy, but nobody can tell exactly what mode it has entered.
+
+The robot still moves, or half-moves, or pauses in a way that seems explainable if you squint hard enough. Logs may eventually reveal that some degraded path was active. But in the moment, the operator, the engineer, and the system itself do not share a clean understanding of the state.
+
+That is a design problem.
+
+Safety modes should not feel mysterious. They should feel boring.
+
+## The State Should Be First-Class
+
+If a system has degraded behavior, then that behavior deserves a real state, not an implicit branch hidden in the control path.
+
+```python
+from enum import Enum
+
+class RobotMode(str, Enum):
+    NOMINAL = "nominal"
+    DEGRADED = "degraded"
+    SAFE_STOP = "safe_stop"
+    OPERATOR_HOLD = "operator_hold"
+    RECOVERING = "recovering"
+```
+
+This matters because state is what aligns:
+
+- user expectations
+- controller behavior
+- observability
+- incident review
+
+If a robot is acting differently, the mode should say so explicitly.
+
+## Ambiguity Is the Enemy
+
+Systems get dangerous when degraded behavior is visible only indirectly:
+
+- lower update rate
+- partial sensor trust
+- planner shortcuts
+- reduced actuation authority
+
+Those may be valid safety responses, but if the system does not announce them clearly, operators are forced to infer the truth from behavior. That is too much ambiguity for a physical system.
+
+## Safety Modes Need Clear Entry Conditions
+
+The best safety states are not entered because “something seemed off.” They are entered because the system crossed a known operational boundary.
+
+Examples:
+
+- repeated control deadline misses
+- stale sensor input beyond threshold
+- localization confidence below floor
+- critical dependency restart loop
+- operator emergency intervention
+
+```python
+def next_mode(signal):
+    if signal.estop_pressed:
+        return "operator_hold"
+    if signal.localization_confidence < 0.4:
+        return "safe_stop"
+    if signal.control_deadline_miss_rate > 0.02:
+        return "degraded"
+    return "nominal"
+```
+
+The point is not that these exact numbers are universal. The point is that entry rules should be explicit enough to explain later.
+
+## Exit Conditions Matter Too
+
+A surprising number of systems define when degraded mode starts but not when it is allowed to end.
+
+That creates two bad outcomes:
+
+1. the robot exits too early and re-enters repeatedly
+2. the robot remains degraded longer than necessary because nobody trusts recovery
+
+Healthy exit criteria should be:
+
+- measurable
+- time-bounded
+- visible in telemetry
+
+Recovery should be an engineered path, not a guess.
+
+## Operators Need Immediate Clarity
+
+The operator should not have to inspect logs to know whether the robot is in:
+
+- nominal mode
+- degraded mode
+- safe stop
+- manual hold
+
+The interface, status output, or local indicator should communicate this directly. If the robot is behaving differently, the human nearby should not be solving a mystery.
+
+## Boring Is Good
+
+In robotics, “boring” is underrated. A boring safety mode means:
+
+- the trigger is unsurprising
+- the behavior is repeatable
+- the observability is consistent
+- the exit path is documented
+
+That is exactly what you want. Safety behavior should not feel clever.
+
+## The Practical Standard
+
+If a robotics system has non-nominal states, those states should be:
+
+- explicit
+- observable
+- predictable
+- reviewable after the fact
+
+The best safety modes are the ones nobody argues about in incident review because everyone already knows what they mean and why they triggered.
+
+That is not just good software design. It is how you make a physical system easier to trust.

@@ -1,0 +1,101 @@
+---
+title: "Edge Systems Need Budgeted Complexity, Not Just Budgeted Latency"
+date: "2026-06-28"
+tags: ["Edge Computing", "Systems", "Architecture", "Reliability", "Embedded Linux", "Production Systems"]
+excerpt: "Teams often budget CPU, memory, and latency while ignoring a different constraint: complexity. On edge systems, too much moving logic, too many special cases, and too many implicit assumptions can break reliability long before raw resource usage does."
+---
+
+# Edge Systems Need Budgeted Complexity, Not Just Budgeted Latency
+
+Engineering teams are usually comfortable budgeting quantitative resources:
+
+- CPU
+- memory
+- disk
+- bandwidth
+- latency
+
+That is necessary. On edge systems, it is also incomplete.
+
+There is another budget that matters just as much in production:
+
+**complexity**
+
+If the system accumulates too many modes, exceptions, hidden dependencies, and operational branches, reliability starts to erode even when the raw resource numbers still look fine.
+
+## Complexity Behaves Like a Resource
+
+You cannot measure it with the same precision as memory, but you can still observe its effects:
+
+- rollout hesitation
+- harder incident review
+- longer onboarding time
+- more surprising failure interactions
+- slower debugging even for simple bugs
+
+In other words, complexity has carrying cost.
+
+## Edge Systems Feel It Earlier
+
+Why does this show up so strongly at the edge?
+
+Because edge systems usually combine:
+
+- hardware variation
+- partial connectivity
+- constrained operators
+- limited local observability
+- awkward recovery conditions
+
+That means every extra branch in the design tends to cost more than it would in a centralized backend.
+
+## The Dangerous Version of “Flexibility”
+
+Teams often add flexibility because it seems prudent:
+
+- one more deployment mode
+- one more local fallback
+- one more config override
+- one more hardware-specific code path
+
+Individually, each choice looks reasonable. Collectively, they create a system where:
+
+- nobody remembers all active combinations
+- incident reproduction becomes fragile
+- rollout confidence drops
+
+At some point, flexibility stops being resilience and starts being drift.
+
+## Budgeting Complexity in Practice
+
+You do not need a perfect complexity metric to control it. You need explicit questions:
+
+1. How many runtime modes does this feature add?
+2. Does it introduce a new recovery path?
+3. Does it add hardware-specific behavior?
+4. Does it create another configuration surface?
+5. Can on-call engineers explain it quickly?
+
+If the answer to several of those is “yes,” the feature should pay for that cost somehow.
+
+## Simpler Failure Paths Win
+
+One of the best design choices on edge systems is choosing a simpler, more legible failure path instead of a more clever adaptive one.
+
+For example:
+
+- clear degraded mode instead of many partial-degradation branches
+- explicit rollback instead of layered retry heuristics
+- one authoritative config source instead of multiple override layers
+
+This is less elegant on paper and more sustainable in production.
+
+## The Practical Standard
+
+Latency budgets keep systems fast. Complexity budgets keep them operable.
+
+If an edge architecture is resource-efficient but too complex to explain, debug, or safely roll out, it is still over budget.
+
+Good systems design is not only about making the machine fit inside its resource envelope. It is also about making the human work around the machine fit inside a sane cognitive envelope.
+
+That is why complexity deserves a budget too.

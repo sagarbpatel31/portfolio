@@ -1,0 +1,105 @@
+---
+title: "Eval-Driven Agent Rollouts: Ship New Agent Behaviors Like You Ship Infrastructure"
+date: "2026-06-29"
+tags: ["AI", "Agents", "Evaluation", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "Agent systems change behavior easily, which is exactly why rollout discipline matters. Prompt updates, tool policies, and routing changes should be treated like infrastructure changes with eval gates, canaries, and rollback paths."
+---
+
+# Eval-Driven Agent Rollouts: Ship New Agent Behaviors Like You Ship Infrastructure
+
+One reason agent systems feel productive is that behavior changes are cheap. You can adjust prompts, routing policy, tool eligibility, or stopping criteria in minutes. That speed is useful, but it creates a trap: teams start shipping behavioral changes with less discipline than they would apply to ordinary infrastructure.
+
+That is backwards.
+
+If a small change can alter:
+
+- cost
+- latency
+- groundedness
+- escalation rate
+- failure behavior
+
+then it deserves a rollout process.
+
+## Agent Changes Are Operational Changes
+
+Teams sometimes treat prompts as content rather than code. But if a prompt update can change tool selection or answer shape across thousands of requests, it is operational behavior.
+
+The same is true for:
+
+- retrieval policy
+- model routing thresholds
+- validator strictness
+- fallback rules
+
+These are not just implementation details. They shape production outcomes.
+
+## The Minimal Rollout Discipline
+
+I want an agent rollout to answer four things:
+
+1. what changed
+2. what eval class it improved
+3. what regression it could plausibly introduce
+4. how we back out if it misbehaves
+
+That is a familiar infrastructure mindset, and it translates well here.
+
+## Eval Gates Need to Be Specific
+
+A single aggregate “quality score” is usually too weak. Agent changes often help one task class while harming another.
+
+So eval gates should be segmented:
+
+- factual retrieval tasks
+- synthesis tasks
+- troubleshooting tasks
+- ambiguous high-escalation tasks
+
+```python
+def rollout_gate(metrics):
+    return all([
+        metrics["factual_groundedness"] >= 0.9,
+        metrics["tool_efficiency"] >= 0.8,
+        metrics["avg_cost_delta"] <= 0.05,
+        metrics["high_risk_regressions"] == 0,
+    ])
+```
+
+The gate should reflect what the system is supposed to protect.
+
+## Canary the Behavior, Not Just the Code
+
+A good canary for agents is not only “did the service stay up?” It is:
+
+- did groundedness stay stable?
+- did tool calls spike?
+- did cost per request drift?
+- did fallback rate increase?
+- did one query segment regress?
+
+This is why agent canaries need behavior metrics, not just standard service metrics.
+
+## Rollback Must Stay Easy
+
+If a behavior change goes bad, rollback should be simple:
+
+- restore prior prompt
+- restore prior routing thresholds
+- restore prior tool policy
+- restore prior validator rules
+
+That sounds obvious, but it only stays easy if those changes are versioned and promoted intentionally.
+
+## The Practical Standard
+
+Agent systems mature when teams stop treating behavior tuning like casual iteration and start treating it like rollout-managed infrastructure.
+
+The change may be “only a prompt edit,” but if it affects user-visible reliability, it deserves:
+
+- evals
+- segmented metrics
+- canaries
+- rollback
+
+That discipline is what keeps fast iteration from turning into production drift.
