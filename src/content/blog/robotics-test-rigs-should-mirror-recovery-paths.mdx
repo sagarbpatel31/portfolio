@@ -1,0 +1,88 @@
+---
+title: "Robotics Test Rigs Should Mirror Recovery Paths, Not Just Happy-Path Behavior"
+date: "2026-06-30"
+tags: ["Robotics", "Testing", "Reliability", "Systems", "Operations", "Physical AI"]
+excerpt: "A robotics test rig that only proves the nominal path is weaker than it looks. The stronger standard is a rig that also exercises restart behavior, degraded states, operator holds, and recovery transitions before those conditions show up in the field."
+---
+
+# Robotics Test Rigs Should Mirror Recovery Paths, Not Just Happy-Path Behavior
+
+Robotics teams put a lot of effort into test rigs, and rightly so. Good rigs let you validate integration, performance, and repeatability before touching field hardware or expensive demos. But many rigs have a blind spot: they are optimized for the nominal path.
+
+They prove that the robot works when:
+
+- dependencies start correctly
+- sensors behave
+- the planner is healthy
+- the operator path is clean
+
+That is useful. It is not enough.
+
+## The Recovery Path Is Part of the Product
+
+Real systems do not only exist in healthy states. They restart, degrade, pause, lose dependencies, and re-enter operation. If the rig never exercises those states, the team is implicitly learning them for the first time in more expensive environments.
+
+Examples of what the rig should be able to trigger:
+
+- restart loops
+- stale or missing sensor input
+- degraded localization confidence
+- operator hold transitions
+- safe-stop and recovery exit conditions
+
+These are not edge cases in the sense of “unlikely.” They are edge cases only in the sense of “often under-tested.”
+
+## Nominal Confidence Can Be Misleading
+
+A system that passes the happy-path rig may still be weak if:
+
+- restart behavior loses important state
+- degraded mode is hard to observe
+- recovery exits are inconsistent
+- operators cannot tell why behavior changed
+
+Those are exactly the situations that create expensive field debugging later.
+
+## The Rig Should Be Able to Force Recovery States
+
+I like recovery-capable rigs because they turn operational questions into reproducible tests.
+
+```python
+def inject_fault(mode):
+    if mode == "sensor_dropout":
+        return disable_sensor("front_camera")
+    if mode == "planner_restart":
+        return restart_process("planner")
+    if mode == "confidence_drop":
+        return set_localization_confidence(0.3)
+```
+
+The exact fault injection mechanism depends on the stack, but the principle is stable: if the production system has a recovery path, the test rig should be able to invoke it on purpose.
+
+## State Transitions Need Verification
+
+Recovery-capable rigs are most useful when they verify not only that a state was entered, but that the full transition behaved correctly:
+
+- trigger detected
+- state changed explicitly
+- operator visibility updated
+- control behavior changed as designed
+- exit conditions enforced correctly
+
+That full chain is what makes the recovery path real instead of theoretical.
+
+## The Practical Standard
+
+A good robotics rig should answer more than “does the robot work?”
+
+It should also answer:
+
+- how does the robot fail?
+- what state does it enter?
+- what does the operator see?
+- how does the system recover?
+- does the exit from recovery behave predictably?
+
+Happy-path validation is necessary. Recovery-path validation is what makes the confidence durable.
+
+If the rig cannot mirror the system’s recovery story, it is only testing half the product.

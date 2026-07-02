@@ -1,0 +1,106 @@
+---
+title: "Agent Evals Should Track Escalation, Not Just Accuracy"
+date: "2026-06-30"
+tags: ["AI", "Agents", "Evaluation", "Production Systems", "Gen AI", "Reliability"]
+excerpt: "An agent can look accurate in offline evaluation while still being operationally weak because it escalates too often, too late, or for the wrong reasons. Good evals should measure escalation behavior as a first-class signal."
+---
+
+# Agent Evals Should Track Escalation, Not Just Accuracy
+
+A common pattern in agent evaluation is to ask: did the system get the answer right? That matters, but for production agents it is not the whole story.
+
+Two agent systems can produce equally accurate answers while behaving very differently:
+
+- one answers directly when it should, escalates rarely, and stops cleanly
+- the other over-calls tools, over-escalates to stronger models, and burns cost to reach the same result
+
+If you only measure answer quality, those systems can look equivalent. Operationally, they are not.
+
+## Escalation Is Part of Behavior
+
+Escalation shows up in several forms:
+
+- moving to a stronger model
+- invoking a supervisor
+- asking for more evidence
+- falling back to a safer answer type
+- handing off to a human or operator
+
+Those are not just implementation details. They are the system’s coping strategy when confidence or grounding is weak.
+
+That means escalation is something the eval loop should examine directly.
+
+## The Wrong Kind of “Safe”
+
+Teams often treat aggressive escalation as cautious behavior. Sometimes it is. Sometimes it is just expensive uncertainty.
+
+Bad patterns include:
+
+- escalating on easy tasks that a cheaper path could handle
+- escalating too late after already wasting time and cost
+- escalating repeatedly because no clear stop condition exists
+- escalating in ways that do not improve groundedness
+
+An eval that ignores those patterns can make the system look safer than it really is.
+
+## What to Measure
+
+I want escalation metrics broken out by task class:
+
+- escalation rate
+- escalation usefulness
+- escalation lateness
+- escalation cost delta
+
+```python
+def escalation_metrics(runs):
+    return {
+        "rate": sum(r.escalated for r in runs) / max(len(runs), 1),
+        "useful": sum(r.escalation_helped for r in runs) / max(len(runs), 1),
+        "late": sum(r.late_escalation for r in runs) / max(len(runs), 1),
+    }
+```
+
+These numbers tell you whether the system is escalating intelligently or just reflexively.
+
+## Accuracy Without Escalation Quality Is Misleading
+
+Consider two cases:
+
+1. a system gets a hard answer right because it escalated early to a strong model
+2. a system gets the same answer right only after several weak intermediate attempts and a late escalation
+
+The output may match. The operating quality does not.
+
+The second case usually means:
+
+- more latency
+- more cost
+- more failure surface
+- less predictable behavior
+
+That difference should appear in evals.
+
+## Escalation Should Improve Something Concrete
+
+One useful discipline is to require that escalation justify itself by improving at least one of:
+
+- groundedness
+- answer completeness
+- support strength
+- policy compliance
+
+If escalation produces the same quality answer at much higher cost, the routing or trigger logic is weak.
+
+## The Practical Standard
+
+For agent systems, “accuracy” is not enough. The eval loop should also ask:
+
+1. Did the system escalate when it should?
+2. Did it avoid escalation when it should?
+3. Did escalation materially improve the result?
+4. Did it happen early enough to be efficient?
+
+Those questions are what turn escalation from a vague safety feeling into an operationally measurable behavior.
+
+If the agent is part of a real product, escalation is not just a backup plan. It is part of the product’s economics and trust model. The evals should treat it that way.

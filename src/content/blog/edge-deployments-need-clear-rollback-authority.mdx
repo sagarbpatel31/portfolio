@@ -1,0 +1,126 @@
+---
+title: "Edge Deployments Need Clear Rollback Authority, Not Just Rollback Code"
+date: "2026-07-01"
+tags: ["Edge Computing", "Reliability", "Release Engineering", "Embedded Linux", "Operations", "Production Systems"]
+excerpt: "A lot of teams build rollback mechanics without deciding who or what is actually allowed to trigger them. For edge systems, rollback authority needs to be explicit across device logic, operators, and rollout policy, or the recovery path stays politically fragile."
+---
+
+# Edge Deployments Need Clear Rollback Authority, Not Just Rollback Code
+
+Engineering teams are usually comfortable building rollback machinery. They write the health checks, keep the last-good release, define the degraded path, maybe even automate the reversal after failure. That is all good work. But there is a second question that gets less attention:
+
+**Who actually has the authority to decide that rollback should happen?**
+
+This is where many deployment systems get weaker than they look. The code path exists, but the decision path is fuzzy.
+
+## Recovery Logic Is Not Enough
+
+An edge deployment can fail in several ways:
+
+- the device can detect a hard health-check failure on its own
+- a field operator can see behavior that telemetry misses
+- a central rollout controller can notice that a canary set is degrading
+- an engineer can recognize that a release is quietly unstable across a device class
+
+Each of those should be able to influence rollback, but not in the same way.
+
+If the authority model is unclear, teams fall into one of two bad patterns:
+
+1. they wait too long because nobody wants to be the one who pulled the rollback trigger
+2. they roll back too aggressively because signals are not prioritized properly
+
+## The Authority Model Should Be Layered
+
+Rollback authority should map to the level of evidence available.
+
+```python
+class RollbackAuthority:
+    DEVICE_AUTOMATIC = "device_automatic"
+    OPERATOR_REQUEST = "operator_request"
+    ROLLOUT_CONTROLLER = "rollout_controller"
+    ENGINEERING_OVERRIDE = "engineering_override"
+```
+
+Each layer should have defined scope:
+
+- `device_automatic`: local hard-failure recovery
+- `operator_request`: immediate safety or usability concern in the field
+- `rollout_controller`: canary-wide degradation or correlated failure rate
+- `engineering_override`: explicit human intervention for complex systemic issues
+
+The value of this model is not the names. It is the fact that the system now has a governance shape, not just a recovery function.
+
+## Devices Should Own the Local Hard Failures
+
+If a device cannot boot the service, cannot pass a startup health gate, or enters a crash loop, it should not wait for human deliberation.
+
+That is the job of local automatic rollback.
+
+Examples:
+
+- repeated process restart failures
+- watchdog-triggered unrecoverable hang
+- failed application self-test
+- invalid release manifest or activation mismatch
+
+The longer those cases wait for human confirmation, the less useful the automation is.
+
+## Operators Need a Legitimate Fast Path
+
+Field operators sometimes detect issues that the system cannot score well yet:
+
+- behavior that is technically “alive” but clearly degraded
+- timing changes that affect workflow
+- safety-relevant oddities not captured by current telemetry
+
+If operators have no clean way to request rollback, teams end up forcing them into awkward workarounds:
+
+- power-cycling repeatedly
+- staying on an unstable release
+- escalating through chat and waiting
+
+Operator authority should not override every signal blindly, but it should be recognized as a valid trigger class.
+
+## Canary Policy Needs Higher-Level Authority
+
+Some problems appear only when looking across a fleet:
+
+- error rate climbs across one hardware revision
+- latency drifts on one environment profile
+- degraded mode entry rises only under a particular workload mix
+
+That is where rollout-controller authority matters. A canary system should be empowered to halt or reverse promotion when fleet-level evidence is strong enough, even if individual devices have not yet triggered local rollback.
+
+## Engineering Override Should Be Rare and Clear
+
+Human override still matters for weird cases:
+
+- interacting failures across multiple services
+- release/config combinations that look healthy locally but fail operationally
+- domain knowledge that the automation does not encode yet
+
+But engineering override should be:
+
+- explicit
+- logged
+- time-bounded
+
+If humans are constantly overriding the policy, the policy is incomplete.
+
+## The Practical Standard
+
+Rollback systems become credible when both of these are true:
+
+1. the mechanics work
+2. the authority model is explicit
+
+That means every team involved can answer:
+
+- what signals trigger automatic rollback
+- what operators can request directly
+- when fleet-level policy can intervene
+- when human override is justified
+
+Without that clarity, rollback remains a feature people admire in design docs but hesitate to use in real time.
+
+Recovery code matters. Recovery authority is what makes it operational.
