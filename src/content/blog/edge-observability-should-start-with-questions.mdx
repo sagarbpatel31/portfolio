@@ -1,0 +1,101 @@
+---
+title: "Edge Observability Should Start With Questions, Not Dashboards"
+date: "2026-07-02"
+tags: ["Edge Computing", "Observability", "Reliability", "Operations", "Systems", "Production Systems"]
+excerpt: "A lot of observability stacks get built by collecting whatever is easy to visualize. Edge systems need a stricter approach: start from the questions incidents will force you to answer, then capture only the signals that make those answers possible."
+---
+
+# Edge Observability Should Start With Questions, Not Dashboards
+
+Observability efforts often begin with tools. Teams pick a metrics stack, wire up a dashboard, ship logs, add a few health charts, and call that progress. It is progress, but not always the right kind.
+
+For edge systems, the better starting point is not “what should we graph?” It is:
+
+**What questions will an incident force us to answer?**
+
+That sounds small, but it changes the entire design.
+
+## The Wrong Starting Point
+
+When observability begins from the visualization layer, teams tend to collect what is easiest:
+
+- generic CPU and memory metrics
+- service up/down state
+- log volume
+- a few latency percentiles
+
+Those signals are fine. They are also often insufficient when the real incident hits:
+
+- why did the device degrade?
+- when did the input go stale?
+- what mode was the system in just before the failure?
+- what recovery action happened, and did it help?
+
+If the data model cannot answer those questions, the dashboard is decorative.
+
+## Start From the Incident Questions
+
+I like to define observability scope with explicit questions first:
+
+1. what changed?
+2. what state was the device in?
+3. what dependency became unhealthy?
+4. what recovery or fallback path was taken?
+5. what evidence survives if the device restarts?
+
+Once those are fixed, telemetry design gets simpler because every metric or event has to justify itself.
+
+## Signals Should Have a Job
+
+For edge systems, each signal should earn its place by helping answer a known operational question.
+
+Examples:
+
+- `camera_drop_rate` helps explain perception degradation
+- `mode_transition` explains why robot behavior changed
+- `rollback_trigger_reason` explains release reversal
+- `queue_depth_max` helps explain missed timing
+
+That is better than collecting broad status data and hoping meaning emerges later.
+
+## Events Matter as Much as Metrics
+
+A lot of teams overweight time-series metrics and underweight discrete operational events.
+
+But edge incidents are often explained by events:
+
+- service restart
+- degraded mode entry
+- operator hold
+- release activation
+- bundle capture trigger
+
+Metrics show shape. Events show causality. You usually need both.
+
+## Compact Evidence Beats Exhaustive Noise
+
+Because storage and connectivity are constrained, the edge often punishes indiscriminate telemetry. That is why I prefer compact, question-driven evidence over maximal raw volume.
+
+```json
+{
+  "device_id": "edge-42",
+  "mode": "degraded",
+  "trigger": "control_deadline_miss",
+  "recent_inference_p99_ms": 33.4,
+  "recovery_action": "restart_pipeline"
+}
+```
+
+This kind of structured record is far more useful than a wall of unsorted logs if it answers the right operational questions.
+
+## The Practical Standard
+
+If you are building observability for edge systems, start by writing the questions the on-call engineer, field operator, or incident reviewer must be able to answer.
+
+Then work backward:
+
+- what metrics help answer them?
+- what events help answer them?
+- what state must survive restart?
+
+Good dashboards come after that. On the edge, questions should drive telemetry, not the other way around.

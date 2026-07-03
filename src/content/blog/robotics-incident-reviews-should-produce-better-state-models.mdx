@@ -1,0 +1,95 @@
+---
+title: "Robotics Incident Reviews Should Produce Better State Models, Not Just Action Items"
+date: "2026-07-02"
+tags: ["Robotics", "Reliability", "Incident Response", "Operations", "Systems", "Physical AI"]
+excerpt: "A robotics incident review should do more than generate a list of fixes. The best reviews improve the system’s state model so future failures become easier to detect, explain, and recover from."
+---
+
+# Robotics Incident Reviews Should Produce Better State Models, Not Just Action Items
+
+Most incident reviews end with a list:
+
+- add a check
+- fix a timeout
+- improve a log
+- write a test
+
+Those are useful. But for robotics systems, I think the strongest incident reviews produce something more durable:
+
+**a better state model**
+
+If the team leaves understanding the system’s modes, transitions, and recovery points more clearly, the review has done deeper work.
+
+## Symptoms Are Often State Ambiguity
+
+Many robotics incidents look messy because the system’s state model is weak or incomplete:
+
+- the robot was “kind of degraded”
+- the planner was “sort of paused”
+- the operator path was “partly manual”
+
+Those phrases are a sign that the system’s real behavior space is larger than its explicit state model.
+
+That gap makes:
+
+- debugging harder
+- operator expectations fuzzier
+- observability weaker
+- recovery behavior less predictable
+
+## Reviews Should Ask State Questions
+
+In addition to root-cause questions, I like reviews to ask:
+
+1. what state was the system actually in?
+2. was that state modeled explicitly?
+3. should it have been?
+4. what transition was missing, ambiguous, or invisible?
+
+This is often where the most reusable engineering insight lives.
+
+## Better States Make Better Signals
+
+When a state becomes explicit, several things improve at once:
+
+- operators can see it
+- telemetry can record it
+- triggers can depend on it
+- exit conditions can be defined
+
+That is why state-model improvements tend to pay back more than isolated fixes.
+
+## Example: “Degraded” Is Often Too Broad
+
+A team may discover that a single `degraded` mode is hiding multiple realities:
+
+- reduced sensor trust
+- operator hold with healthy perception
+- planner disabled but locomotion active
+- inference fallback active but control healthy
+
+Those are not the same thing operationally. Splitting them into more meaningful states can improve future triage immediately.
+
+## Action Items Still Matter
+
+I am not arguing against concrete fixes. I am arguing that the review should also ask whether the incident exposed a missing or weak conceptual model of the system.
+
+The best postmortems give you both:
+
+- a bug fix
+- a stronger way to describe future system behavior
+
+## The Practical Standard
+
+If a robotics incident review ends only with tasks, you may fix the local bug and still leave the system hard to reason about.
+
+If it ends with:
+
+- clearer states
+- clearer transitions
+- better entry and exit conditions
+- better observability around those states
+
+then future incidents get easier to understand before they happen.
+
+That is why I think good incident reviews should improve the state model, not just the backlog.

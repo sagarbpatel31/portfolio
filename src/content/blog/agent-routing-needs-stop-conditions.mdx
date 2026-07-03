@@ -1,0 +1,87 @@
+---
+title: "Agent Routing Needs Stop Conditions, Not Just Better Escalation Logic"
+date: "2026-07-02"
+tags: ["AI", "Agents", "Routing", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "Many agent systems spend too much effort deciding when to escalate and too little effort deciding when to stop. A routing system becomes much more reliable when it has clear termination rules for low-confidence or low-yield paths."
+---
+
+# Agent Routing Needs Stop Conditions, Not Just Better Escalation Logic
+
+Teams working on agent systems often focus on escalation logic:
+
+- when to call the stronger model
+- when to invoke a supervisor
+- when to fetch more evidence
+
+Those are important decisions. But there is a second decision that matters just as much:
+
+**When should the system stop trying?**
+
+Without good stop conditions, escalation logic only makes the system more elaborate, not more disciplined.
+
+## More Attempts Are Not Automatically Safer
+
+It is tempting to think repeated attempts are a sign of caution. In practice, repeated attempts often create:
+
+- higher latency
+- more cost
+- more failure surface
+- less predictable behavior
+
+An agent that keeps searching, reranking, escalating, and retrying may look persistent. It may also just be drifting through low-value work because nobody taught it when to stop.
+
+## Stop Conditions Create Shape
+
+Stop conditions make a routing policy easier to reason about because they put a limit on uncertainty.
+
+```python
+class StopPolicy:
+    max_tool_calls = 5
+    max_escalations = 2
+    min_groundedness = 0.8
+    max_latency_ms = 4500
+```
+
+These limits do not weaken the agent. They shape the system into something that behaves within known boundaries.
+
+## The Most Useful Stop Conditions
+
+I like stop rules that reflect real production costs:
+
+- too many tool calls with no better evidence
+- repeated low-confidence retrieval
+- escalation that did not improve support strength
+- latency budget exhausted
+- no change in answer quality after another step
+
+Those conditions mean the system has probably learned what it can learn from the current path.
+
+## Stop Early, Fall Back Cleanly
+
+The real benefit of stop conditions is not just shorter runs. It is cleaner fallback.
+
+When the route stops early, the system can still:
+
+- return the best grounded partial answer
+- surface the top supporting evidence
+- label uncertainty explicitly
+- hand off to a stronger or human path in a controlled way
+
+That is far better than continuing to spend tokens on a path that is no longer earning its keep.
+
+## Escalation Without Stop Rules Is Drift
+
+You can build a sophisticated routing tree and still end up with messy behavior if every branch just says “try harder.” That pattern feels intelligent while it is running and usually looks wasteful in the trace afterward.
+
+Stop conditions are what turn routing from wandering into policy.
+
+## The Practical Standard
+
+Agent routing becomes much more operational when it answers both questions clearly:
+
+1. when do we escalate?
+2. when do we stop?
+
+Most teams invest heavily in the first and underinvest in the second. In production, both matter.
+
+A good system does not only know how to try harder. It knows when another attempt is no longer worth it.
