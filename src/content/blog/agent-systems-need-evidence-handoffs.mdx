@@ -1,0 +1,110 @@
+---
+title: "Agent Systems Need Evidence Handoffs, Not Just Task Handoffs"
+date: "2026-07-07"
+tags: ["AI", "Agents", "Production Systems", "Reliability", "Evaluation", "Gen AI"]
+excerpt: "Multi-step agent workflows often fail because intermediate stages pass conclusions forward without passing enough evidence. Stronger agent systems make evidence handoff explicit so downstream steps can verify, challenge, or safely constrain what came before."
+---
+
+# Agent Systems Need Evidence Handoffs, Not Just Task Handoffs
+
+Agent workflows are often described in terms of tasks:
+
+- retrieve
+- summarize
+- compare
+- answer
+
+That decomposition is useful, but it hides a critical design question:
+
+**What exactly gets handed from one stage to the next?**
+
+Too many systems pass only conclusions. One stage “decides” something, the next stage consumes that decision, and the workflow marches on as if the intermediate result were trustworthy by default. That is where a lot of quiet failures begin.
+
+## Task Handoffs Are Not Enough
+
+If stage A hands stage B only a conclusion, B has very little leverage:
+
+- it cannot verify whether the evidence was strong
+- it cannot tell whether retrieval was thin
+- it cannot distinguish direct support from interpretive leap
+- it cannot reason well about uncertainty
+
+That makes downstream stages more brittle than they appear. The workflow may look modular while actually spreading unchecked assumptions from step to step.
+
+## Evidence Should Travel With the Conclusion
+
+I prefer intermediate artifacts that look more like this:
+
+```python
+class Handoff:
+    conclusion: str
+    evidence_ids: list[str]
+    confidence: float
+    support_strength: str
+```
+
+Now the next stage receives:
+
+- the claim
+- the evidence behind it
+- a confidence signal
+- a rough quality label
+
+That is enough context for the next stage to verify, reduce, or constrain the result instead of inheriting it blindly.
+
+## Why This Matters in Practice
+
+Without explicit evidence handoffs, agent systems often fail in one of three ways:
+
+### 1. Unsupported Compression
+
+A summarizer compresses nuance into one neat statement, and later stages treat that statement as fact even though the supporting material was weak or partial.
+
+### 2. Escalation Without Context
+
+A stronger model gets called, but it receives only the prior stage’s text output rather than the evidence that made the earlier stage uncertain.
+
+### 3. False Agreement
+
+Multiple stages appear to agree because they are all reusing the same unsupported intermediate assertion.
+
+None of those are really model-quality problems. They are handoff-quality problems.
+
+## Handoffs Should Preserve Uncertainty
+
+One mistake is trying to make every intermediate artifact look polished. That often strips away the most useful information.
+
+If a stage is uncertain, that uncertainty should survive the handoff:
+
+- weak evidence
+- conflicting evidence
+- incomplete evidence
+- low retrieval coverage
+
+That allows downstream stages to behave more honestly.
+
+## Better Handoffs Create Better Supervision
+
+Supervisors become more useful when they can inspect:
+
+- what the stage concluded
+- what evidence it used
+- whether evidence was direct or partial
+- where uncertainty entered
+
+This is much stronger than supervising only the final answer because it reveals *where* the workflow got thin, not just *that* the end result was weak.
+
+## The Practical Standard
+
+Agent systems get more reliable when they stop handing off only tasks and start handing off evidence-rich intermediate artifacts.
+
+That means each stage should leave behind enough structure that the next stage can:
+
+- verify the claim
+- challenge the claim
+- narrow the claim
+- escalate with context
+
+Without that, a multi-step agent pipeline can become a chain of increasingly fluent guesses.
+
+Good agent orchestration is not only about who does what next. It is about what proof survives the handoff.

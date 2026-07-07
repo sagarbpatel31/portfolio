@@ -1,0 +1,93 @@
+---
+title: "Edge Reliability Comes From Fewer Implicit Dependencies"
+date: "2026-07-06"
+tags: ["Edge Computing", "Reliability", "Systems", "Architecture", "Embedded Linux", "Operations"]
+excerpt: "A lot of edge incidents come from dependencies nobody modeled clearly enough: boot order assumptions, sensor timing expectations, config fallthrough, and service relationships that only exist in tribal memory. Reliability improves when those dependencies become explicit or disappear."
+---
+
+# Edge Reliability Comes From Fewer Implicit Dependencies
+
+Edge systems rarely fail because one obvious component broke in a clean and isolated way. More often, they fail because the system depended on something nobody had modeled clearly enough:
+
+- a service needed another service to start first
+- one pipeline assumed a sensor timestamp would always arrive within a narrow window
+- one config path silently inherited values from another
+- a recovery script expected a filesystem state that was not guaranteed
+
+These are implicit dependencies. They are dangerous because they live more in habit than in architecture.
+
+## The Cost of Assumptions Nobody Wrote Down
+
+Implicit dependencies create a special kind of operational pain:
+
+- they are hard to test directly
+- they show up under timing variation or unusual rollout order
+- they often look intermittent
+- they make incident review sound confusing even when the root cause is simple
+
+That is why these failures often feel “weird” in the moment. The system is enforcing a contract the team never formalized.
+
+## Explicit Dependencies Are Easier to Govern
+
+I want important runtime dependencies to exist in one of three states:
+
+1. explicitly modeled
+2. actively monitored
+3. intentionally removed
+
+If a dependency is critical but lives only in engineer intuition, it will eventually appear as an outage.
+
+## Typical Implicit Dependency Traps
+
+### Startup Order
+
+One process expects another to be ready, but readiness is assumed rather than checked.
+
+### Configuration Inheritance
+
+One environment quietly falls back to another value path and nobody notices until rollout.
+
+### Time Coherence
+
+Several stages assume clocks or timestamps remain aligned well enough, but the tolerance is neither measured nor enforced.
+
+### Recovery Preconditions
+
+A restart or rollback script assumes the device is in a local state that may not actually hold after a messy failure.
+
+## The Practical Fix
+
+The cure is not “document more” in the abstract. It is to turn hidden assumptions into explicit interfaces or checks.
+
+Examples:
+
+- readiness gate instead of assumed startup order
+- resolved config snapshot instead of layered hidden fallthrough
+- explicit timestamp skew metric instead of silent timing optimism
+- precondition validation before recovery actions execute
+
+```python
+def can_activate_service(dep):
+    return all([
+        dep.config_loaded,
+        dep.clock_skew_ms < 20,
+        dep.required_sensor_ready,
+        dep.last_good_state_known,
+    ])
+```
+
+This is what operationalizing a dependency looks like.
+
+## The Practical Standard
+
+Edge reliability improves when the system depends on fewer things it cannot name.
+
+If a service, sensor, config path, or recovery action is genuinely important, the system should:
+
+- know it exists
+- know when it is healthy
+- know when it is missing
+
+The fewer hidden contracts the runtime carries, the more predictable the whole system becomes.
+
+Reliability is often less about adding redundancy and more about removing assumptions nobody intended to be critical.

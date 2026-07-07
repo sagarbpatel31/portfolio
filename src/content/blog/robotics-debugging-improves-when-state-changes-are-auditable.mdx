@@ -1,0 +1,65 @@
+---
+title: "Robotics Debugging Improves When State Changes Are Auditable"
+date: "2026-07-05"
+tags: ["Robotics", "Debugging", "Observability", "Reliability", "Systems", "Operations"]
+excerpt: "A lot of robotics debugging pain comes from not knowing exactly when the system changed modes, what triggered it, and what it believed at the time. Auditable state transitions make incident review much more mechanical and much less interpretive."
+---
+
+# Robotics Debugging Improves When State Changes Are Auditable
+
+Robotics incidents often feel harder to debug than they should because the team spends too much time reconstructing the sequence of state changes from indirect clues.
+
+Questions like these consume a lot of incident energy:
+
+- when did the robot leave nominal mode?
+- what triggered the degraded path?
+- did the operator hold happen before or after localization confidence dropped?
+- was recovery entered automatically or manually?
+
+If those transitions are not recorded clearly, debugging becomes a reconstruction exercise instead of a verification exercise.
+
+## State Transitions Are Operational Facts
+
+For me, a state transition is not just an internal implementation detail. It is an operational fact that deserves a record:
+
+- previous state
+- next state
+- trigger reason
+- relevant measurements
+- timestamp
+
+```json
+{
+  "from": "nominal",
+  "to": "degraded",
+  "trigger": "control_deadline_miss_rate",
+  "value": 0.031,
+  "timestamp": "2026-07-05T19:41:22Z"
+}
+```
+
+This is the kind of artifact that makes incident review faster and less argumentative.
+
+## Why Auditability Helps
+
+Auditable transitions improve several things at once:
+
+- operators can see why behavior changed
+- engineers can align events across subsystems
+- replay bundles become more explanatory
+- exit conditions become easier to evaluate later
+
+Without transition records, even correct degraded behavior can look mysterious.
+
+## The Practical Standard
+
+If a robotics system has meaningful operational states, then moving between them should leave behind an auditable trail.
+
+That trail should make it easy to answer:
+
+1. what changed?
+2. why did it change?
+3. when did it change?
+4. what signal justified it?
+
+The more clearly the system can answer those questions, the more debugging becomes systems work instead of narrative guesswork.
