@@ -1,0 +1,81 @@
+---
+title: "Edge Rollouts Should Measure Degraded-Mode Entry Rates"
+date: "2026-07-10"
+tags: ["Edge Computing", "Reliability", "Release Engineering", "Observability", "Systems", "Production Systems"]
+excerpt: "A rollout can look healthy if devices stay online, even while more of them are quietly entering degraded behavior. One of the strongest rollout signals for edge systems is how often releases trigger degraded modes under real workloads."
+---
+
+# Edge Rollouts Should Measure Degraded-Mode Entry Rates
+
+Many rollout dashboards focus on visible failure:
+
+- crash rate
+- restart rate
+- outright rollback rate
+- latency spikes
+
+Those are useful, but they miss an important class of instability: systems that stay technically alive while operating in degraded mode more often than they should.
+
+For edge systems, that is often where early trouble shows up first.
+
+## A Release Can Be Quiet and Still Be Bad
+
+Imagine a rollout where:
+
+- devices are not crashing
+- health checks still pass
+- no mass rollback has happened
+
+At first glance, that looks fine. But if degraded-mode entry rates doubled, the release may already be eroding quality in a way the main dashboard does not highlight.
+
+That matters because degraded modes often mean:
+
+- reduced sensor trust
+- reduced throughput
+- fallback inference behavior
+- reduced automation or control authority
+
+The device is still up, but the operating quality is worse.
+
+## Degraded Mode Is a Rollout Signal
+
+I treat degraded-mode entry as a first-class rollout metric because it captures instability earlier than total failure does.
+
+```python
+def degraded_mode_entry_rate(events, device_count):
+    entries = sum(1 for e in events if e["mode"] == "degraded")
+    return entries / max(device_count, 1)
+```
+
+This number becomes more useful when broken down by:
+
+- device class
+- workload type
+- environment
+- release version
+
+That is how you spot rollout drift that only appears under real-world conditions.
+
+## Why This Metric Catches Trouble Early
+
+A release can increase degraded-mode entries before it increases:
+
+- hard crashes
+- explicit rollback
+- support tickets
+
+That is because degraded mode is often the system’s first protective response. If that response is happening more often, the release is already under strain even if the strain has not yet escalated into obvious failure.
+
+## The Practical Standard
+
+For edge rollouts, I want to know not just:
+
+- did devices stay online?
+
+but also:
+
+- how often did devices have to protect themselves?
+
+That is what degraded-mode entry rate tells you.
+
+A healthy release is not merely one that avoids crashing. It is one that does not quietly push more devices into protective behavior. If you care about rollout quality, measure that directly.

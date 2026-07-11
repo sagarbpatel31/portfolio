@@ -1,0 +1,87 @@
+---
+title: "Robotics Systems Need a Clear Operator Story"
+date: "2026-07-09"
+tags: ["Robotics", "Operations", "Systems", "Reliability", "Physical AI", "Safety"]
+excerpt: "A robotics system may be technically sound and still be difficult to run if operators cannot tell what the machine is doing, why it changed modes, or what action they are expected to take next. The operator story is part of the system design."
+---
+
+# Robotics Systems Need a Clear Operator Story
+
+Robotics engineers naturally spend a lot of time on system internals:
+
+- perception quality
+- control behavior
+- state estimation
+- runtime performance
+
+Those are core technical concerns. But an operational system also needs something simpler and often neglected:
+
+**a clear operator story**
+
+That means the human around the robot should be able to answer:
+
+- what is it doing?
+- why did it change behavior?
+- what am I supposed to do next?
+
+If the system cannot make those answers clear, it is harder to trust no matter how strong the internal architecture is.
+
+## Technical Correctness Is Not Enough
+
+A robot can behave “correctly” according to its internal logic and still be confusing in practice.
+
+Examples:
+
+- the system enters degraded mode but the operator sees only slower behavior
+- manual hold activates but the reason is unclear
+- recovery becomes available but nothing signals that fact explicitly
+
+In all of those cases, the problem is not necessarily control logic. It is the mismatch between system state and operator understanding.
+
+## The Operator Story Should Be Intentional
+
+I think of the operator story as a design surface with three parts:
+
+1. state visibility
+2. reason visibility
+3. expected next action
+
+State visibility means the operator can tell the current mode.
+
+Reason visibility means the operator can tell why it changed.
+
+Expected next action means the system makes clear whether the operator should:
+
+- wait
+- intervene
+- reset
+- inspect a dependency
+
+Without those three pieces, the operator is forced to guess.
+
+## Good Systems Reduce Guessing
+
+The right standard is not “the operator can probably figure it out.” The standard is that the system reduces the need for interpretation.
+
+That can be as simple as:
+
+- explicit status text
+- clear local indicator changes
+- structured event history
+- consistent recovery prompts
+
+The exact interface can vary. The principle is stable: behavior changes should come with explanation.
+
+## The Practical Standard
+
+If a robotics system changes modes, pauses, degrades, or asks for intervention, the operator story should already exist.
+
+That means the person nearby does not need deep architecture knowledge to answer the key questions:
+
+1. what happened?
+2. why did it happen?
+3. what should I do now?
+
+The better that story is, the more operationally useful the system becomes.
+
+Robotics is not only about what the machine knows internally. It is also about what the humans around it can understand in time.
