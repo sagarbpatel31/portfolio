@@ -1,0 +1,78 @@
+---
+title: "Robotics Debugging Gets Faster When Timing Assumptions Are Audited"
+date: "2026-07-14"
+tags: ["Robotics", "Debugging", "Timing", "Reliability", "Systems", "Operations"]
+excerpt: "A lot of robotics bugs are really timing-assumption bugs: components behave correctly only while the system stays inside a narrow implicit timing envelope. Debugging gets much easier when those assumptions are measured and reviewed explicitly."
+---
+
+# Robotics Debugging Gets Faster When Timing Assumptions Are Audited
+
+Many robotics incidents are described in terms of components:
+
+- the planner lagged
+- the sensor dropped frames
+- localization became unstable
+
+But a surprising number of those issues are really timing-assumption failures. The system was quietly relying on one or more timing relationships that no one had made explicit enough.
+
+## Timing Assumptions Hide in Healthy Behavior
+
+A robotics stack can look stable for a long time while carrying hidden timing assumptions like:
+
+- this topic usually arrives within X milliseconds
+- that callback usually completes before the next control tick
+- the inference stage usually does not overlap with a competing workload spike
+
+Those assumptions work until they do not. When they break, the failure can look intermittent or component-specific even though the real issue is the envelope around the components.
+
+## Audit the Assumption, Not Just the Symptom
+
+If debugging starts only at the obvious symptom, teams often spend too much time on the wrong layer.
+
+The better question is:
+
+**What timing relationship did this behavior require in order to stay healthy?**
+
+That shifts attention toward:
+
+- queue wait time
+- callback overlap
+- timestamp skew
+- control-loop budget margins
+- burst behavior rather than averages
+
+## Timing Should Have Named Contracts
+
+I prefer timing assumptions to exist as explicit contracts when they matter:
+
+```python
+timing_contract = {
+    "sensor_to_inference_ms": 18,
+    "inference_to_control_ms": 12,
+    "control_loop_total_ms": 40,
+}
+```
+
+Even if those numbers are approximate, naming them gives the team something testable and reviewable.
+
+## Why This Speeds Up Debugging
+
+When timing assumptions are audited, incident review becomes more mechanical:
+
+- which contract drifted?
+- when did the margin collapse?
+- was the failure burst-driven or sustained?
+
+That is much easier than arguing over which subsystem “probably caused it” from behavior alone.
+
+## The Practical Standard
+
+Robotics debugging gets faster when timing is treated like part of the architecture, not just an outcome observed after the fact.
+
+If a system depends on a narrow timing relationship to stay healthy, that relationship should be:
+
+- measured
+- named
+- reviewed
+
+That is how timing bugs stop masquerading as mysterious system bugs.

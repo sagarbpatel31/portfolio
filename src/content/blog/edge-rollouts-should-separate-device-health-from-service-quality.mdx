@@ -1,0 +1,92 @@
+---
+title: "Edge Rollouts Should Separate Device Health From Service Quality"
+date: "2026-07-15"
+tags: ["Edge Computing", "Reliability", "Release Engineering", "Observability", "Systems", "Production Systems"]
+excerpt: "A release can keep devices technically healthy while still degrading the service they deliver. Strong rollout evaluation separates 'the box is alive' from 'the workload is still behaving well under real conditions.'"
+---
+
+# Edge Rollouts Should Separate Device Health From Service Quality
+
+One of the easiest rollout mistakes on edge systems is to treat device health and service quality as the same thing.
+
+They are related. They are not identical.
+
+A device can be:
+
+- online
+- reachable
+- passing basic health checks
+- not restart-looping
+
+and still be delivering noticeably worse behavior to the workload that matters.
+
+## Health Checks Catch the Floor, Not the Ceiling
+
+Basic device health is about survival:
+
+- process alive
+- service listening
+- resource use within bounds
+- release activated successfully
+
+That is necessary, but it only tells you the platform did not fail outright.
+
+Service quality is a different question:
+
+- are outputs still timely?
+- are fallback modes increasing?
+- is operator intervention rising?
+- is throughput or control quality quietly degrading?
+
+Those are not always visible in ordinary health checks.
+
+## Why the Distinction Matters
+
+If you merge the two ideas, a rollout can look deceptively good:
+
+- crash rate stays low
+- uptime remains high
+- no mass rollback occurs
+
+Meanwhile:
+
+- degraded mode entries climb
+- inference latency creeps upward
+- control quality softens
+- operators compensate manually more often
+
+This is a real regression, even if the device itself stays technically alive.
+
+## Rollout Dashboards Need Two Layers
+
+I prefer rollout evaluation to be split into:
+
+1. device health metrics
+2. service quality metrics
+
+```python
+device_health = {
+    "restart_rate": 0.002,
+    "offline_rate": 0.0,
+    "rollback_rate": 0.0,
+}
+
+service_quality = {
+    "degraded_mode_entry_rate": 0.08,
+    "p95_latency_ms": 41.0,
+    "manual_intervention_rate": 0.03,
+}
+```
+
+This makes it much harder to call a rollout “healthy” when the hardware stayed up but the delivered behavior got worse.
+
+## The Practical Standard
+
+For edge rollouts, I want teams to be able to answer two separate questions:
+
+1. Did the devices stay healthy?
+2. Did the service quality remain acceptable?
+
+If the first answer is yes and the second is no, the rollout still needs attention.
+
+That distinction is what keeps release evaluation honest.

@@ -1,0 +1,103 @@
+---
+title: "Agent Supervisors Should Score Evidence Loss, Not Just Answer Quality"
+date: "2026-07-16"
+tags: ["AI", "Agents", "Evaluation", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "Agent supervision often focuses on the final answer while missing a quieter failure mode: evidence gets lost, compressed, or weakened as it moves through the workflow. Strong supervisors should measure that loss directly."
+---
+
+# Agent Supervisors Should Score Evidence Loss, Not Just Answer Quality
+
+Most agent evaluation stacks spend the majority of their attention on the visible endpoint:
+
+- was the answer correct?
+- was it grounded?
+- did it use the right tools?
+
+Those are useful checks. But there is a quieter failure mode that often gets missed:
+
+**the system gradually loses evidentiary quality as work moves from one stage to the next.**
+
+By the time the final answer is produced, the loss may be partially hidden behind polished language.
+
+## Evidence Loss Is a Workflow Problem
+
+Evidence loss can happen in several ways:
+
+- retrieval finds enough support, but summarization strips away qualifiers
+- an intermediate step collapses multiple sources into one simplified claim
+- confidence drops, but that reduction is not propagated forward
+- a later stage rephrases a claim more strongly than the carried evidence justifies
+
+None of those necessarily look dramatic in a trace unless you are explicitly watching for them.
+
+## Final Quality Alone Is Too Late
+
+If you only grade the last answer, a lot of internal degradation stays invisible.
+
+The workflow may still appear “good enough” because:
+
+- the final answer is directionally right
+- the model is fluent enough to hide missing context
+- a stronger final model compensates for earlier sloppiness
+
+But the system is still weaker than it could be, and often more expensive than it should be.
+
+## Supervisors Need an Evidence-Retention View
+
+I like to think of each stage as either preserving, strengthening, or weakening the available support.
+
+```python
+class EvidenceState:
+    source_count: int
+    support_strength: str
+    uncertainty_flags: int
+```
+
+A supervisor should compare those values across handoffs and ask:
+
+- did support become more precise or just more compressed?
+- were uncertainty markers dropped?
+- did the number of useful sources collapse too early?
+
+That is how evidence loss becomes measurable instead of intuitive.
+
+## A Useful Metric: Retention Ratio
+
+One simple framing is an evidence-retention score:
+
+```python
+def evidence_retention_ratio(initial_support, final_support):
+    if initial_support == 0:
+        return 1.0
+    return final_support / initial_support
+```
+
+The implementation can be more nuanced than this, but the idea is valuable. The system should not be allowed to casually degrade support density without the supervisor noticing.
+
+## Why This Matters Operationally
+
+When evidence loss goes unmeasured, teams often make the wrong fix:
+
+- they tune the final prompt
+- they swap the final model
+- they add stronger guardrails only at the end
+
+But the actual problem may live earlier in the chain. Measuring evidence loss shifts attention toward the handoffs, summaries, and intermediate validators that are actually weakening the system.
+
+## The Practical Standard
+
+Agent supervision gets better when it evaluates not only:
+
+- the final answer
+
+but also:
+
+- how much of the original evidence quality survived the workflow
+
+That means supervisors should notice when a process becomes:
+
+- more confident than its support
+- simpler than its evidence
+- cleaner than the underlying uncertainty
+
+Good agent systems are not only right at the end. They preserve proof as they move.
