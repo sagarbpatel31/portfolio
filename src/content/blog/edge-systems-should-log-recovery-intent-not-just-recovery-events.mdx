@@ -1,0 +1,65 @@
+---
+title: "Edge Systems Should Log Recovery Intent, Not Just Recovery Events"
+date: "2026-07-20"
+tags: ["Edge Computing", "Reliability", "Observability", "Recovery", "Systems", "Production Systems"]
+excerpt: "A lot of recovery logs show what happened after the system acted, but not what it intended to do when it made the decision. Logging recovery intent makes incident review much easier because teams can compare the policy decision with the observed outcome."
+---
+
+# Edge Systems Should Log Recovery Intent, Not Just Recovery Events
+
+Many recovery systems do a decent job recording events after they happen:
+
+- service restarted
+- rollback triggered
+- degraded mode entered
+
+Those logs are useful. But during incident review, teams often still struggle with a more interesting question:
+
+**What did the system think it was doing when it chose that recovery action?**
+
+That is where recovery intent becomes valuable.
+
+## Event Logs Miss the Decision Layer
+
+An event log tells you the action that occurred. It does not always tell you:
+
+- what signal crossed the threshold
+- what alternative actions were considered
+- what policy branch selected the final action
+
+Without that layer, incident review becomes more interpretive than it needs to be.
+
+## Intent Makes Recovery More Explainable
+
+I like recovery records that capture both the decision and the result.
+
+```json
+{
+  "intent": "restart_ingest_pipeline",
+  "reason": "camera_timeout_secs > 5",
+  "fallback_option": "enter_degraded_mode",
+  "executed": "restart_ingest_pipeline"
+}
+```
+
+This makes it possible to ask:
+
+- was the policy correct?
+- was the execution correct?
+- did the result match the intended action?
+
+Those are much better review questions than “why did this random restart happen?”
+
+## The Practical Standard
+
+For edge recovery systems, logging only the event is often not enough.
+
+The system should also log:
+
+- what action it intended to take
+- why it chose it
+- what alternate path was available
+
+That turns recovery from a black-box reaction into something the team can reason about as policy.
+
+The better the system can explain its intent, the easier it becomes to improve the next recovery decision.

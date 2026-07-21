@@ -1,0 +1,79 @@
+---
+title: "Agent Systems Need Bounded Memory Scopes"
+date: "2026-07-21"
+tags: ["AI", "Agents", "Memory", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "Agent systems often get less reliable when they remember too much too loosely. Stronger designs give memory a clear scope, retention rule, and operational purpose so past context helps instead of polluting the next decision."
+---
+
+# Agent Systems Need Bounded Memory Scopes
+
+When agent systems start accumulating memory, the first reaction is usually optimism. More context should mean better decisions, better continuity, and fewer repeated mistakes. Sometimes that is true. Just as often, the system starts carrying forward stale, weak, or irrelevant context that quietly degrades later work.
+
+That is why I think memory needs a boundary, not just a storage layer.
+
+## Memory Is Not Purely Helpful
+
+Unbounded memory tends to create a few predictable issues:
+
+- outdated assumptions keep influencing later steps
+- weak observations are treated like established facts
+- retrieval surfaces context that is adjacent but no longer relevant
+- the model spends more effort reconciling memory than solving the task
+
+The result is a workflow that feels informed while becoming less precise.
+
+## Scope Should Follow the Job
+
+Not all memory deserves the same lifetime or authority.
+
+I like to separate memory into scopes such as:
+
+```python
+class MemoryScope:
+    TURN = "turn"
+    TASK = "task"
+    SESSION = "session"
+    DURABLE = "durable"
+```
+
+This lets the system ask:
+
+- should this survive only the current workflow?
+- should it persist for the session?
+- is it strong enough to become durable knowledge?
+
+Without those distinctions, everything starts competing for the same level of trust.
+
+## Durable Memory Should Be Harder to Earn
+
+One useful default is to make durable memory expensive to create.
+
+It should usually require:
+
+- repeated confirmation
+- strong evidence
+- clear operational value
+
+This prevents the system from turning momentary observations into long-lived assumptions.
+
+## Retrieval Should Respect Scope
+
+The retriever should know whether the current task wants:
+
+- recent transient context
+- prior task state
+- durable facts
+
+That keeps memory useful without making every decision drag a large context tail behind it.
+
+## The Practical Standard
+
+Agent memory works best when it is scoped like an operational resource:
+
+- what is it for?
+- how long should it live?
+- how trustworthy is it?
+
+The more explicit those answers are, the less likely memory is to become a source of subtle error.
+
+Good agent systems do not just remember more. They remember with boundaries.
