@@ -1,0 +1,49 @@
+---
+title: "Agent Systems Need Reviewable Intermediate Artifacts"
+date: "2026-07-22"
+tags: ["AI", "Agents", "Evaluation", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "Agent workflows become much easier to debug when the important intermediate steps are preserved as reviewable artifacts instead of disappearing into a final answer. Good systems leave behind enough structure to inspect how the reasoning path evolved."
+---
+
+# Agent Systems Need Reviewable Intermediate Artifacts
+
+One reason agent systems can feel slippery in production is that too much of the workflow disappears behind the final answer. By the time something looks wrong, the intermediate planning, evidence shaping, and constraint decisions are already compressed away.
+
+That is a tooling problem as much as a modeling problem.
+
+## Final Outputs Hide Too Much
+
+If the only artifact that survives is the final response, incident review becomes harder than it should be. You can see the bad outcome, but not the specific places where the process got thinner, noisier, or overconfident.
+
+That is why I prefer workflows that preserve intermediate artifacts such as:
+
+- evidence bundles
+- plan revisions
+- support-strength summaries
+- uncertainty markers
+- escalation reasons
+
+These do not need to be pretty. They need to be inspectable.
+
+## Reviewability Is a Reliability Feature
+
+Reviewable intermediate artifacts help because they make it possible to ask:
+
+- what evidence actually existed at this step?
+- what changed before the answer became stronger or weaker?
+- what information was dropped?
+- what triggered escalation or fallback?
+
+Without those artifacts, supervision ends up inferring the workflow from its final prose, which is much less reliable.
+
+## The Practical Standard
+
+Agent systems improve faster when the important internal steps are visible enough to inspect after the fact.
+
+That does not mean storing every token forever. It means keeping the artifacts that explain:
+
+- what the system knew
+- what it decided
+- why it changed course
+
+A reviewable workflow is easier to debug, easier to score, and easier to trust than one that only leaves behind the final answer.

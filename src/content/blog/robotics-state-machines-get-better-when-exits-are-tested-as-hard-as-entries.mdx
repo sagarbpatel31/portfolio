@@ -1,0 +1,62 @@
+---
+title: "Robotics State Machines Get Better When Exits Are Tested as Hard as Entries"
+date: "2026-07-22"
+tags: ["Robotics", "State Machines", "Reliability", "Testing", "Systems", "Operations"]
+excerpt: "Teams often test how a robotics system enters degraded or safe states, but not how it exits them. Stronger state machines treat exit conditions as first-class behavior that deserves the same discipline as entry triggers."
+---
+
+# Robotics State Machines Get Better When Exits Are Tested as Hard as Entries
+
+Robotics teams usually pay a lot of attention to state entry:
+
+- when to enter degraded mode
+- when to safe stop
+- when to switch to operator hold
+
+That is appropriate. But many systems give much less attention to the other half of the problem:
+
+**how does the system leave that state cleanly?**
+
+Weak exits create a lot of operational pain.
+
+## Entry Is Only Half the Contract
+
+A degraded or safe state is useful only if the system also knows:
+
+- what conditions must be true before exiting
+- whether those conditions are stable enough to trust
+- how the transition back to normal behavior should look
+
+Without that discipline, systems often:
+
+- exit too early
+- oscillate between states
+- remain degraded longer than necessary
+- confuse operators about what recovery actually means
+
+## Exit Conditions Need Their Own Tests
+
+I like exit behavior to be tested as directly as entry behavior.
+
+That means validating:
+
+- the explicit exit thresholds
+- the required dwell time before recovery
+- the operator visibility during the transition
+- the post-exit behavior under renewed load
+
+These are not secondary details. They determine whether recovery is stable or merely optimistic.
+
+## The Practical Standard
+
+State machines get much better when exits are treated like a first-class part of system behavior.
+
+For robotics, that means asking not only:
+
+- when should we enter this mode?
+
+but also:
+
+- how do we know it is safe to leave?
+
+A recovery path is only credible if the exit is as engineered as the entry.

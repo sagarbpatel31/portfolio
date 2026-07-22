@@ -1,0 +1,47 @@
+---
+title: "Edge Systems Should Measure How Often Humans Compensate"
+date: "2026-07-22"
+tags: ["Edge Computing", "Reliability", "Operations", "Observability", "Systems", "Production Systems"]
+excerpt: "A release can look healthy in metrics while humans quietly work around its weaknesses. One of the stronger operational signals for edge systems is how often technicians or operators have to compensate for behavior the software should have handled itself."
+---
+
+# Edge Systems Should Measure How Often Humans Compensate
+
+A system can look stable in dashboards while still being operationally expensive. One reason is that humans often absorb the instability before the metrics make it obvious.
+
+Technicians retry steps. Operators pause and resume workflows manually. Engineers clean up after degraded behavior. None of that always shows up in the basic health numbers.
+
+## Human Compensation Is a Real Signal
+
+When people repeatedly work around the system, that is not just “support activity.” It is evidence that the software is pushing work outward.
+
+Common examples:
+
+- repeating setup or recovery actions
+- manually overriding degraded states
+- restarting local services more often than expected
+- taking extra steps to keep the workflow usable
+
+If those patterns increase after a rollout, the release may be weaker than uptime metrics suggest.
+
+## Why This Matters
+
+Traditional signals catch obvious failure:
+
+- crash rate
+- restart rate
+- rollback rate
+
+Human compensation catches something subtler:
+
+- the workload still completes, but only because people are absorbing extra friction
+
+That is still a regression. It just appears in human effort before it appears as hard system failure.
+
+## The Practical Standard
+
+For edge systems, I want teams to notice not only whether the device stayed alive, but also whether people had to work harder around it.
+
+That means treating operator and technician compensation as part of the service-quality picture.
+
+If humans are regularly patching over software weakness, the system is telling you something important even when the health checks still look green.
