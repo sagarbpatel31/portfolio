@@ -1,0 +1,70 @@
+---
+title: "Agent Systems Need Better Abandon Signals"
+date: "2026-07-24"
+tags: ["AI", "Agents", "Reliability", "Production Systems", "Evaluation", "Gen AI"]
+excerpt: "A lot of agent systems know how to continue and how to escalate, but they are weak at recognizing when a path is no longer worth pursuing. Better abandon signals help the system stop wasting cost, latency, and trust on low-yield attempts."
+---
+
+# Agent Systems Need Better Abandon Signals
+
+Agent systems usually spend a lot of design effort on two decisions:
+
+- when to continue
+- when to escalate
+
+There is a third decision that matters just as much in production:
+
+**when should the system give up on the current path entirely?**
+
+Without a good answer, agents tend to waste effort in ways that look industrious in the trace and disappointing in the result.
+
+## Not Every Problem Deserves More Attempts
+
+Some workflows hit a point where the current path is clearly not paying off:
+
+- retrieval remains thin after repeated tries
+- tool outputs add noise instead of clarity
+- grounding does not improve after another step
+- cost grows without improving support quality
+
+If the system cannot recognize those situations, it will often keep moving simply because “doing something” feels safer than stopping.
+
+## Abandonment Is Not Failure
+
+Teams sometimes treat abandonment as if it were a weakness in the agent. In reality, a well-timed stop is often a sign of good operational judgment.
+
+Better abandon behavior can mean:
+
+- return a bounded partial answer
+- surface the best current evidence
+- explicitly state that support is insufficient
+- stop before another unproductive escalation
+
+That behavior is usually better than one more expensive, low-confidence attempt.
+
+## What a Good Abandon Signal Looks Like
+
+I like abandon rules that combine evidence quality, budget pressure, and improvement rate.
+
+```python
+def should_abandon(run):
+    return any([
+        run.support_strength == "weak" and run.retry_count >= 2,
+        run.tool_yield_delta <= 0 and run.tool_calls >= 4,
+        run.total_cost_usd > 0.03 and run.quality_gain <= 0,
+    ])
+```
+
+The exact thresholds will vary. The point is that abandonment should be policy, not mood.
+
+## The Practical Standard
+
+Agent systems become more reliable when they know not only how to keep going, but also how to stop intelligently.
+
+Good abandonment signals protect:
+
+- latency
+- cost
+- user trust
+
+An agent that cannot recognize a dead-end path is more likely to confuse persistence with progress. Stronger systems know the difference.

@@ -1,0 +1,54 @@
+---
+title: "Robotics Systems Need State Summaries for Humans"
+date: "2026-07-24"
+tags: ["Robotics", "Operations", "Reliability", "Systems", "Safety", "Physical AI"]
+excerpt: "A robotics system can have excellent internal state tracking and still be hard to operate if humans never get a clear summary of what the machine believes is happening. State summaries make complex system behavior more legible under pressure."
+---
+
+# Robotics Systems Need State Summaries for Humans
+
+Robotics systems often do a lot of internal bookkeeping:
+
+- mode tracking
+- health evaluation
+- dependency status
+- confidence thresholds
+
+That internal state is useful. But if the human nearby cannot quickly understand the machine’s current situation, the operational value of all that bookkeeping is limited.
+
+## Internal State and Human State Are Different
+
+The machine may know a great deal about itself, but operators and engineers usually need something more compressed:
+
+- current mode
+- why that mode changed
+- what the most important unhealthy dependency is
+- what action is expected next
+
+That is essentially a state summary for humans.
+
+## Why Summaries Matter
+
+Without a clear summary, people end up reconstructing meaning from fragments:
+
+- a status light
+- a few logs
+- behavior changes
+- one line of UI text
+
+That slows response and increases the chance of mistaken intervention. A concise human-facing summary reduces that friction.
+
+## The Practical Standard
+
+I want robotics systems to be able to produce a short, reliable description of their own operational state:
+
+```text
+Mode: degraded
+Cause: localization confidence below threshold
+Current constraint: manual intervention recommended
+Expected next step: operator hold or recovery wait
+```
+
+This is not decoration. It is an operational surface.
+
+The better a system can summarize itself for humans, the easier it becomes to run safely and debug efficiently when things stop being nominal.
