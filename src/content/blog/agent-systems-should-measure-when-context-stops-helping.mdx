@@ -1,0 +1,57 @@
+---
+title: "Agent Systems Should Measure When Context Stops Helping"
+date: "2026-07-29"
+tags: ["AI", "Agents", "Evaluation", "Production Systems", "Reliability", "Gen AI"]
+excerpt: "More context is not always better context. Stronger agent systems measure when additional history, evidence, or memory stops improving outcomes and starts diluting clarity, speed, or groundedness."
+---
+
+# Agent Systems Should Measure When Context Stops Helping
+
+One of the most common assumptions in agent design is that more context will usually improve the result. Sometimes that is true. Sometimes more context just means more material for the system to reconcile, compress, mis-rank, or overfit.
+
+That is why I think context should be treated like a variable with diminishing returns, not like a universal good.
+
+## Context Has a Point of Decline
+
+Extra context can hurt when it causes:
+
+- weaker relevance ranking
+- slower tool or model passes
+- more opportunities for stale information to leak in
+- more compression pressure during summarization
+
+At that point, the workflow is not becoming more informed. It is becoming more cluttered.
+
+## Measure the Delta, Not the Assumption
+
+The system should be able to ask whether additional context actually improved anything:
+
+- did support strength improve?
+- did groundedness improve?
+- did confidence improve?
+- did the answer become more complete without getting noisier?
+
+If the answer is consistently no, then that extra context is not helping.
+
+```python
+def context_gain(before, after):
+    return {
+        "groundedness_delta": after.groundedness - before.groundedness,
+        "support_delta": after.support_strength - before.support_strength,
+        "latency_delta": after.latency_ms - before.latency_ms,
+    }
+```
+
+This is the kind of measurement that turns context strategy into something operational rather than philosophical.
+
+## The Practical Standard
+
+Agent systems should not only know how to gather more context. They should know how to detect when more context has stopped buying them better outcomes.
+
+That is how you keep:
+
+- latency under control
+- evidence focused
+- memory useful
+
+Good systems do not just accumulate more inputs. They know when enough context has become better than extra context.
