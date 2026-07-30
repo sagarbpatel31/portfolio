@@ -17,12 +17,12 @@ import { getRecruiterBookingLink } from "@/lib/contact";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Resume",
+  title: "Resume & Experience",
   description:
     "ATS-friendly resume for Sagar Patel with explicit skills, scope, impact bullets, and hiring links.",
   alternates: { canonical: `${SITE_URL}/resume` },
   openGraph: {
-    title: "Resume | SAGAR_OS",
+    title: "Resume & Experience | SAGAR_OS",
     description: "ATS-friendly resume with skills, scope, and impact bullets.",
     url: `${SITE_URL}/resume`,
     type: "website",
@@ -36,11 +36,11 @@ export default function ResumePage() {
     <div className="py-8">
       <Container>
         <Link
-          href="/#dashboard"
+          href="/"
           className="mb-6 inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent"
         >
           <ArrowLeft size={12} />
-          cd ~/dashboard
+          cd ~/home
         </Link>
 
         <div className="mb-6 flex items-center gap-3">
@@ -142,67 +142,6 @@ export default function ResumePage() {
                   {resumeData.email}
                   <Mail size={13} aria-hidden="true" />
                 </a>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <section className="mb-8 grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="dash-card">
-            <div className="dash-card-header">
-              <span>professional summary</span>
-              <span className="text-accent">keywords</span>
-            </div>
-            <CardContent className="space-y-4">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {resumeData.summary}
-              </p>
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  ATS keyword set
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-foreground">
-                  {resumeData.keywords}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="dash-card">
-            <div className="dash-card-header">
-              <span>scope summary</span>
-              <span className="text-accent-green">end-to-end</span>
-            </div>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-border bg-surface/50 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Experience
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    {resumeData.experience.length} roles across embedded and AI systems
-                  </p>
-                </div>
-                <div className="rounded-lg border border-border bg-surface/50 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Projects
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    {resumeData.projects.length} shipped projects and prototypes
-                  </p>
-                </div>
-              </div>
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  Focus areas
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {resumeData.focusAreas.map((area) => (
-                    <Badge key={area} variant="outline">
-                      {area}
-                    </Badge>
-                  ))}
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -346,32 +285,6 @@ export default function ResumePage() {
           </Card>
         </section>
 
-        <section className="mb-4">
-          <div className="dash-card">
-            <div className="dash-card-header">
-              <span>schedule</span>
-              <span className="text-accent-amber">recruiter CTA</span>
-            </div>
-            <div className="dash-card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-foreground">
-                  If a quick conversation is easier than email, schedule a short intro call.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  The button opens a booking link when configured, otherwise it falls back to a
-                  prefilled email.
-                </p>
-              </div>
-              <a
-                href={scheduleLink}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-accent-dim"
-              >
-                <CalendarDays size={14} aria-hidden="true" />
-                Book intro call
-              </a>
-            </div>
-          </div>
-        </section>
       </Container>
     </div>
   );

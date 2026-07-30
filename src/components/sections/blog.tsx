@@ -52,6 +52,7 @@ export function Blog({ posts }: BlogSectionProps) {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
+                            timeZone: "UTC",
                           })}
                         </span>
                         <span className="inline-flex items-center gap-1">

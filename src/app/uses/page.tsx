@@ -5,12 +5,12 @@ import { Container } from "@/components/ui/container";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Uses & Now",
+  title: "Stack & Current Focus",
   description:
     "What Sagar Patel is working on right now, and the hardware, tools, and stack he builds with.",
   alternates: { canonical: `${SITE_URL}/uses` },
   openGraph: {
-    title: "Uses & Now | SAGAR_OS",
+    title: "Stack & Current Focus | SAGAR_OS",
     description:
       "Current focus + the hardware, tools, and stack behind the work.",
     url: `${SITE_URL}/uses`,
@@ -24,7 +24,7 @@ interface StackGroup {
   items: string[];
 }
 
-const NOW: { label: string; detail: string; status: "active" | "learning" | "open" }[] = [
+const NOW: { label: string; detail: string; status: "active" | "learning" }[] = [
   {
     label: "Senior Software Engineer @ Ciena",
     detail:
@@ -32,14 +32,9 @@ const NOW: { label: string; detail: string; status: "active" | "learning" | "ope
     status: "active",
   },
   {
-    label: "M.S. Computer Science @ Sofia University",
-    detail: "Part-time, Jan 2026 – Jun 2027. Deepening ML systems + distributed computing.",
-    status: "active",
-  },
-  {
     label: "Building: Watchpoint, StepAhead, FieldFix, SignalForge",
     detail:
-      "Robotics incident intelligence, infant motor-development AI, offline repair assistant, and a DPDK traffic generator — all shipping in production.",
+      "Active builds spanning robotics incident intelligence, applied computer vision, offline AI, and DPDK networking.",
     status: "active",
   },
   {
@@ -47,12 +42,6 @@ const NOW: { label: string; detail: string; status: "active" | "learning" | "ope
     detail:
       "NVIDIA GR00T policy fine-tuning, humanoid teleop (XG1 / Unitree G1), and HydraDB-backed agent memory architectures.",
     status: "learning",
-  },
-  {
-    label: "Open to roles",
-    detail:
-      "Physical AI · Forward Deployed Engineer · Gen AI software · Embedded software. High-ownership, ship-fast environments.",
-    status: "open",
   },
 ];
 
@@ -126,13 +115,11 @@ const STACK: StackGroup[] = [
 const statusStyle = {
   active: "text-accent-green",
   learning: "text-accent",
-  open: "text-accent-amber",
 } as const;
 
 const statusLabel = {
   active: "ACTIVE",
   learning: "LEARNING",
-  open: "OPEN",
 } as const;
 
 export default function UsesPage() {
@@ -140,28 +127,29 @@ export default function UsesPage() {
     <Container>
       <div className="py-8">
         <Link
-          href="/#dashboard"
+          href="/"
           className="mb-6 inline-flex items-center gap-2 font-mono text-xs text-muted transition-colors hover:text-accent"
         >
           <ArrowLeft size={12} />
-          cd ~/dashboard
+          cd ~/home
         </Link>
 
         <div className="mb-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-border" />
           <span className="font-mono text-xs uppercase tracking-widest text-muted">
-            ~/uses
+            ~/stack
           </span>
           <div className="h-px flex-1 bg-border" />
         </div>
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            <span className="text-foreground">Uses </span>
-            <span className="text-gradient-cyan">&amp; Now</span>
+            <span className="text-foreground">Stack </span>
+            <span className="text-gradient-cyan">&amp; current focus</span>
           </h1>
-          <p className="mt-2 font-mono text-sm text-muted-foreground">
-            What I&apos;m working on right now + the stack behind the work.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            The tools I reach for, the platforms I build on, and what I&apos;m
+            exploring now.
           </p>
         </div>
 

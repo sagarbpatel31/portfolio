@@ -3,7 +3,6 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Navbar } from "@/components/layout/navbar";
 import { StatusBar } from "@/components/layout/status-bar";
-import { KonamiOverlay } from "@/components/konami-overlay";
 import { SITE_URL } from "@/lib/site";
 import { profile } from "@/content/profile";
 import { socials } from "@/content/socials";
@@ -139,6 +138,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable}`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col bg-background bg-grid font-sans text-foreground antialiased overflow-x-hidden">
@@ -155,7 +155,6 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-grow pt-14 pb-8">{children}</main>
         <StatusBar />
-        <KonamiOverlay />
         <Analytics />
       </body>
     </html>

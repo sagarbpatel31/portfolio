@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Menu, Github, Linkedin } from "lucide-react";
 import { MobileNav } from "./mobile-nav";
 import { ThemeToggle } from "./theme-toggle";
-import { XIcon } from "@/components/icons/x-icon";
 
 export function Navbar() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -42,23 +41,18 @@ export function Navbar() {
               </Link>
             </li>
             <li>
-              <Link href="/#dashboard" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
-                /dashboard
+              <Link href="/projects" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /work
               </Link>
             </li>
             <li>
               <Link href="/blog" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
-                /blog
+                /writing
               </Link>
             </li>
             <li>
               <Link href="/uses" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
-                /uses
-              </Link>
-            </li>
-            <li>
-              <Link href="/projects" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
-                /projects
+                /stack
               </Link>
             </li>
             <li>
@@ -89,16 +83,6 @@ export function Navbar() {
             >
               <Linkedin className="h-3.5 w-3.5" />
             </a>
-            <a
-              href="https://x.com/SagarPa65006244"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden rounded-md p-2 text-muted-foreground transition-colors hover:text-accent sm:inline-flex"
-              aria-label="X (Twitter)"
-            >
-              <XIcon className="h-3.5 w-3.5" />
-            </a>
-
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-md p-2 text-muted transition-colors hover:text-foreground md:hidden"

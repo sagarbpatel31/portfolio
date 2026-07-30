@@ -1,257 +1,82 @@
-"use client";
-
-import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { motion, useInView } from "framer-motion";
-import { Download, Github, Linkedin } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Download, Github, Linkedin } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { fadeIn, staggerContainer } from "@/lib/motion";
-import { profile } from "@/content/profile";
-import { heroSignals } from "@/content/hiring";
-import { Terminal } from "@/components/terminal";
-
-const roles = [
-  "Embedded Software",
-  "AI Software",
-  "Robotics",
-  "Edge AI",
-  "Gen AI",
-  "Systems Programming",
-];
-
-const AVATAR_BLUR =
-  "data:image/jpeg;base64,/9j/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQABADASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABQED/8QAHxAAAgICAQUAAAAAAAAAAAAAAQMCBAAREhQhMUFR/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAP/xAAaEQACAgMAAAAAAAAAAAAAAAAAEQECElFh/9oADAMBAAIRAxEAPwDezI9OGNAYwYhSsuNREBqOz5+DCaMpMOpjY9g5brpLnwX2AxnVPhJzo//Z";
-
-function TypingRoles() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [displayed, setDisplayed] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const current = roles[currentIndex];
-
-    // Reached the full word — pause, then begin deleting.
-    if (!isDeleting && displayed === current) {
-      const pause = setTimeout(() => setIsDeleting(true), 2000);
-      return () => clearTimeout(pause);
-    }
-
-    // Finished deleting — advance to the next word after a short beat.
-    if (isDeleting && displayed === "") {
-      const next = setTimeout(() => {
-        setIsDeleting(false);
-        setCurrentIndex((prev) => (prev + 1) % roles.length);
-      }, 400);
-      return () => clearTimeout(next);
-    }
-
-    const speed = isDeleting ? 40 : 80;
-    const timer = setTimeout(() => {
-      setDisplayed(
-        isDeleting
-          ? current.slice(0, displayed.length - 1)
-          : current.slice(0, displayed.length + 1)
-      );
-    }, speed);
-
-    return () => clearTimeout(timer);
-  }, [displayed, isDeleting, currentIndex]);
-
-  return (
-    <span className="text-accent glow-text">
-      {displayed}
-      <span className="animate-blink text-accent">|</span>
-    </span>
-  );
-}
 
 export function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true });
-
   return (
-    <section id="hero" ref={ref} className="relative scroll-mt-20 py-8 lg:py-12">
+    <section
+      id="hero"
+      className="relative overflow-hidden border-b border-border/70 py-14 sm:py-20 lg:py-24"
+    >
+      <div
+        className="pointer-events-none absolute -right-24 top-12 h-72 w-72 rounded-full bg-accent/8 blur-3xl"
+        aria-hidden="true"
+      />
+
       <Container>
-        <motion.div
-          variants={staggerContainer(0.1, 0.1)}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-          className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12 items-start"
-        >
-          {/* Left: Profile info */}
-          <motion.div variants={fadeIn("up", 0)} className="space-y-6 min-w-0">
-            {/* Profile header */}
-            <div className="flex items-center gap-4">
-              <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-accent/30">
-                <Image
-                  src={profile.avatarUrl}
-                  alt={profile.name}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                  priority
-                  placeholder="blur"
-                  blurDataURL={AVATAR_BLUR}
-                />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  <span className="text-foreground">Sagar </span>
-                  <span className="text-gradient-cyan">Patel</span>
-                </h1>
-                <p className="font-mono text-xs text-muted-foreground mt-0.5">
-                  {profile.title}
-                </p>
-              </div>
-            </div>
+        <div className="max-w-5xl">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-accent-green">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
+            </span>
+            Open to high-ownership engineering roles
+          </div>
 
-            {/* Status */}
-            <div className="inline-flex max-w-full items-start gap-2 rounded border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 font-mono text-xs text-accent-green">
-              <span className="relative mt-1 flex h-1.5 w-1.5 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
-              </span>
-              <span className="min-w-0">{profile.status}</span>
-            </div>
+          <p className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-accent">
+            Sagar Patel · Systems &amp; AI Engineer
+          </p>
+          <h1 className="max-w-4xl text-4xl font-bold leading-[1.03] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-7xl">
+            I build the software between{" "}
+            <span className="text-gradient-cyan">hardware and intelligence.</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Embedded Linux, high-performance networking, edge AI, and robotics,
+            owned from low-level implementation through production behavior.
+          </p>
 
-            {/* Typing role */}
-            <div className="flex items-center gap-2 font-mono text-sm text-muted-foreground">
-              <span className="text-accent-green">$</span>
-              <span className="text-muted">~/</span>
-              <TypingRoles />
-            </div>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/projects"
+              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 font-mono text-xs font-semibold text-background transition-colors hover:bg-accent-dim"
+            >
+              View selected work
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/resume"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/60 px-4 py-2.5 font-mono text-xs font-semibold text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+            >
+              <Download size={14} aria-hidden="true" />
+              Resume
+            </Link>
+            <a
+              href="https://github.com/sagarbpatel31"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center rounded-md border border-border p-2.5 text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent sm:inline-flex"
+              aria-label="GitHub"
+            >
+              <Github size={14} />
+            </a>
+            <a
+              href="https://linkedin.com/in/sagarp31"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden items-center rounded-md border border-border p-2.5 text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent sm:inline-flex"
+              aria-label="LinkedIn"
+            >
+              <Linkedin size={14} />
+            </a>
+          </div>
 
-            {/* Tagline */}
-            <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              {profile.tagline}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {heroSignals.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 font-mono text-[11px] text-accent"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-
-            {/* CTA buttons */}
-            <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm" className="font-mono text-xs bg-accent text-background hover:bg-accent-dim">
-                <a href="#dashboard">
-                  View Hiring Story
-                </a>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="font-mono text-xs">
-                <a href="#proud-work">
-                  Work I&apos;m Proud Of
-                </a>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="font-mono text-xs">
-                <Link href="/resume">
-                  <Download size={14} className="mr-1.5" aria-hidden="true" />
-                  Resume
-                </Link>
-              </Button>
-              <a
-                href="https://github.com/sagarbpatel31"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent hover:border-accent/30"
-                aria-label="GitHub"
-              >
-                <Github size={14} />
-              </a>
-              <a
-                href="https://linkedin.com/in/sagarp31"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent hover:border-accent/30"
-                aria-label="LinkedIn"
-              >
-                <Linkedin size={14} />
-              </a>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-2">
-              <span className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted">
-                Quick links
-              </span>
-              <Link
-                href="/blog"
-                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
-              >
-                /blog
-              </Link>
-              <Link
-                href="/uses"
-                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
-              >
-                /uses
-              </Link>
-              <Link
-                href="/projects"
-                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
-              >
-                /projects
-              </Link>
-              <Link
-                href="#hiring"
-                className="rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-mono text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
-              >
-                /hiring
-              </Link>
-            </div>
-
-            <div className="dash-card max-w-xl">
-              <div className="dash-card-header">
-                <span>recruiter snapshot</span>
-                <span className="text-accent-green">open now</span>
-              </div>
-              <div className="dash-card-body grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Best fit
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    Embedded Linux, edge AI, robotics, and networking systems with direct production ownership.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Location
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">{profile.location}</p>
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Open to
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    Systems roles • Robotics / Physical AI • Edge AI / inference
-                  </p>
-                </div>
-                <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    Hire signal
-                  </p>
-                  <p className="mt-1 text-sm text-foreground">
-                    End-to-end owner with a systems-first bias: observability, rollback paths, latency discipline, and real deployment constraints.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Right: Terminal */}
-          <motion.div variants={fadeIn("up", 0.2)}>
-            <Terminal />
-          </motion.div>
-        </motion.div>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+            <span>Ciena</span>
+            <span>Cisco</span>
+            <span>TCS</span>
+            <span>4+ years in production systems</span>
+          </div>
+        </div>
       </Container>
     </section>
   );

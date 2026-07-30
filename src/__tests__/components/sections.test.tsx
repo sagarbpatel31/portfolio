@@ -1,6 +1,5 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
 // Mock framer-motion to render children directly
 jest.mock("framer-motion", () => ({
@@ -81,24 +80,24 @@ describe("Hero section", () => {
   beforeEach(() => render(<Hero />));
 
   it("renders the name", () => {
-    expect(screen.getByText("Sagar")).toBeInTheDocument();
-    expect(screen.getByText("Patel")).toBeInTheDocument();
+    expect(screen.getAllByText(/Sagar Patel/).length).toBeGreaterThan(0);
   });
 
   it("renders status badge", () => {
-    expect(screen.getByText(/Open to Physical AI.*Forward Deployed/)).toBeInTheDocument();
+    expect(screen.getByText(/Open to high-ownership engineering roles/)).toBeInTheDocument();
   });
 
-  it("renders role domains terminal", () => {
-    expect(screen.getByText("~/")).toBeInTheDocument();
+  it("keeps detailed profile data off the homepage hero", () => {
+    expect(screen.queryByText("profile.snapshot")).not.toBeInTheDocument();
+    expect(screen.queryByText(/C\/C\+\+ · Python · Linux · CUDA/)).not.toBeInTheDocument();
   });
 
-  it("renders tagline", () => {
-    expect(screen.getByText(/Building production software from silicon to multi-agent AI/)).toBeInTheDocument();
+  it("renders the recruiter-facing positioning", () => {
+    expect(screen.getByText(/Embedded Linux, high-performance networking/)).toBeInTheDocument();
   });
 
-  it("has View Dashboard CTA linking to dashboard", () => {
-    expect(screen.getByRole("link", { name: /View Dashboard/ })).toHaveAttribute("href", "#dashboard");
+  it("links directly to selected work", () => {
+    expect(screen.getByRole("link", { name: /View selected work/ })).toHaveAttribute("href", "/projects");
   });
 
   it("has Resume download CTA", () => {
@@ -176,8 +175,8 @@ describe("Stack map section", () => {
 describe("Case studies section", () => {
   beforeEach(() => render(<CaseStudies />));
 
-  it("renders case_studies heading", () => {
-    expect(screen.getByText("case_studies")).toBeInTheDocument();
+  it("renders selected_work heading", () => {
+    expect(screen.getByText("selected_work")).toBeInTheDocument();
   });
 
   it("renders the selected case studies", () => {
@@ -258,18 +257,10 @@ describe("Projects section", () => {
     expect(screen.getAllByText(/XG1/).length).toBeGreaterThan(0);
   });
 
-  it("renders category filter tabs", () => {
-    const buttons = screen.getAllByRole("button");
-    const tabLabels = buttons.map((b) => b.textContent);
-    expect(tabLabels).toContain("All");
-    expect(tabLabels).toContain("Robotics & AI");
-  });
-
-  it("filters projects by category", async () => {
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Physical AI & Robotics"));
+  it("renders a static archive without category controls", () => {
+    expect(screen.queryByRole("button", { name: "All" })).not.toBeInTheDocument();
     expect(screen.getAllByText(/XG1/).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/Watchpoint/)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Watchpoint/).length).toBeGreaterThan(0);
   });
 
   it("project cards link to detail pages", () => {

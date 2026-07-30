@@ -1,153 +1,111 @@
-"use client";
-
-import { useRef } from "react";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { ArrowRight, Download, Mail } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { Badge } from "@/components/ui/badge";
-import { fadeIn, staggerContainer } from "@/lib/motion";
-import { BlogPost } from "@/types";
+import { profile } from "@/content/profile";
+import type { BlogPost } from "@/types";
 
 type LatestBlogPost = Pick<
   BlogPost,
-  "slug" | "title" | "date" | "readingTime" | "tags" | "excerpt"
+  "slug" | "title" | "date" | "readingTime" | "tags"
 >;
 
 interface LatestBlogsProps {
   posts: LatestBlogPost[];
 }
 
-export function LatestBlogs({ posts }: LatestBlogsProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
 
+export function LatestBlogs({ posts }: LatestBlogsProps) {
   if (posts.length === 0) {
     return null;
   }
 
-  const [latestPost, ...otherPosts] = posts;
-
   return (
-    <section id="latest-blogs" ref={ref} className="py-8 sm:py-12">
+    <section id="latest-writing" className="py-10 pb-16 sm:py-14 sm:pb-20">
       <Container>
-        <motion.div
-          variants={staggerContainer(0.08, 0.1)}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-        >
-          <motion.div variants={fadeIn("up", 0)} className="mb-6">
-            <div className="section-bar mb-4" />
-            <h2 className="font-mono text-sm font-semibold uppercase tracking-widest text-accent">
-              latest_blogs
-            </h2>
-            <p className="mt-2 max-w-3xl text-xl font-bold tracking-tight sm:text-2xl">
-              Recent writing on systems, edge AI, networking, and multi-agent work.
-            </p>
-          </motion.div>
-
-          <div className="grid gap-3 lg:grid-cols-[1.3fr_0.7fr]">
-            <motion.div variants={fadeIn("up", 0)} className="dash-card overflow-hidden">
-              <Link
-                href={`/blog/${latestPost.slug}`}
-                className="group block h-full transition-colors hover:border-accent/30"
-              >
-                <div className="dash-card-body flex h-full flex-col gap-4 bg-gradient-to-br from-accent/10 via-transparent to-transparent">
-                  <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-                    <span className="rounded border border-accent/20 bg-accent/5 px-2 py-0.5 text-accent">
-                      Latest note
-                    </span>
-                    <span>{latestPost.readingTime}</span>
-                  </div>
-
-                  <div className="space-y-3">
-                    <h3 className="text-2xl font-bold tracking-tight text-foreground transition-colors group-hover:text-accent sm:text-3xl">
-                      {latestPost.title}
-                    </h3>
-                    <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                      {latestPost.excerpt}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {latestPost.tags.slice(0, 4).map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="mt-auto flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Calendar size={12} aria-hidden="true" />
-                      {new Date(latestPost.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Clock size={12} aria-hidden="true" />
-                      {latestPost.readingTime}
-                    </span>
-                  </div>
-
-                  <span className="inline-flex items-center gap-1 text-sm text-accent">
-                    Read latest post
-                    <ArrowRight
-                      size={14}
-                      className="transition-transform group-hover:translate-x-1"
-                    />
-                  </span>
-                </div>
+        <div className="grid gap-3 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="dash-card">
+            <div className="dash-card-header">
+              <span>latest_writing</span>
+              <Link href="/blog" className="text-accent hover:text-accent-light">
+                View archive
               </Link>
-            </motion.div>
-
-            <motion.div variants={fadeIn("up", 0)} className="space-y-3">
-              {otherPosts.map((post) => (
+            </div>
+            <div className="divide-y divide-border">
+              {posts.map((post) => (
                 <Link
                   key={post.slug}
                   href={`/blog/${post.slug}`}
-                  className="group dash-card block overflow-hidden transition-colors hover:border-accent/30"
+                  className="group block p-5 transition-colors hover:bg-surface/50 sm:p-6"
                 >
-                  <div className="dash-card-body space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-                      <span>{new Date(post.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}</span>
-                      <span>{post.readingTime}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-base font-semibold text-foreground transition-colors group-hover:text-accent">
-                        {post.title}
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
-                        {post.excerpt}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {post.tags.slice(0, 3).map((tag) => (
-                        <Badge key={tag} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted">
+                    <time dateTime={post.date}>{formatDate(post.date)}</time>
+                    <span>·</span>
+                    <span>{post.readingTime}</span>
+                    <span>·</span>
+                    <span className="text-accent">{post.tags[0]}</span>
+                  </div>
+                  <div className="mt-2 flex items-start justify-between gap-4">
+                    <h2 className="font-semibold leading-snug text-foreground transition-colors group-hover:text-accent sm:text-lg">
+                      {post.title}
+                    </h2>
+                    <ArrowRight
+                      size={15}
+                      className="mt-1 shrink-0 text-muted transition-transform group-hover:translate-x-1 group-hover:text-accent"
+                      aria-hidden="true"
+                    />
                   </div>
                 </Link>
               ))}
-
-              <Link
-                href="/blog"
-                className="inline-flex items-center gap-1 px-1 text-sm text-accent transition-colors hover:text-accent-light"
-              >
-                Browse all writing
-                <ArrowRight size={14} aria-hidden="true" />
-              </Link>
-            </motion.div>
+            </div>
           </div>
-        </motion.div>
+
+          <div className="dash-card flex flex-col border-accent/20 bg-gradient-to-br from-accent/10 via-card to-card">
+            <div className="dash-card-header">
+              <span>open_to_work</span>
+              <span className="text-accent-green">available</span>
+            </div>
+            <div className="dash-card-body flex flex-1 flex-col justify-between gap-8 p-6">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
+                  Let&apos;s build something difficult
+                </p>
+                <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+                  Need systems depth with end-to-end ownership?
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  I&apos;m open to embedded, edge AI, robotics, physical AI, and
+                  forward-deployed engineering roles.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={`mailto:${profile.email}`}
+                  className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 font-mono text-xs font-semibold text-background transition-colors hover:bg-accent-dim"
+                >
+                  <Mail size={14} aria-hidden="true" />
+                  Email me
+                </a>
+                <a
+                  href={profile.resumeUrl}
+                  download
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 font-mono text-xs font-semibold text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+                >
+                  <Download size={14} aria-hidden="true" />
+                  PDF resume
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </Container>
     </section>
   );

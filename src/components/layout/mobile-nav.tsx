@@ -7,10 +7,9 @@ import { fadeIn } from "@/lib/motion";
 
 const navLinks = [
   { label: "/home", href: "/" },
-  { label: "/dashboard", href: "/#dashboard" },
-  { label: "/blog", href: "/blog" },
-  { label: "/uses", href: "/uses" },
-  { label: "/projects", href: "/projects" },
+  { label: "/work", href: "/projects" },
+  { label: "/writing", href: "/blog" },
+  { label: "/stack", href: "/uses" },
   { label: "/resume", href: "/resume" },
 ];
 

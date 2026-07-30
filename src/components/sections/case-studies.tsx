@@ -1,58 +1,73 @@
-"use client";
-
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { fadeIn, staggerContainer } from "@/lib/motion";
 import { caseStudies } from "@/content/hiring";
-import { CaseStudyPanel } from "@/components/case-study-panel";
 
 export function CaseStudies() {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
-
   return (
-    <section id="case-studies" ref={ref} className="py-8 sm:py-12">
+    <section id="selected-work" className="py-10 sm:py-14">
       <Container>
-        <motion.div
-          variants={staggerContainer(0.08, 0.1)}
-          initial="hidden"
-          animate={isInView ? "visible" : "hidden"}
-        >
-          <motion.div variants={fadeIn("up", 0)} className="mb-6">
-            <div className="section-bar mb-4" />
-            <h2 className="font-mono text-sm font-semibold uppercase tracking-widest text-accent">
-              case_studies
-            </h2>
-            <p className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-              Strongest projects, rewritten for hiring teams.
+        <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.22em] text-accent">
+              selected_work
             </p>
-          </motion.div>
-
-          <div className="grid gap-3 lg:grid-cols-3">
-            {caseStudies.map((study) => (
-              <motion.div key={study.slug} variants={fadeIn("up", 0)} className="h-full">
-                <CaseStudyPanel
-                  study={study}
-                  compact
-                  href={`/projects/${study.slug}`}
-                />
-              </motion.div>
-            ))}
+            <h2 className="mt-2 max-w-2xl text-2xl font-bold tracking-tight sm:text-3xl">
+              Three projects. Clear constraints. Measurable outcomes.
+            </h2>
           </div>
+          <Link
+            href="/projects"
+            className="inline-flex shrink-0 items-center gap-1.5 font-mono text-xs text-accent transition-colors hover:text-accent-light"
+          >
+            View all projects
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
 
-          <motion.div variants={fadeIn("up", 0)} className="mt-4 flex justify-end">
+        <div className="grid gap-3 lg:grid-cols-3">
+          {caseStudies.map((study) => (
             <Link
-              href="/projects"
-              className="inline-flex items-center gap-1 text-sm text-accent transition-colors hover:text-accent-light"
+              key={study.slug}
+              href={`/projects/${study.slug}`}
+              className="dash-card group flex h-full flex-col transition-transform duration-200 hover:-translate-y-0.5"
             >
-              Browse the full archive
-              <ArrowRight size={14} aria-hidden="true" />
+              <div className="dash-card-header">
+                <span>{study.category}</span>
+                <span className="text-accent-green">{study.metric}</span>
+              </div>
+              <article className="dash-card-body flex flex-1 flex-col">
+                <h3 className="text-xl font-bold tracking-tight text-foreground transition-colors group-hover:text-accent">
+                  {study.title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {study.problem}
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {study.techStack.slice(0, 3).map((item) => (
+                    <span
+                      key={item}
+                      className="rounded border border-border bg-surface/60 px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-auto pt-5">
+                  <p className="line-clamp-2 border-t border-border pt-4 text-sm leading-relaxed text-foreground">
+                    {study.outcome}
+                  </p>
+                  <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-xs text-accent">
+                    Read case study
+                    <ArrowUpRight size={13} aria-hidden="true" />
+                  </span>
+                </div>
+              </article>
             </Link>
-          </motion.div>
-        </motion.div>
+          ))}
+        </div>
       </Container>
     </section>
   );

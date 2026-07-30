@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Search, Calendar, Clock, X } from "lucide-react";
 
+const PAGE_SIZE = 12;
+
 interface PostMeta {
   slug: string;
   title: string;
@@ -18,12 +20,15 @@ function formatDate(d: string): string {
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 
 export function BlogIndex({ posts }: { posts: PostMeta[] }) {
   const [query, setQuery] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   // All unique tags sorted by frequency
   const allTags = useMemo(() => {
@@ -37,7 +42,8 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
   }, [posts]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const queryTerms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+
     return posts.filter((p) => {
       // Tag filter: post must have ALL active tags
       if (activeTags.length > 0) {
@@ -46,7 +52,7 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
           return false;
       }
       // Search: title, excerpt, tags
-      if (q) {
+      if (queryTerms.length > 0) {
         const haystack = (
           p.title +
           " " +
@@ -54,13 +60,14 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
           " " +
           p.tags.join(" ")
         ).toLowerCase();
-        if (!haystack.includes(q)) return false;
+        if (!queryTerms.every((term) => haystack.includes(term))) return false;
       }
       return true;
     });
   }, [posts, query, activeTags]);
 
   const toggleTag = (tag: string) => {
+    setVisibleCount(PAGE_SIZE);
     setActiveTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
@@ -69,9 +76,12 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
   const clearAll = () => {
     setQuery("");
     setActiveTags([]);
+    setVisibleCount(PAGE_SIZE);
   };
 
   const hasFilters = query.trim().length > 0 || activeTags.length > 0;
+  const visibleTags = showAllTags ? allTags : allTags.slice(0, 10);
+  const visiblePosts = filtered.slice(0, visibleCount);
 
   return (
     <div className="space-y-6">
@@ -86,14 +96,21 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search posts by title, content, or tag..."
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setVisibleCount(PAGE_SIZE);
+              }}
+              placeholder="Search by title, summary, or topic..."
               className="w-full rounded border border-border bg-surface py-2 pl-9 pr-9 font-mono text-sm text-foreground outline-none placeholder:text-muted focus:border-accent/50 focus:ring-1 focus:ring-accent/20 transition-colors"
               aria-label="Search blog posts"
             />
             {query && (
               <button
-                onClick={() => setQuery("")}
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setVisibleCount(PAGE_SIZE);
+                }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-accent transition-colors"
                 aria-label="Clear search"
               >
@@ -104,10 +121,11 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
 
           {/* Tag chips */}
           <div className="flex flex-wrap gap-1.5">
-            {allTags.map(({ tag, count }) => {
+            {visibleTags.map(({ tag, count }) => {
               const active = activeTags.includes(tag);
               return (
                 <button
+                  type="button"
                   key={tag}
                   onClick={() => toggleTag(tag)}
                   className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-all ${
@@ -121,6 +139,15 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
                 </button>
               );
             })}
+            {allTags.length > 10 && (
+              <button
+                type="button"
+                onClick={() => setShowAllTags((current) => !current)}
+                className="rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+              >
+                {showAllTags ? "fewer topics" : `+${allTags.length - 10} topics`}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -128,11 +155,13 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
       {/* Result count + clear */}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
         <span>
-          {filtered.length} {filtered.length === 1 ? "post" : "posts"}
-          {hasFilters && ` (of ${posts.length})`}
+          Showing {visiblePosts.length} of {filtered.length}{" "}
+          {filtered.length === 1 ? "post" : "posts"}
+          {hasFilters && ` (${posts.length} total)`}
         </span>
         {hasFilters && (
           <button
+            type="button"
             onClick={clearAll}
             className="text-accent hover:text-accent-light transition-colors"
           >
@@ -147,6 +176,7 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
           <div className="dash-card-body py-12 text-center font-mono text-sm text-muted">
             No posts match your filters.
             <button
+              type="button"
               onClick={clearAll}
               className="ml-2 text-accent hover:underline"
             >
@@ -156,7 +186,7 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {filtered.map((post) => (
+          {visiblePosts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
@@ -192,6 +222,18 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {visiblePosts.length < filtered.length && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+            className="rounded-md border border-border bg-card px-4 py-2 font-mono text-xs text-foreground transition-colors hover:border-accent/30 hover:text-accent"
+          >
+            Show {Math.min(PAGE_SIZE, filtered.length - visiblePosts.length)} more
+          </button>
         </div>
       )}
     </div>

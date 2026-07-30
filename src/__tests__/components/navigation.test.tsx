@@ -49,15 +49,17 @@ describe("Navbar", () => {
 
   it("renders all nav links", () => {
     expect(screen.getByText("/home")).toBeInTheDocument();
-    expect(screen.getByText("/dashboard")).toBeInTheDocument();
+    expect(screen.getByText("/work")).toBeInTheDocument();
+    expect(screen.getByText("/writing")).toBeInTheDocument();
+    expect(screen.getByText("/stack")).toBeInTheDocument();
     expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 
   it("nav links use correct hrefs", () => {
     const homeLink = screen.getByText("/home").closest("a");
     expect(homeLink).toHaveAttribute("href", "/");
-    const dashLink = screen.getByText("/dashboard").closest("a");
-    expect(dashLink).toHaveAttribute("href", "/#dashboard");
+    const workLink = screen.getByText("/work").closest("a");
+    expect(workLink).toHaveAttribute("href", "/projects");
   });
 
   it("resume link points to the ATS resume page", () => {
@@ -97,7 +99,9 @@ describe("MobileNav", () => {
   it("renders nav links when open", () => {
     render(<MobileNav isOpen={true} onClose={() => {}} />);
     expect(screen.getByText("/home")).toBeInTheDocument();
-    expect(screen.getByText("/dashboard")).toBeInTheDocument();
+    expect(screen.getByText("/work")).toBeInTheDocument();
+    expect(screen.getByText("/writing")).toBeInTheDocument();
+    expect(screen.getByText("/stack")).toBeInTheDocument();
     expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 
