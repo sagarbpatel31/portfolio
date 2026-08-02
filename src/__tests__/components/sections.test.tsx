@@ -64,6 +64,7 @@ jest.mock("@/components/terminal", () => ({
 
 import { Hero } from "@/components/sections/hero";
 import { SelectedImpact } from "@/components/sections/selected-impact";
+import { HomeTerminal } from "@/components/sections/home-terminal";
 import { StackMap } from "@/components/sections/stack-map";
 import { CaseStudies } from "@/components/sections/case-studies";
 import { Highlights } from "@/components/sections/highlights";
@@ -153,6 +154,16 @@ describe("Selected impact section", () => {
     expect(screen.getByText("31%")).toBeInTheDocument();
     expect(screen.getByText("73%")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
+  });
+});
+
+describe("Homepage terminal section", () => {
+  beforeEach(() => render(<HomeTerminal />));
+
+  it("renders the interactive terminal without restoring the full dashboard", () => {
+    expect(screen.getByText("interactive_console")).toBeInTheDocument();
+    expect(screen.getByText("Query the profile directly.")).toBeInTheDocument();
+    expect(screen.getByTestId("terminal")).toBeInTheDocument();
   });
 });
 

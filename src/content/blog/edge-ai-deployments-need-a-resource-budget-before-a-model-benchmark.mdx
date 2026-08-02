@@ -1,0 +1,93 @@
+---
+title: "Edge AI Deployments Need a Resource Budget Before a Model Benchmark"
+date: "2026-08-01"
+tags: ["Edge AI", "Embedded Linux", "Inference", "Performance", "Reliability", "Production Systems"]
+excerpt: "A fast model benchmark does not prove that an edge-AI workload fits the device. Production readiness starts with explicit budgets for memory, startup, thermals, storage, contention, and recovery behavior."
+---
+
+# Edge AI Deployments Need a Resource Budget Before a Model Benchmark
+
+Edge-AI projects often begin with a benchmark question:
+
+**How fast can this model run on the target?**
+
+That matters, but it is not the first production question. The first question is whether the complete workload fits inside the device's operating budget while everything else is running.
+
+A model can hit its latency target in isolation and still be a poor deployment candidate.
+
+## The Device Runs a System, Not a Benchmark
+
+Production hardware is also handling work such as:
+
+- sensor ingestion
+- networking and storage
+- control or business logic
+- health monitoring
+- update and rollback services
+- operator interfaces
+
+The inference process has to coexist with those responsibilities. Peak memory, startup behavior, sustained thermals, and recovery paths can matter as much as average latency.
+
+## Define the Budget Before Optimization
+
+I prefer to define an explicit resource envelope before comparing engines or precision modes.
+
+A useful budget includes:
+
+| Resource | Question |
+| --- | --- |
+| Startup | How long until the first trustworthy result? |
+| Steady memory | What does the process hold during normal operation? |
+| Peak memory | What happens during model load, warmup, or reconfiguration? |
+| Compute | How much CPU, GPU, or accelerator time remains for other services? |
+| Thermals | Can target throughput hold after sustained operation? |
+| Storage | What is the cost of engines, weights, calibration data, and rollback copies? |
+| Recovery | Can the service restart without destabilizing the rest of the device? |
+
+Those limits turn optimization into a constrained engineering problem instead of a leaderboard exercise.
+
+## Measure Contention, Not Only Isolation
+
+A realistic benchmark should run while representative system load is present.
+
+That means testing cases such as:
+
+- sensor streams at production rates
+- network bursts and local persistence
+- another service competing for memory bandwidth
+- thermal steady state rather than a cold device
+- model restart while the rest of the application remains active
+
+The relevant result is not the best latency sample. It is the behavior of the full system under the conditions it must survive.
+
+```text
+release gate = latency target
+             + memory ceiling
+             + thermal stability
+             + startup deadline
+             + recovery test
+```
+
+## Budgets Make Tradeoffs Reviewable
+
+When the envelope is explicit, teams can reason clearly about options:
+
+- lower precision for memory and throughput headroom
+- smaller batches for predictable latency
+- a reduced model for thermal stability
+- staged loading to control startup peaks
+- a fallback path when the accelerator is unavailable
+
+Without a budget, those choices become subjective. With one, each optimization can be evaluated against a production constraint.
+
+## The Practical Standard
+
+Before calling an edge-AI model deployable, I want evidence that it stays within its resource envelope during:
+
+1. startup
+2. normal operation
+3. peak contention
+4. sustained thermal load
+5. failure and restart
+
+Model speed is one line in that report. The deployment is ready only when the entire device remains predictable around it.

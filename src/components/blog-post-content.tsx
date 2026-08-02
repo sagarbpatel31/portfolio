@@ -34,6 +34,15 @@ function parseInline(text: string): string {
   );
 }
 
+function parseTableRow(row: string): string[] {
+  return row
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
 function renderMarkdown(content: string): string {
   const segments = content.split(/(```[\s\S]*?```)/g);
   const htmlParts: string[] = [];
@@ -61,9 +70,40 @@ function renderMarkdown(content: string): string {
     for (const block of blocks) {
       const trimmed = block.trim();
       if (!trimmed) continue;
+      const lines = trimmed.split("\n").map((line) => line.trim());
+      const isTable =
+        lines.length >= 2 &&
+        lines[0].includes("|") &&
+        /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(lines[1]);
 
+      // Tables
+      if (isTable) {
+        const headers = parseTableRow(lines[0]);
+        const rows = lines.slice(2).map(parseTableRow);
+        const headerHtml = headers
+          .map(
+            (header) =>
+              `<th class="border-b border-border bg-surface px-3 py-2 text-left font-mono text-xs text-foreground">${parseInline(header)}</th>`
+          )
+          .join("");
+        const bodyHtml = rows
+          .map(
+            (row) =>
+              `<tr>${row
+                .map(
+                  (cell) =>
+                    `<td class="border-b border-border/70 px-3 py-2 align-top text-sm text-muted">${parseInline(cell)}</td>`
+                )
+                .join("")}</tr>`
+          )
+          .join("");
+
+        htmlParts.push(
+          `<div class="my-6 overflow-x-auto rounded-lg border border-border"><table class="w-full border-collapse"><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`
+        );
+      }
       // Headings
-      if (trimmed.startsWith("### ")) {
+      else if (trimmed.startsWith("### ")) {
         htmlParts.push(
           `<h3 class="text-xl font-semibold mt-10 mb-4">${parseInline(trimmed.slice(4))}</h3>`
         );
@@ -98,6 +138,19 @@ function renderMarkdown(content: string): string {
           .join("");
         htmlParts.push(
           `<ul class="list-disc list-inside space-y-2 my-4 ml-2">${items}</ul>`
+        );
+      }
+      // Ordered lists
+      else if (/^\d+\.\s/.test(trimmed)) {
+        const items = lines
+          .filter((line) => /^\d+\.\s/.test(line))
+          .map(
+            (line) =>
+              `<li class="text-muted leading-relaxed">${parseInline(line.replace(/^\d+\.\s/, ""))}</li>`
+          )
+          .join("");
+        htmlParts.push(
+          `<ol class="list-decimal list-inside space-y-2 my-4 ml-2">${items}</ol>`
         );
       }
       // Horizontal rule

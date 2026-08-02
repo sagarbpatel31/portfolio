@@ -1,0 +1,78 @@
+---
+title: "Agentic Engineering Needs Explicit Stop Conditions"
+date: "2026-07-30"
+tags: ["AI", "Agents", "Evaluation", "Reliability", "Production Systems", "Gen AI"]
+excerpt: "An agent that can keep planning, searching, and retrying also needs a precise definition of when to stop. Explicit stop conditions turn open-ended autonomy into bounded, reviewable engineering behavior."
+---
+
+# Agentic Engineering Needs Explicit Stop Conditions
+
+Agent workflows are often designed around what the system can do next:
+
+- search for another source
+- call another tool
+- revise the plan
+- retry a failed action
+- ask another model to review the result
+
+That capability is useful, but it creates a basic production question: **what makes the loop end?**
+
+A workflow without explicit stop conditions is not meaningfully autonomous. It is merely allowed to continue until a timeout, a token limit, or an operator loses patience.
+
+## Completion Is More Than a Final Answer
+
+A system should not stop only because it produced text. It should stop because the required completion conditions are satisfied.
+
+For an engineering task, those conditions might include:
+
+- the requested artifact exists
+- validation commands passed
+- unresolved assumptions are recorded
+- cited evidence supports the important claims
+- no required task remains open
+
+This makes completion inspectable. A reviewer can see why the system believed the work was finished instead of inferring that from a confident response.
+
+## Failure Also Needs a Stop Contract
+
+Agents need a separate set of conditions for stopping without success. Useful signals include:
+
+- the same action failed repeatedly for the same reason
+- required credentials or user input are unavailable
+- new searches are returning no additional evidence
+- tool output contradicts a required assumption
+- the remaining risk exceeds the agent's authority
+
+The important part is that the system records a structured reason instead of silently exhausting its budget.
+
+```ts
+type StopReason =
+  | { kind: "complete"; checks: string[] }
+  | { kind: "blocked"; dependency: string }
+  | { kind: "budget"; consumed: number }
+  | { kind: "unsafe"; risk: string };
+```
+
+A stop reason is operational data. It can be reviewed, measured, and used to improve the workflow.
+
+## Stop Conditions Should Be Evaluated During the Run
+
+A common mistake is to check stopping logic only at the outermost loop. Stronger systems evaluate it after meaningful transitions:
+
+1. after a tool result changes the evidence state
+2. after a validation step passes or fails
+3. after the plan is revised
+4. before repeating an action
+5. before handing control to a person
+
+This prevents the system from continuing after the answer is already sufficient or repeating work after the path is clearly blocked.
+
+## The Practical Standard
+
+Every production agent loop should be able to answer three questions:
+
+- what does success look like?
+- what conditions make further work unproductive or unsafe?
+- what evidence explains why the loop stopped?
+
+Autonomy becomes reliable when continuation is earned, not assumed. Explicit stop conditions keep agent behavior bounded, make failures legible, and give reviewers a concrete contract for deciding whether the system did enough.

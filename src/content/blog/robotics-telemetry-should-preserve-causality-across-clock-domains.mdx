@@ -1,0 +1,94 @@
+---
+title: "Robotics Telemetry Should Preserve Causality Across Clock Domains"
+date: "2026-07-31"
+tags: ["Robotics", "Observability", "Distributed Systems", "Embedded Systems", "Reliability", "Timing"]
+excerpt: "A robotics incident is hard to reconstruct when cameras, controllers, accelerators, and operator tools disagree about time. Useful telemetry preserves causal order, clock identity, and synchronization uncertainty instead of logging timestamps alone."
+---
+
+# Robotics Telemetry Should Preserve Causality Across Clock Domains
+
+A modern robotics system rarely has one clock.
+
+It may include:
+
+- a microcontroller running a control loop
+- a Linux computer coordinating behavior
+- cameras and sensors with device timestamps
+- a GPU pipeline producing delayed inference results
+- an operator station recording wall-clock events
+
+When an incident crosses those boundaries, a timestamp on each log line is not enough. Engineers need to know which event caused which reaction and how trustworthy the apparent ordering is.
+
+## Equal-Looking Timestamps Can Describe Different Time
+
+Two components can both emit `12:04:10.250` while disagreeing about the underlying instant. Clocks drift, synchronization updates arrive late, device timestamps may begin at boot, and buffered pipelines can report capture time or completion time without saying which one they mean.
+
+That ambiguity creates expensive debugging questions:
+
+- did perception become stale before the controller changed modes?
+- did the safety event precede or follow the operator command?
+- was a latency spike in compute, transport, or timestamp conversion?
+
+If the telemetry cannot answer those questions, the incident timeline becomes guesswork.
+
+## Preserve More Than Wall Time
+
+For important events, I want telemetry to retain:
+
+- a local monotonic timestamp
+- the clock or device that produced it
+- a synchronized wall-clock estimate when available
+- synchronization offset or uncertainty
+- sequence numbers for ordered streams
+- correlation identifiers across pipeline stages
+
+A compact event envelope might look like this:
+
+```json
+{
+  "event": "trajectory_rejected",
+  "source": "motion-controller",
+  "monotonic_ns": 482193044120,
+  "wall_time": "2026-07-31T18:42:11.205Z",
+  "clock_offset_us": 37,
+  "sequence": 18422,
+  "trace_id": "plan-7f31"
+}
+```
+
+The exact schema can vary. The important property is that later analysis can distinguish event time, processing time, and uncertainty.
+
+## Causal Markers Survive Imperfect Synchronization
+
+Perfect clock agreement is not always available, especially on constrained or intermittently connected hardware. Sequence numbers and correlation IDs still preserve useful relationships.
+
+For example:
+
+1. sensor frame `4128` entered the perception pipeline
+2. inference result `4128` produced obstacle track `93`
+3. planner cycle `771` consumed track `93`
+4. controller command `9912` came from planner cycle `771`
+
+That chain can establish causality even when the devices disagree slightly about absolute time.
+
+## Test the Timeline Before an Incident
+
+Telemetry design should be exercised under the same conditions that distort timing:
+
+- CPU and GPU contention
+- delayed sensor delivery
+- clock resynchronization
+- process restarts
+- offline operation followed by log upload
+
+The test is not merely whether logs exist. The test is whether an engineer can reconstruct the real sequence of a failure from them.
+
+## The Practical Standard
+
+Robotics observability should preserve enough timing context to answer:
+
+- what happened first?
+- which output depended on which input?
+- how uncertain is the cross-device ordering?
+
+A timestamp is a label. A causal timeline is evidence. Production robotics systems need the second one when behavior crosses sensors, processors, networks, and human controls.

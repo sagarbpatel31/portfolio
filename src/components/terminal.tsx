@@ -61,8 +61,8 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "  Arch:      x86_64 / ARM64 / Jetson Orin", type: "output" },
     { text: "  Languages: C / C++ / Python / Rust", type: "output" },
     { text: "  Stack:     CUDA · TensorRT · ROS2 · DPDK", type: "output" },
-    { text: "  Uptime:    5y 10m (career mode)", type: "output" },
-    { text: "  Location:  San Francisco Bay Area, CA", type: "output" },
+    { text: "  Uptime:    4+ years in production systems", type: "output" },
+    { text: `  Location:  ${profile.location}`, type: "output" },
     { text: "  Status:    Open to roles", type: "accent" },
   ],
   whoami: () => [
@@ -84,7 +84,7 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "SAGAR_OS v1.0.0 (stable)", type: "accent" },
     { text: "Kernel: Embedded-Linux + AI-Stack", type: "output" },
     { text: "Arch:   x86_64 / ARM64 / Jetson Orin", type: "output" },
-    { text: "Uptime: 5y 10m (career mode)", type: "muted" },
+    { text: "Uptime: 4+ years in production systems", type: "muted" },
   ],
   about: () => [
     { text: profile.shortBio, type: "output" },
@@ -176,7 +176,7 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "    feat: keep shipping", type: "output" },
     { text: "", type: "output" },
     { text: "commit 439f979", type: "output" },
-    { text: "    feat: 5+ years embedded systems + AI", type: "output" },
+    { text: "    feat: 4+ years embedded systems + AI", type: "output" },
     { text: "", type: "output" },
     { text: "commit 0000001", type: "output" },
     { text: "    init: first line of code, age 14", type: "muted" },
@@ -336,23 +336,36 @@ export function Terminal() {
       </div>
       <div ref={scrollRef} className="terminal-body">
         {history.map((line, i) => (
-          <div key={i} className={`whitespace-pre ${colorMap[line.type]}`}>
+          <div
+            key={i}
+            className={`whitespace-pre-wrap break-words ${colorMap[line.type]}`}
+          >
             {line.text || "\u00A0"}
           </div>
         ))}
-        <form onSubmit={handleSubmit} className="flex items-center gap-1">
-          <span className="text-accent-green whitespace-nowrap shrink-0">visitor@sagar-os:~$</span>
+        <form onSubmit={handleSubmit} className="flex min-w-0 items-center gap-1">
+          <span className="shrink-0 whitespace-nowrap text-accent-green">
+            <span className="hidden sm:inline">visitor@sagar-os:~$</span>
+            <span className="sm:hidden">$</span>
+          </span>
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent text-foreground outline-none caret-accent"
+            className="min-w-0 flex-1 bg-transparent text-foreground outline-none caret-accent"
             spellCheck={false}
             autoComplete="off"
             aria-label="Terminal input"
           />
+          <button
+            type="submit"
+            className="shrink-0 text-accent transition-colors hover:text-accent-light"
+            aria-label="Run terminal command"
+          >
+            run
+          </button>
         </form>
       </div>
     </div>

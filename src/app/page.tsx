@@ -1,5 +1,6 @@
 import { Hero } from "@/components/sections/hero";
 import { SelectedImpact } from "@/components/sections/selected-impact";
+import { HomeTerminal } from "@/components/sections/home-terminal";
 import { CaseStudies } from "@/components/sections/case-studies";
 import { LatestBlogs } from "@/components/sections/latest-blogs";
 import { HomeDirectory } from "@/components/sections/home-directory";
@@ -19,6 +20,7 @@ export default function Home() {
     <>
       <Hero />
       <SelectedImpact />
+      <HomeTerminal />
       <CaseStudies />
       <HomeDirectory postCount={posts.length} />
       <LatestBlogs posts={latestPosts} />
