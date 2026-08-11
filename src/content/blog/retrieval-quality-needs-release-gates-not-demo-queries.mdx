@@ -1,0 +1,87 @@
+---
+title: "Retrieval Quality Needs Release Gates, Not Demo Queries"
+date: "2026-08-10"
+tags: ["RAG", "Evaluation", "Retrieval", "HydraDB", "Reliability", "Production Systems"]
+excerpt: "A retrieval system should not be tuned by trying a few convincing prompts. A deterministic corpus, explicit relevance judgments, quality metrics, and latency thresholds turn retrieval changes into reviewable release decisions."
+---
+
+# Retrieval Quality Needs Release Gates, Not Demo Queries
+
+Retrieval systems are easy to demonstrate and surprisingly hard to evaluate.
+
+A developer tries several prompts, relevant passages appear near the top, and the configuration looks ready. Then a chunking change, ranking adjustment, or metadata filter quietly improves one query class while degrading another.
+
+The problem is not that the team needs more demo queries. It needs a repeatable release gate.
+
+For the HydraDB docs bounty, I built a dependency-free retrieval-quality evaluator around this idea. The useful part was not a single score. It was making the entire tuning loop deterministic, inspectable, and easy to rerun.
+
+## Start With a Golden Corpus
+
+Evaluation needs known source material and explicit relevance judgments. A small fictional corpus is often better than production data for the first gate because it is safe to publish, quick to reset, and easy to reason about.
+
+Each query should define what counts as relevant before the retrieval configuration is tested.
+
+```json
+{
+  "query": "Which runbook covers a failed edge update?",
+  "relevant_sources": ["ota-recovery-runbook"],
+  "expected_terms": ["rollback", "health check"]
+}
+```
+
+This prevents a common evaluation mistake: deciding that a result was relevant only after seeing what the system returned.
+
+## Use Metrics That Answer Different Questions
+
+No single metric describes retrieval quality completely. A compact evaluator can still cover the important dimensions:
+
+| Metric | Question |
+| --- | --- |
+| Hit@K | Did at least one relevant result appear in the first K? |
+| Source Recall@K | How much of the expected source set was recovered? |
+| MRR@K | How early did the first relevant result appear? |
+| p50 latency | What does a typical query cost? |
+| p95 latency | What does the slower tail look like? |
+
+Hit rate alone can look healthy while the best evidence consistently appears near the bottom. MRR exposes that ranking weakness. Average latency can hide unstable tails. Percentiles make them visible.
+
+## Compare Profiles Against the Same Workload
+
+Retrieval tuning is easier to review when candidate profiles run against the same corpus and query set.
+
+A profile might vary:
+
+- chunk size and overlap
+- dense, sparse, or hybrid retrieval
+- metadata filters
+- ranking weights
+- result count
+
+The evaluator should produce a side-by-side result rather than asking someone to remember how yesterday's configuration felt.
+
+```text
+release = quality thresholds pass
+        + latency thresholds pass
+        + no protected query regresses
+        + test suite remains deterministic
+```
+
+That last condition matters. If corpus setup, query execution, or scoring changes between runs, the comparison is not evidence.
+
+## Make Failures Actionable
+
+A useful report identifies which query failed, which source was expected, what was returned, and how the rank changed. Aggregate scores are useful for a dashboard, but per-query evidence is what helps an engineer fix the system.
+
+The evaluator I contributed includes Hit@K, source Recall@K, MRR@K, p50 and p95 latency, profile comparison, and 31 Node.js tests. The implementation and review history are available in [HydraDB docs PR #184](https://github.com/usecortex/mintlify-docs/pull/184).
+
+## The Practical Standard
+
+Before shipping a retrieval change, I want a report that can answer:
+
+1. which queries improved or regressed?
+2. did the expected evidence remain discoverable?
+3. did relevant evidence move earlier or later in the ranking?
+4. what happened to typical and tail latency?
+5. can another engineer reproduce the result?
+
+Demo queries create confidence. Release gates create evidence. Production retrieval systems need the second one before tuning becomes an engineering discipline instead of an intuition loop.

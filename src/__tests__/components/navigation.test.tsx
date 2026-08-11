@@ -52,6 +52,7 @@ describe("Navbar", () => {
     expect(screen.getByText("/work")).toBeInTheDocument();
     expect(screen.getByText("/writing")).toBeInTheDocument();
     expect(screen.getByText("/stack")).toBeInTheDocument();
+    expect(screen.getByText("/wins")).toBeInTheDocument();
     expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 
@@ -65,6 +66,11 @@ describe("Navbar", () => {
   it("resume link points to the ATS resume page", () => {
     const resumeLink = screen.getByText("/resume").closest("a");
     expect(resumeLink).toHaveAttribute("href", "/resume");
+  });
+
+  it("wins link points to the recognition page", () => {
+    const winsLink = screen.getByText("/wins").closest("a");
+    expect(winsLink).toHaveAttribute("href", "/wins");
   });
 
   it("has GitHub social link", () => {
@@ -102,6 +108,7 @@ describe("MobileNav", () => {
     expect(screen.getByText("/work")).toBeInTheDocument();
     expect(screen.getByText("/writing")).toBeInTheDocument();
     expect(screen.getByText("/stack")).toBeInTheDocument();
+    expect(screen.getByText("/wins")).toBeInTheDocument();
     expect(screen.getByText("/resume")).toBeInTheDocument();
   });
 

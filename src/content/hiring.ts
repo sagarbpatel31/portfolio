@@ -10,9 +10,9 @@ export const selectedImpact = [
     detail: "Watchpoint bundles incident evidence and correlates robotics telemetry automatically.",
   },
   {
-    value: "2",
-    label: "hackathon tracks won on XG1",
-    detail: "DeepLake + NomadicML wins for humanoid teleop and GR00T fine-tuning.",
+    value: "5",
+    label: "hackathon and bounty recognitions in 2026",
+    detail: "Two XG1 tracks, HydraSwarm, a HydraDB Bug Bounty top-10 finish, and a HydraDB Docs win.",
   },
 ];
 

@@ -6,6 +6,7 @@ import { skills } from "@/content/skills";
 import { experiences } from "@/content/experience";
 import { projects } from "@/content/projects";
 import { socials } from "@/content/socials";
+import { awards } from "@/content/awards";
 import { cycleTheme } from "@/lib/theme";
 
 interface OutputLine {
@@ -25,6 +26,26 @@ function longestCommonPrefix(words: string[]): string {
   return prefix;
 }
 
+function winsOutput(): OutputLine[] {
+  const eventCount = new Set(awards.map((award) => award.event)).size;
+  const lines: OutputLine[] = [
+    {
+      text: `${awards.length} technical recognitions across ${eventCount} events`,
+      type: "accent",
+    },
+    { text: "", type: "output" },
+  ];
+
+  awards.forEach((award, index) => {
+    lines.push({ text: `  ${index + 1}. ${award.title}`, type: "output" });
+    lines.push({ text: `     ${award.event} | ${award.year}`, type: "muted" });
+  });
+
+  lines.push({ text: "", type: "output" });
+  lines.push({ text: "Full summaries and evidence: /wins", type: "accent" });
+  return lines;
+}
+
 const COMMANDS: Record<string, () => OutputLine[]> = {
   help: () => [
     { text: "Available commands:", type: "accent" },
@@ -32,6 +53,7 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "  skills      — Technical capabilities", type: "output" },
     { text: "  experience  — Deployment history", type: "output" },
     { text: "  projects    — Active processes", type: "output" },
+    { text: "  wins        — Hackathons and technical recognition", type: "output" },
     { text: "  contact     — Establish connection", type: "output" },
     { text: "  socials     — Social links", type: "output" },
     { text: "  status      — System status", type: "output" },
@@ -76,6 +98,7 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     { text: "drwxr-xr-x  projects/", type: "accent" },
     { text: "drwxr-xr-x  experience/", type: "accent" },
     { text: "drwxr-xr-x  skills/", type: "accent" },
+    { text: "drwxr-xr-x  wins/", type: "accent" },
     { text: "-rw-r--r--  resume.pdf", type: "output" },
     { text: "-rw-r--r--  README.md", type: "output" },
     { text: "-r--------  .secrets  (nice try)", type: "muted" },
@@ -123,6 +146,8 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
     });
     return lines;
   },
+  wins: winsOutput,
+  awards: winsOutput,
   contact: () => [
     { text: `Email:    ${profile.email}`, type: "accent" },
     { text: `GitHub:   github.com/sagarbpatel31`, type: "output" },
@@ -219,7 +244,7 @@ const COMMANDS: Record<string, () => OutputLine[]> = {
 };
 
 const COMPLETIONS = [
-  "about", "skills", "experience", "projects", "contact", "socials",
+  "about", "skills", "experience", "projects", "wins", "awards", "contact", "socials",
   "status", "resume", "theme", "neofetch", "whoami", "ls", "uname",
   "pwd", "date", "ping", "clear", "help",
 ];

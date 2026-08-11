@@ -2,11 +2,11 @@ import { Highlight } from "@/types";
 
 export const highlights: Highlight[] = [
   {
-    title: "Won 2 awards at a national hackathon in 36 hours",
+    title: "Earned 5 hackathon and bounty recognitions in 2026",
     description:
-      "Built HydraSwarm, a self-improving multi-agent AI system with institutional memory, winning Best Overall Use of DeepLake. Also won the Physical AI & Robotics track with a Unitree G1 humanoid pipeline using MuJoCo, Meta Quest 3, and NVIDIA GR00T.",
-    metric: "2 hackathon wins",
-    tags: ["Multi-Agent AI", "DeepLake", "Robotics", "NVIDIA"],
+      "Won two XG1 robotics tracks, won with the HydraSwarm multi-agent system, placed in the top 10 of HydraDB's July bug bounty, and was selected as one of 10 HydraDB Docs winners for a retrieval-quality evaluation lab.",
+    metric: "5 technical wins",
+    tags: ["HydraDB", "Reliability", "Multi-Agent AI", "Robotics"],
   },
   {
     title: "31% throughput improvement on logistics edge gateways",

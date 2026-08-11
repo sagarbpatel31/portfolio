@@ -5,9 +5,11 @@ import {
   Cpu,
   FileText,
   Folder,
+  Trophy,
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { projects } from "@/content/projects";
+import { awards } from "@/content/awards";
 
 interface HomeDirectoryProps {
   postCount: number;
@@ -42,6 +44,13 @@ export function HomeDirectory({ postCount }: HomeDirectoryProps) {
       count: "Current toolkit",
       description: "Hardware, languages, tools, and what I am learning now.",
       icon: Cpu,
+    },
+    {
+      href: "/wins",
+      label: "Wins",
+      count: `${awards.length} recognitions`,
+      description: "Hackathons, bounties, technical contributions, and evidence.",
+      icon: Trophy,
     },
   ];
 

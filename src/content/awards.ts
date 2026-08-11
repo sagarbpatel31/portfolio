@@ -2,6 +2,27 @@ import { Award } from "@/types";
 
 export const awards: Award[] = [
   {
+    title: "HydraDB Docs Winner - Retrieval Quality Evaluation Lab",
+    event: "Hack into HydraDB Docs",
+    year: "2026",
+    description:
+      "Selected as one of 10 winners for PR #184, a deterministic HydraDB v2 retrieval-quality evaluator that turns tuning into measurable release gates. The contribution added Hit@K, source Recall@K, MRR@K, latency percentiles, profile comparison, a fictional golden corpus, live sandbox evidence, and 31 passing Node.js tests.",
+    links: [
+      { label: "PR #184", url: "https://github.com/usecortex/mintlify-docs/pull/184" },
+      { label: "Event", url: "https://luma.com/5swfnpjk" },
+    ],
+  },
+  {
+    title: "Top-10 Winner - HydraDB Ingestion Write-Safety Audit",
+    event: "Break into HydraDB: BugBounty Week",
+    year: "2026",
+    description:
+      "Placed in the top 10 among more than 20 submissions. Built a bounded, reproducible audit and documented ingestion write-safety failures around upsert semantics and 0-byte or empty-success paths, plus indexed JSON projection/filter corruption and a tenant-readiness race. The report focused on clear reproduction steps and the data-integrity impact of silent success.",
+    links: [
+      { label: "Event", url: "https://luma.com/0bxv1xmc" },
+    ],
+  },
+  {
     title: "Physical AI & Robotics: Data at Scale — Best Overall Use of DeepLake",
     event: "Intelligence at the Frontier Hackathon 2026",
     year: "2026",

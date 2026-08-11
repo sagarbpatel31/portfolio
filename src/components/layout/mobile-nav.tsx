@@ -10,6 +10,7 @@ const navLinks = [
   { label: "/work", href: "/projects" },
   { label: "/writing", href: "/blog" },
   { label: "/stack", href: "/uses" },
+  { label: "/wins", href: "/wins" },
   { label: "/resume", href: "/resume" },
 ];
 

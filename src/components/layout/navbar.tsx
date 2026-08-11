@@ -56,6 +56,11 @@ export function Navbar() {
               </Link>
             </li>
             <li>
+              <Link href="/wins" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /wins
+              </Link>
+            </li>
+            <li>
               <Link href="/resume" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /resume
               </Link>

@@ -125,8 +125,10 @@ describe("Content: skills", () => {
 });
 
 describe("Content: awards", () => {
-  it("has at least 2 awards", () => {
-    expect(awards.length).toBeGreaterThanOrEqual(2);
+  it("tracks all five technical recognitions", () => {
+    expect(awards).toHaveLength(5);
+    expect(awards.some((award) => award.title.includes("HydraDB Docs Winner"))).toBe(true);
+    expect(awards.some((award) => award.title.includes("Ingestion Write-Safety"))).toBe(true);
   });
 
   it("each award has required fields", () => {
@@ -135,6 +137,7 @@ describe("Content: awards", () => {
       expect(a.event).toBeTruthy();
       expect(a.year).toBeTruthy();
       expect(a.description).toBeTruthy();
+      a.links?.forEach((link) => expect(link.url).toMatch(/^https:\/\//));
     });
   });
 });

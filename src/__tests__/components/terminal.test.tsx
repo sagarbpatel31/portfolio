@@ -27,4 +27,20 @@ describe("Terminal", () => {
     expect(screen.getByText("Available commands:")).toBeInTheDocument();
     expect(screen.getByText(/about\s+— Who I am/)).toBeInTheDocument();
   });
+
+  it("summarizes technical recognition with the wins command", async () => {
+    const user = userEvent.setup();
+    render(<Terminal />);
+
+    await user.type(screen.getByLabelText("Terminal input"), "wins");
+    await user.click(
+      screen.getByRole("button", { name: "Run terminal command" })
+    );
+
+    expect(
+      screen.getByText("5 technical recognitions across 4 events")
+    ).toBeInTheDocument();
+    expect(screen.getByText(/HydraDB Docs Winner/)).toBeInTheDocument();
+    expect(screen.getByText("Full summaries and evidence: /wins")).toBeInTheDocument();
+  });
 });

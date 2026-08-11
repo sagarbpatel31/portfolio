@@ -1,0 +1,92 @@
+---
+title: "Ingestion APIs Must Make Empty Success Impossible"
+date: "2026-08-07"
+tags: ["APIs", "Data Integrity", "Reliability", "Testing", "Distributed Systems", "HydraDB"]
+excerpt: "An ingestion endpoint can return success while preserving nothing useful or violating the caller's write policy. Reliable APIs define success semantically, enforce upsert contracts, and prove the stored result."
+---
+
+# Ingestion APIs Must Make Empty Success Impossible
+
+One of the most dangerous API failures is not a visible error. It is a successful response for a write that produced no trustworthy data.
+
+This pattern shows up in ingestion systems when transport-level acceptance is mistaken for semantic success. The request was valid JSON. The worker did not crash. The endpoint returned a `2xx` response. But the resulting record may be empty, incomplete, unexpectedly overwritten, or unusable by downstream retrieval.
+
+A recent ingestion write-safety audit reinforced a simple rule: **a write is successful only when the promised state transition is true.**
+
+## Transport Success Is Not Data Success
+
+An ingestion pipeline usually crosses several boundaries:
+
+```text
+request -> validation -> normalization -> persistence -> indexing -> retrieval
+```
+
+Each stage can accept its input while still weakening the final result. For example:
+
+- validation permits an object with no meaningful content
+- normalization drops fields without surfacing the loss
+- persistence creates a record with zero useful bytes
+- indexing succeeds against a corrupted projection
+- the response reports success before the record is queryable
+
+If the API acknowledges the write at the beginning of that chain, the caller receives confidence that the system has not earned.
+
+## Upsert Is a Contract, Not a Hint
+
+Write-safety also depends on honoring overwrite policy exactly.
+
+When a caller sets `upsert=false`, the expected behavior is clear: an existing logical record must not be replaced. Quietly overwriting it is worse than returning an error because the caller may continue under the assumption that the original data is intact.
+
+The contract should be enforced at the boundary where the final write becomes atomic, not only during an earlier existence check. Otherwise concurrent operations can pass validation and still violate the policy.
+
+Useful outcomes are explicit:
+
+| Condition | Expected result |
+| --- | --- |
+| New valid record | Created with a durable identifier |
+| Existing record, upsert enabled | Updated with version evidence |
+| Existing record, upsert disabled | Rejected without mutation |
+| Empty or unusable content | Rejected before persistence |
+| Partial downstream failure | Failed or clearly marked incomplete |
+
+## Prove the Postcondition
+
+An ingestion test should verify more than the status code. It should check the state the response claims now exists.
+
+That includes assertions such as:
+
+- the stored content is non-empty and matches normalization rules
+- the previous version remains intact after a rejected write
+- structured fields survive projection and filtering
+- the new record becomes retrievable within the documented consistency window
+- retries do not create duplicates or unexpected overwrites
+
+Property-based and table-driven tests are especially useful here because empty strings, missing fields, zero-byte payloads, duplicate identifiers, and mixed content types form a compact but high-value boundary matrix.
+
+## Make Success Carry Evidence
+
+A stronger write response reports the result precisely:
+
+```json
+{
+  "status": "created",
+  "record_id": "src_184",
+  "version": 1,
+  "content_bytes": 4287,
+  "indexed": true
+}
+```
+
+The exact fields depend on the system. The important point is that the response distinguishes accepted, created, updated, rejected, and incomplete states instead of collapsing them into one vague success.
+
+## The Practical Standard
+
+For an ingestion API, success should mean all of the following:
+
+1. the input satisfied semantic validation
+2. the requested overwrite policy was honored atomically
+3. useful data was durably stored
+4. downstream state matches the documented consistency promise
+5. the response identifies what actually changed
+
+Empty success is data loss with good manners. Reliable ingestion systems make it impossible to confuse acceptance with a valid write.

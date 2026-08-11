@@ -1,0 +1,82 @@
+---
+title: "Fast Data Planes Need Explicit Slow-Path Budgets"
+date: "2026-08-04"
+tags: ["Networking", "DPDK", "Performance", "Reliability", "Linux", "Systems"]
+excerpt: "A packet pipeline is not production-ready because its best-case fast path is fast. It is ready when flow misses, control-plane work, retries, and observability stay inside an explicit slow-path budget."
+---
+
+# Fast Data Planes Need Explicit Slow-Path Budgets
+
+High-performance networking benchmarks usually emphasize the fast path: packets per second, average latency, cache efficiency, and line-rate throughput.
+
+Those numbers matter, but production behavior is often decided somewhere else. It is decided by the packets that miss a flow entry, require policy resolution, trigger reassembly, wait for control-plane state, or fall into an exception handler.
+
+A data plane is not robust because the common path is fast. It is robust when the uncommon paths are bounded.
+
+## Every Fast Path Has an Exit
+
+Even a carefully optimized pipeline needs a slow path for work such as:
+
+- new-flow classification
+- route or neighbor resolution
+- fragmented or malformed traffic
+- policy and security exceptions
+- telemetry export
+- resource exhaustion and retry handling
+
+The problem begins when those exits are treated as rare implementation details. A small increase in misses can move enough traffic into shared queues, locks, or control-plane services to change the behavior of the whole system.
+
+That is why I prefer to treat slow-path capacity as a first-class design budget.
+
+## Budget the Exception Rate
+
+The useful question is not only "How fast is the normal path?" It is also "How much abnormal work can the system absorb before normal traffic is affected?"
+
+A practical budget should define:
+
+| Signal | What it reveals |
+| --- | --- |
+| Fast-path hit rate | How often packets stay in the optimized pipeline |
+| Exception rate | How much traffic requires additional processing |
+| Slow-path queue depth | Whether exceptional work is accumulating |
+| Service time | How long each exception class takes to resolve |
+| Drop or retry rate | Whether overload is being hidden by repeated work |
+| Recovery time | How quickly the pipeline returns to steady state |
+
+Those signals should be measured by exception class. One aggregate counter can hide the difference between harmless telemetry work and a flow-resolution storm.
+
+## Backpressure Must Be Deliberate
+
+When slow-path demand exceeds capacity, the system needs an explicit policy. It can shed, sample, defer, or prioritize work, but it should not silently let queues grow until latency and memory become the failure mechanism.
+
+```text
+fast-path health = hit rate
+                 + bounded exception queues
+                 + explicit overload policy
+                 + recovery evidence
+```
+
+The overload behavior should also preserve important control traffic. A pipeline that drops health, routing, or recovery messages under pressure may make the incident harder to contain than the original traffic burst.
+
+## Test Transitions, Not Just Steady State
+
+The strongest tests deliberately move traffic between paths:
+
+1. warm the flow table and establish a stable baseline
+2. introduce controlled misses or policy changes
+3. measure queue growth and impact on established flows
+4. remove the disturbance
+5. verify that latency and queue depth return to baseline
+
+That last step matters. Some systems survive a burst but do not recover cleanly because stale work, retries, or cache churn continues after the trigger disappears.
+
+## The Practical Standard
+
+Before calling a data plane production-ready, I want evidence for both sides of the architecture:
+
+- the fast path meets its throughput and latency target
+- the slow path has a measured capacity and overload policy
+- exceptional work cannot starve established traffic
+- the system returns to steady state after a miss storm
+
+Fast-path optimization wins the benchmark. A bounded slow path is what keeps the benchmark relevant when the network stops behaving ideally.

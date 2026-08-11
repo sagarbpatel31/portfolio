@@ -124,17 +124,17 @@ describe("Highlights section", () => {
   });
 
   it("renders highlight titles", () => {
-    expect(screen.getByText(/Won 2 awards at a national hackathon/)).toBeInTheDocument();
+    expect(screen.getByText(/Earned 5 hackathon and bounty recognitions/)).toBeInTheDocument();
     expect(screen.getByText(/31% throughput improvement on logistics/)).toBeInTheDocument();
   });
 
   it("renders metrics", () => {
-    expect(screen.getByText("2 hackathon wins")).toBeInTheDocument();
+    expect(screen.getByText("5 technical wins")).toBeInTheDocument();
     expect(screen.getByText("31% throughput gain")).toBeInTheDocument();
   });
 
   it("renders tech tags", () => {
-    expect(screen.getAllByText("DeepLake").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("HydraDB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Yocto").length).toBeGreaterThan(0);
   });
 
@@ -153,7 +153,7 @@ describe("Selected impact section", () => {
   it("renders the strongest metrics", () => {
     expect(screen.getByText("31%")).toBeInTheDocument();
     expect(screen.getByText("73%")).toBeInTheDocument();
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
   });
 });
 
@@ -345,6 +345,8 @@ describe("Awards section", () => {
     expect(screen.getByText(/Best Overall Use of DeepLake/)).toBeInTheDocument();
     expect(screen.getAllByText(/NomadicML/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/HydraSwarm/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/HydraDB Docs Winner/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ingestion Write-Safety Audit/).length).toBeGreaterThan(0);
   });
 
   it("has section id", () => {
