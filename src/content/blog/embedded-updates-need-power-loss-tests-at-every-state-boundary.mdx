@@ -1,0 +1,101 @@
+---
+title: "Embedded Updates Need Power-Loss Tests at Every State Boundary"
+date: "2026-08-06"
+tags: ["Embedded Linux", "OTA", "Testing", "Reliability", "Fault Injection", "Release Engineering"]
+excerpt: "Atomic file operations are necessary for safe embedded updates, but they are not sufficient. Power-loss testing must interrupt every durable state transition and prove that boot always resolves to a known-good release."
+---
+
+# Embedded Updates Need Power-Loss Tests at Every State Boundary
+
+An embedded update system can look correct in code review and still fail the first time power disappears between two durable writes.
+
+Signed bundles, atomic renames, health checks, and rollback logic are all necessary. The missing proof is often interruption testing: cutting power at each state boundary and verifying that the next boot reaches a valid, explainable state.
+
+For field devices, this is not an edge case. Power loss is part of the operating environment.
+
+## Atomic Operations Do Not Make the Workflow Atomic
+
+Linux gives us useful primitives such as `rename(2)`, `fsync(2)`, and durable filesystems. But an update is a sequence of operations, not one operation:
+
+```text
+verify -> stage -> persist intent -> switch -> restart -> health check -> promote
+```
+
+Each arrow is a crash boundary. An individual rename may be atomic while the overall workflow still becomes ambiguous if the system loses power before related metadata reaches storage.
+
+Questions appear immediately:
+
+- Was the new release completely staged?
+- Does `current` point to the old or new version?
+- Was the health-check result persisted?
+- Which release is still considered last-known-good?
+- Is cleanup safe, or could it delete the only bootable copy?
+
+The implementation needs explicit answers before recovery code can be trusted.
+
+## Define Durable States, Not In-Memory Steps
+
+I prefer an update journal with a small set of durable states. Every state records enough information for boot-time recovery to make one deterministic decision.
+
+| Durable state | Required recovery behavior |
+| --- | --- |
+| `verified` | Resume staging or safely discard the candidate |
+| `staged` | Validate staged bytes before switching |
+| `switched` | Boot candidate and run the health gate |
+| `promoting` | Confirm candidate health before changing last-known-good |
+| `rollback` | Restore the previous release before normal startup |
+| `complete` | Permit cleanup of superseded artifacts |
+
+The journal should be written and synchronized before the side effect it authorizes. Recovery then reasons from durable evidence rather than guessing which line of code ran last.
+
+## Build a Power-Cut Matrix
+
+A useful fault-injection test interrupts the updater after every important write and transition.
+
+```text
+for boundary in update_boundaries:
+    install_known_good()
+    start_update()
+    cut_power_at(boundary)
+    reboot()
+    assert_bootable_release()
+    assert_journal_is_explainable()
+    assert_no_partial_release_is_active()
+```
+
+The exact mechanism can be a relay-controlled power supply, a programmable USB switch, a virtual machine reset, or process termination for early software-only coverage. Hardware interruption remains important because it includes storage caches and real boot behavior that a process kill cannot reproduce.
+
+For each boundary, verify more than whether the device boots:
+
+- the active version is known and valid
+- the previous release remains recoverable until promotion completes
+- the journal explains why recovery selected that version
+- repeated reboots do not alternate between states
+- a resumed update remains idempotent
+- cleanup never removes the last-known-good release
+
+## Test Filesystem Durability Assumptions
+
+Power-loss behavior depends on more than application logic. Mount options, filesystem ordering, storage-controller caches, and removable media can change what survives.
+
+If correctness depends on a file and directory entry both being durable, synchronize both. If the target hardware uses different storage SKUs, include them as test cohorts rather than assuming one device represents the fleet.
+
+The test report should name the filesystem, mount configuration, storage device, updater version, and exact boundary interrupted. Without that context, a passing result is difficult to reproduce.
+
+## Recovery Must Converge
+
+The strongest property is convergence: after interruption, repeated boots and retries should move the device toward one stable release without operator guesswork.
+
+That means recovery actions must be idempotent. Re-running rollback should not corrupt the previous release. Re-running staging should not trust partial files. Re-running promotion should not erase the rollback target before health is proven.
+
+## The Practical Standard
+
+Before shipping an embedded update mechanism, I want evidence that:
+
+1. every durable state has one documented recovery decision
+2. power interruption has been injected at every state boundary
+3. the device always boots a verified candidate or the last-known-good release
+4. retries and repeated reboots converge safely
+5. the test matrix covers representative storage hardware
+
+An update design is not power-loss safe because its diagram contains an atomic rename. It is safe when interruption testing proves the complete state machine can always find its way home.
