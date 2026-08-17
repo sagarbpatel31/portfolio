@@ -1,0 +1,132 @@
+---
+title: "Edge Fleets Need Configuration Provenance"
+date: "2026-08-16"
+tags: ["Edge Computing", "Configuration", "Reliability", "Fleet Operations", "Observability", "Release Engineering"]
+excerpt: "An edge device should be able to explain the exact effective configuration that produced its behavior. Provenance links every value to its source, precedence, version, and rollout so configuration drift becomes diagnosable evidence."
+---
+
+# Edge Fleets Need Configuration Provenance
+
+When two edge devices running the same application version behave differently, configuration is one of the first suspects and one of the hardest things to reconstruct.
+
+The value an application uses may come from a compiled default, image file, device overlay, environment variable, local technician change, feature flag, or recovery fallback. Logging the final value is useful, but it does not explain why that value won.
+
+Edge systems need configuration provenance: a durable explanation of the effective configuration and where every important value came from.
+
+## Configuration Is a Layered Build Artifact
+
+Treat effective configuration as something the device builds at startup.
+
+```text
+compiled defaults
+  < release configuration
+  < device-class overlay
+  < site policy
+  < approved device override
+  < bounded runtime safety override
+```
+
+The exact precedence differs by system. What matters is that it is explicit, deterministic, and observable.
+
+If two sources define the same key, the resolver should record both the winner and the shadowed value's source. Otherwise an engineer can find the expected setting in one file while the process is actually using another.
+
+## Record a Sanitized Effective Snapshot
+
+At startup and after any accepted change, produce a canonical configuration snapshot.
+
+```json
+{
+  "schema_version": 7,
+  "release": "2.4.1",
+  "device_class": "gateway-v2",
+  "effective_hash": "sha256:1b73...",
+  "values": {
+    "inference.batch_size": {
+      "value": 2,
+      "source": "site-policy/us-west-warehouse-4",
+      "source_version": "policy-184"
+    },
+    "network.retry_limit": {
+      "value": 4,
+      "source": "release-defaults",
+      "source_version": "2.4.1"
+    }
+  }
+}
+```
+
+Secrets should never be written into this artifact. Record a key identifier, secret version, or redacted presence marker instead of the value.
+
+Canonical serialization matters because the effective hash should be stable across processes and reboots when the meaningful configuration is unchanged.
+
+## Link Configuration to Behavior
+
+The effective hash belongs in the same evidence as release and hardware identity:
+
+- startup and health telemetry
+- incident bundles
+- rollout dashboards
+- performance benchmark results
+- operator-visible device summaries
+- support exports
+
+This makes comparison mechanical. If one cohort regresses, group devices by release, hardware cohort, and configuration hash before assuming the executable is inconsistent.
+
+A changed hash is not automatically a problem. It is a search boundary that tells engineers which devices are actually comparable.
+
+## Make Changes Transactional and Reviewable
+
+A configuration update should have the same discipline as a software update:
+
+1. validate against a versioned schema
+2. resolve all layers and calculate the candidate snapshot
+3. show the effective diff, including shadowed values
+4. apply atomically or reject without partial mutation
+5. run a bounded health gate
+6. retain the prior known-good snapshot for rollback
+
+Do not report success merely because a file was downloaded or a control-plane request was accepted. Success means the intended effective configuration is active and the dependent service remains healthy.
+
+For settings that cannot change safely at runtime, the system should say so and stage them for the next controlled restart.
+
+## Detect Drift Without Assuming Connectivity
+
+Cloud-connected fleets can compare device hashes against desired state centrally. Offline or intermittently connected devices still need local evidence.
+
+Store a bounded history containing:
+
+- effective hash
+- timestamp and monotonic sequence
+- actor or source that requested the change
+- old and new source versions
+- validation and health-gate outcome
+- rollback reason when applicable
+
+When the device reconnects or returns from the field, that history explains how it diverged. It also distinguishes intentional local overrides from corruption or manual edits outside the supported path.
+
+## Test Precedence and Recovery
+
+Configuration bugs often live in combinations, not individual values. Use table-driven tests for precedence rules and integration tests for lifecycle behavior.
+
+Important cases include:
+
+- the same key present in three layers
+- malformed high-priority input falling back or failing closed
+- removal of an override revealing the correct lower layer
+- schema migration across a software rollback
+- power loss during configuration activation
+- a health-gate failure restoring the previous snapshot
+
+The test should assert the value, source, source version, effective hash, and recorded change event.
+
+## The Practical Standard
+
+For every field device, I want an engineer to be able to answer:
+
+1. what exact configuration is active?
+2. which source and version supplied each important value?
+3. what changed since the last known-good state?
+4. which devices share the same effective configuration?
+5. can a failed change restore the prior snapshot safely?
+
+Versioning the application tells you which code ran. Configuration provenance tells you which behavior that code was asked to produce. Production edge systems need both before fleet debugging becomes evidence instead of comparison by guesswork.

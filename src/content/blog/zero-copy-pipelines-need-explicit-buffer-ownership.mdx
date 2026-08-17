@@ -1,0 +1,127 @@
+---
+title: "Zero-Copy Pipelines Need Explicit Buffer Ownership"
+date: "2026-08-12"
+tags: ["Networking", "DMA", "DPDK", "Embedded Linux", "Performance", "Systems Programming"]
+excerpt: "Removing memcpy calls does not make a pipeline safely zero-copy. High-throughput systems need an explicit ownership protocol for DMA buffers, including transfer points, lifetime rules, backpressure, and reuse evidence."
+---
+
+# Zero-Copy Pipelines Need Explicit Buffer Ownership
+
+Zero-copy is often described as a performance optimization: remove a memory copy, reduce CPU work, and keep data close to the device that produced it.
+
+That description is incomplete. Once multiple components share the same memory, buffer ownership becomes a correctness protocol.
+
+The difficult question is no longer only "How many copies does this packet take?" It is "Who is allowed to read, mutate, release, or recycle these bytes at this exact moment?"
+
+## A Pointer Is Not Ownership
+
+A packet or frame can move through several stages without changing its address:
+
+```text
+NIC DMA -> RX descriptor -> parser -> classifier -> accelerator -> TX or recycle
+```
+
+Every stage may hold a pointer into the same backing memory. That is fast, but it creates failure modes that ordinary value ownership would have prevented:
+
+- the RX ring reuses a buffer while a classifier still reads it
+- two stages mutate overlapping metadata
+- an error path releases the same buffer twice
+- a slow consumer pins enough buffers to starve the producer
+- device and CPU views disagree because synchronization was incomplete
+
+These failures often disappear under light load and appear during bursts, retries, or cancellation. That makes them easy to misdiagnose as random corruption.
+
+## Model Ownership as States
+
+I prefer to define a small ownership state machine for every buffer class.
+
+| State | Owner | Allowed operations |
+| --- | --- | --- |
+| `free` | allocator or device ring | assign to a producer |
+| `device_write` | DMA-capable device | write payload and completion metadata |
+| `cpu_read` | parser or worker | read payload, write private metadata |
+| `shared_read` | bounded consumers | read only, retain with explicit lifetime |
+| `device_read` | accelerator or TX device | consume submitted bytes |
+| `recycle` | completion path | reset metadata and return to free pool |
+
+Transitions should happen at visible boundaries: descriptor completion, queue transfer, reference acquisition, accelerator completion, or explicit cancellation.
+
+If the code cannot identify the transition that moved a buffer into its current state, the ownership model is too implicit.
+
+## Separate Payload From Mutable Metadata
+
+Many pipelines do not need every stage to mutate the packet. Keep the payload immutable after ingress and give each stage separate metadata where possible.
+
+```c
+struct packet_view {
+    const uint8_t *data;
+    uint32_t length;
+    uint32_t buffer_id;
+    uint32_t generation;
+};
+
+struct packet_meta {
+    uint32_t flow_id;
+    uint16_t class_id;
+    uint16_t flags;
+};
+```
+
+A generation counter is useful when buffers are recycled. It lets debug builds and telemetry detect a stale view that refers to the right buffer ID but the wrong lifetime.
+
+Reference counts can help with fan-out, but they do not replace an ownership design. The system still needs rules for who may create references, how cancellation releases them, and what happens when a consumer never completes.
+
+## Backpressure Is Part of Ownership
+
+If downstream stages can retain shared buffers indefinitely, the pool is effectively an unbounded queue with a fixed amount of memory. Eventually ingress stalls or allocation falls back to a slower path.
+
+The ownership contract therefore needs limits:
+
+- maximum retained buffers per consumer
+- timeout or cancellation behavior
+- policy when the free pool reaches a low watermark
+- priority for control and recovery traffic
+- metrics for oldest outstanding ownership
+
+Dropping, copying, or diverting work under pressure can be correct. Silently exhausting the pool is not.
+
+Sometimes a controlled copy is the right fallback. One copy that isolates a slow or untrusted consumer can be cheaper than letting that consumer hold the data-plane buffer pool hostage.
+
+## Device Synchronization Must Be Explicit
+
+DMA ownership transitions also require the platform's memory and cache synchronization rules. Descriptor completion must be observed before payload consumption. CPU writes must be visible before a device reads them. The exact primitives depend on the driver model, architecture, and DMA API.
+
+Do not replace those rules with assumptions based on one coherent development machine. The test matrix should include the target architecture and real device path.
+
+## Test Delayed and Cancelled Consumers
+
+Throughput tests alone rarely expose lifetime defects. Add targeted stress cases:
+
+1. delay one consumer while ingress continues
+2. cancel work after ownership transfer but before completion
+3. force an accelerator or TX error path
+4. wrap the descriptor ring repeatedly under burst traffic
+5. verify every buffer returns to the pool exactly once
+
+Useful invariants include:
+
+```text
+allocated = free + device_owned + cpu_owned + shared + pending_recycle
+double_release_count = 0
+stale_generation_count = 0
+oldest_ownership_age < deadline
+```
+
+Those checks turn invisible lifetime assumptions into measurable system behavior.
+
+## The Practical Standard
+
+Before calling a pipeline zero-copy and production-ready, I want evidence that:
+
+1. every buffer state has one owner or an explicitly bounded shared-read set
+2. every ownership transition has a synchronization point
+3. cancellation and error paths release exactly once
+4. slow consumers cannot exhaust the producer's buffer pool
+5. generation and accounting checks survive ring wrap and sustained bursts
+
+Zero-copy is not the absence of `memcpy`. It is a disciplined agreement about memory lifetime. The performance gain is real only when ownership remains correct under the pressure that made the optimization necessary.

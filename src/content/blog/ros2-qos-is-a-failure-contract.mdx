@@ -1,0 +1,114 @@
+---
+title: "ROS2 QoS Is a Failure Contract, Not a Tuning Menu"
+date: "2026-08-14"
+tags: ["ROS2", "Robotics", "DDS", "Reliability", "Distributed Systems", "Physical AI"]
+excerpt: "ROS2 QoS settings decide what a robotics system does when messages are late, lost, replayed, or disconnected. Profiles should be derived from topic failure semantics and verified under fault injection, not copied from defaults."
+---
+
+# ROS2 QoS Is a Failure Contract, Not a Tuning Menu
+
+ROS2 exposes Quality of Service policies for reliability, durability, history, depth, deadline, lifespan, and liveliness. It is tempting to treat them as middleware tuning knobs.
+
+They are more important than that. A QoS profile defines what a topic is allowed to do when the system experiences delay, loss, restart, or disconnection.
+
+That makes QoS part of the robotics failure contract.
+
+## Start With the Meaning of the Topic
+
+Different messages have different operational value.
+
+A camera frame is useful while it is fresh. If the subscriber falls behind, processing old frames can be worse than dropping them. A mode transition or calibration record may remain important after the publisher restarts. A periodic pose estimate may tolerate one loss but not a growing queue.
+
+Before selecting policies, write down:
+
+- how long the message remains useful
+- whether a newer message supersedes an older one
+- whether late joiners need the latest state
+- what loss rate is acceptable
+- how disconnection should be detected
+- what the subscriber must do after missing its deadline
+
+Only then should the profile be encoded.
+
+## Reliability Does Not Mean End-to-End Safety
+
+`RELIABLE` requests retransmission behavior from DDS. It does not prove that the application consumed the message, acted once, or acted before a control deadline.
+
+A reliable queue can also preserve messages that are already stale. If a control loop needs the newest command, a deep reliable history may increase latency during congestion instead of improving safety.
+
+For each topic, separate three questions:
+
+1. Should the middleware retry delivery?
+2. Is an older message still useful?
+3. How will the application detect and handle missed timing?
+
+Those answers may lead to a shallow reliable queue, a best-effort latest-value stream, or an explicit service/action protocol with acknowledgement at the application layer.
+
+## Use a Topic Contract Table
+
+A reviewable system documents QoS beside topic semantics.
+
+| Topic class | Freshness | Typical contract |
+| --- | --- | --- |
+| Camera or lidar stream | newest sample matters | best effort, volatile, shallow history |
+| Robot state estimate | short bounded age | shallow history, deadline monitoring |
+| Mode or configuration state | latest state must reach late joiners | reliable, transient local where appropriate |
+| High-rate actuator target | stale commands are dangerous | bounded history, explicit lifespan or age checks |
+| Long-running operation | progress and cancellation matter | action protocol rather than topic-only delivery |
+
+This is not a universal profile table. It is a prompt to connect each setting to a failure decision.
+
+## Compatibility Is a Deployment Constraint
+
+Publisher and subscriber profiles must be compatible. A node can compile, launch, and discover the graph while a requested/offered mismatch prevents communication.
+
+That risk grows when teams independently change profiles or deploy mixed software versions. Treat QoS changes like interface changes:
+
+- keep profiles in version-controlled definitions
+- review publisher and subscriber changes together
+- test mixed-version rollout combinations
+- surface incompatible endpoints in diagnostics
+- include effective QoS in incident evidence
+
+If a topic is safety- or mission-critical, startup should not report healthy merely because the node process is alive. It should verify that required endpoints are matched and receiving data within the expected window.
+
+## Deadlines and Liveliness Need Application Responses
+
+Detecting a missed deadline is useful only if the application has a defined reaction.
+
+Possible responses include:
+
+- hold the last safe command for a bounded interval
+- transition to a degraded controller
+- stop an actuator path
+- mark perception stale and prevent planning from consuming it
+- alert an operator with the affected topic and age
+
+The QoS event is a signal. The state machine decides what that signal means.
+
+Likewise, liveliness can reveal that a publisher is no longer asserting presence, but the robot still needs a deterministic behavior for that condition.
+
+## Test QoS Under Failure
+
+Nominal message exchange proves very little. Exercise the contract directly:
+
+1. delay the subscriber until its queue fills
+2. drop and reorder traffic where the transport permits it
+3. restart publishers and late-join subscribers
+4. deploy intentionally incompatible profiles in a test graph
+5. introduce CPU contention that causes deadline misses
+6. confirm the robot enters the documented safe or degraded behavior
+
+Measure message age at consumption, not only publish rate. A topic can deliver every message and still violate the system if those messages arrive too late to use.
+
+## The Practical Standard
+
+For every important ROS2 topic, I want the design to answer:
+
+1. what does freshness mean for this message?
+2. which loss, retry, and replay behavior is acceptable?
+3. are publisher and subscriber profiles versioned and compatible?
+4. what state transition follows a missed deadline or lost publisher?
+5. has that behavior been tested under delay, restart, and congestion?
+
+QoS is not middleware decoration. It is where the communication layer and the robot's failure behavior meet. Treating it as a contract makes the graph easier to reason about before the first dropped message becomes a field incident.
