@@ -1,0 +1,148 @@
+---
+title: "Edge AI Rollbacks Need Artifact Compatibility Contracts"
+date: "2026-08-18"
+tags: ["Edge AI", "MLOps", "TensorRT", "Release Engineering", "Reliability", "Embedded Linux"]
+excerpt: "Rolling back an edge-AI executable is not enough when models, TensorRT engines, calibration data, schemas, and caches evolved with it. Safe recovery treats the deployable unit as a compatibility-checked artifact set."
+---
+
+# Edge AI Rollbacks Need Artifact Compatibility Contracts
+
+Software rollback sounds simple: keep the previous release, switch the active pointer, restart the service, and verify health.
+
+For edge AI, the executable is only one part of the deployed state. The workload may also depend on model weights, TensorRT engines, calibration data, tokenizer or label maps, preprocessing configuration, feature schemas, and persistent caches.
+
+Rolling back the binary while leaving newer artifacts in place can produce a service that starts successfully and behaves incorrectly.
+
+## The Release Is an Artifact Set
+
+An edge-AI release should describe every compatibility-sensitive component it expects.
+
+```json
+{
+  "release": "vision-stack-2.4.1",
+  "application": "sha256:3a91...",
+  "model": {
+    "id": "anomaly-detector-v7",
+    "sha256": "7db4...",
+    "input_schema": 4,
+    "output_schema": 3
+  },
+  "engine": {
+    "sha256": "0fe8...",
+    "target": "jetson-orin-nx",
+    "runtime_compatibility": "declared-build-profile"
+  },
+  "preprocess_config": "sha256:b105...",
+  "label_map": "sha256:0c72..."
+}
+```
+
+The exact fields vary by stack. The contract needs immutable identities, target hardware, schema versions, and the relationships that were tested together.
+
+An unversioned file named `model.engine` is not enough evidence for deployment or rollback.
+
+## Engines Are Not Universal Model Files
+
+Optimized runtime engines encode assumptions from their build environment and target. Hardware characteristics, runtime versions, plugins, precision modes, calibration inputs, and optimization profiles can all matter.
+
+The release process should either:
+
+- ship a verified engine for a declared hardware and software cohort, or
+- rebuild the engine on the target through a deterministic, health-gated path
+
+It should not silently load whichever cached engine happens to exist.
+
+On rollback, the device must verify that the selected engine belongs to the rollback release and current hardware cohort. If no compatible engine is available, recovery needs a defined fallback, such as rebuilding from a retained model or returning to a non-accelerated safe mode.
+
+## Schema Compatibility Extends Beyond Tensor Shapes
+
+Matching input dimensions does not prove semantic compatibility.
+
+A model update may change:
+
+- normalization constants
+- channel order or color space
+- class and label ordering
+- confidence calibration
+- feature-window construction
+- postprocessing thresholds
+- output field meaning
+
+The older application can accept the same tensor shape and still interpret the result incorrectly.
+
+Version preprocessing, postprocessing, and label semantics as part of the model interface. Rollback should reject combinations that were never certified together.
+
+## Persistent State Can Break an Otherwise Valid Rollback
+
+Edge inference services often retain state for speed or continuity:
+
+- engine caches
+- calibration caches
+- feature statistics
+- model warm-start state
+- local result databases
+- configuration migrations
+
+Newer software may write a format the previous release cannot read. Safe rollback requires one of three strategies:
+
+1. backward-compatible state formats
+2. release-scoped state directories
+3. a tested downgrade migration
+
+Deleting state on rollback can be valid only when the system explicitly treats that state as disposable and can rebuild it within the recovery deadline.
+
+## Make Promotion Preserve the Rollback Set
+
+Do not prune the previous model and engine as soon as the new process starts. Keep the complete last-known-good artifact set until the candidate passes its production-relevant health window.
+
+The retained set should include:
+
+- executable and libraries
+- model and engine or deterministic rebuild source
+- preprocessing and postprocessing configuration
+- schemas and label maps
+- compatible persistent-state snapshot or namespace
+- signed manifest and verification evidence
+
+Storage budgeting must account for this. A device without room for both candidate and rollback artifacts does not have a complete rollback strategy.
+
+## Health Checks Must Validate Semantics
+
+Process liveness and model-load success are only the floor. A promotion or rollback health gate should run representative known inputs and verify bounded output properties.
+
+```text
+artifact hashes valid
+  + engine loads on target
+  + input/output schemas match
+  + golden samples stay within tolerance
+  + latency and memory stay within budget
+  + dependent services accept the result contract
+```
+
+Golden samples should cover more than the happy path. Include at least one negative or abstention case so a label-map or threshold mismatch cannot pass by producing any plausible output.
+
+## Test Rollback After State Has Changed
+
+The meaningful rollback test does not begin immediately after installation. Let the candidate run long enough to create caches, update local state, and process real-shaped data, then interrupt it and restore the previous set.
+
+Verify that:
+
+1. the previous release selects only its compatible artifacts
+2. incompatible caches are ignored, migrated, or namespaced
+3. semantic golden tests pass after recovery
+4. latency and resource use return to the previous envelope
+5. repeated rollback attempts remain idempotent
+
+This is how the test reaches the state most likely to expose downgrade defects.
+
+## The Practical Standard
+
+Before claiming an edge-AI release can roll back safely, I want the system to answer:
+
+1. what complete artifact set was tested together?
+2. which hardware and runtime cohort is the engine compatible with?
+3. are preprocessing, outputs, labels, and thresholds versioned as interfaces?
+4. can older software handle state written by the candidate?
+5. does rollback pass semantic checks, not merely process health?
+
+A binary rollback restores code. An artifact compatibility contract restores behavior. Edge AI systems need the second guarantee before recovery can be trusted in the field.

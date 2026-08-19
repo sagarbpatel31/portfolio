@@ -1,0 +1,133 @@
+---
+title: "Packet Drops Need Provenance, Not One Counter"
+date: "2026-08-17"
+tags: ["Networking", "DPDK", "Embedded Linux", "Observability", "Reliability", "Performance"]
+excerpt: "A total packet-drop counter proves that traffic disappeared but not where, why, or under which pressure. High-performance data planes need stage-specific reason codes and enough context to distinguish policy from overload and defects."
+---
+
+# Packet Drops Need Provenance, Not One Counter
+
+A packet-drop counter is necessary and usually insufficient.
+
+When the number rises, the system confirms that traffic disappeared somewhere between ingress and delivery. It does not explain whether the NIC ring overflowed, the driver rejected a frame, a queue exhausted its capacity, policy intentionally denied the packet, or the application discarded stale work.
+
+Those causes require different fixes. Treating them as one metric turns incident response into elimination by guesswork.
+
+## Drops Happen at Multiple Boundaries
+
+A typical packet path contains several places where traffic can stop:
+
+```text
+NIC -> RX ring -> driver -> parser -> classifier -> policy -> worker queue -> TX ring
+```
+
+Each stage has different ownership, capacity, and failure semantics.
+
+- A NIC drop may indicate insufficient descriptors or a stalled consumer.
+- A parser drop may indicate malformed input or a new protocol variant.
+- A policy drop may be expected behavior.
+- A worker-queue drop may indicate backpressure or poor workload partitioning.
+- A TX drop may come from link state, descriptor pressure, or an invalid egress decision.
+
+Adding all of these together answers only one question: how many packets did not complete the path?
+
+## Give Every Drop a Stage and Reason
+
+I prefer a bounded taxonomy with two dimensions:
+
+1. the stage that made the decision
+2. the reason that prevented progress
+
+```c
+enum drop_stage {
+    DROP_RX_DEVICE,
+    DROP_DRIVER,
+    DROP_PARSE,
+    DROP_CLASSIFY,
+    DROP_POLICY,
+    DROP_WORK_QUEUE,
+    DROP_TX_DEVICE,
+};
+
+enum drop_reason {
+    REASON_RING_FULL,
+    REASON_INVALID_FRAME,
+    REASON_UNSUPPORTED_PROTOCOL,
+    REASON_POLICY_DENY,
+    REASON_NO_ROUTE,
+    REASON_QUEUE_LIMIT,
+    REASON_STALE,
+    REASON_DEVICE_ERROR,
+};
+```
+
+The taxonomy should remain small enough to operate. If every call site invents a reason string, dashboards become fragmented and alerts become difficult to compare across releases.
+
+Reserve an `unknown` reason as a migration signal, not a permanent bucket. Its rate should trend toward zero.
+
+## Separate Intentional and Unintentional Loss
+
+Policy enforcement, sampling, duplicate suppression, and expiration can all discard packets correctly. Capacity exhaustion and device errors are operational failures.
+
+Both belong in the evidence, but they should not share the same health interpretation.
+
+| Drop class | Example | Operational meaning |
+| --- | --- | --- |
+| Intentional | policy deny | expected if policy and traffic mix are unchanged |
+| Protective | stale packet discarded | system preserved freshness under pressure |
+| Capacity | RX ring full | consumer could not keep up |
+| Correctness | invalid descriptor state | likely implementation or device-path defect |
+| Environment | link unavailable | external condition requiring recovery |
+
+A rise in intentional policy drops may still deserve investigation if the traffic mix did not change. The important point is that the system names the decision instead of forcing operators to infer it from a total.
+
+## Add Context Without Logging Every Packet
+
+Per-packet logs are usually too expensive for a high-throughput path. Use counters for coverage and bounded samples for diagnosis.
+
+A sampled drop record might include:
+
+- monotonic timestamp
+- stage and reason code
+- ingress and intended egress interface
+- queue or core identifier
+- packet length and protocol class
+- flow hash rather than full addresses when privacy matters
+- release, configuration, and hardware-cohort identifiers
+- relevant ring occupancy or queue depth
+
+Sampling should be rate-limited per reason. Otherwise one failure mode can flood the evidence channel and make the original overload worse.
+
+## Preserve Counter Semantics Across Restarts
+
+Operators need to know whether a counter is cumulative, reset at process start, or exported as a rate. A raw value without an epoch can look like a recovery when the process simply restarted.
+
+Export the process or device boot identifier beside counters. For local incident bundles, retain the final counter snapshot before restart when possible.
+
+Also distinguish hardware counters from software counters. A packet dropped before DMA reaches the host cannot be attributed by application code, but the device counter can still be correlated with ring occupancy, interrupt activity, and the same time window.
+
+## Test the Attribution Path
+
+Every reason code should have at least one controlled test that makes it increase without affecting unrelated reasons.
+
+Useful cases include:
+
+1. shrink a test RX ring and burst above capacity
+2. inject malformed and unsupported frames
+3. apply a known deny policy
+4. delay a worker until its queue reaches the limit
+5. remove egress availability during transmission
+
+The test should assert the expected stage, reason, counter delta, and sampled evidence. It should also verify that normal throughput remains healthy after the disturbance is removed.
+
+## The Practical Standard
+
+When packet loss rises, I want the system to answer:
+
+1. at which stage did traffic stop?
+2. was the loss intentional, protective, capacity-driven, or erroneous?
+3. which queue, interface, release, and hardware cohort were involved?
+4. did the condition recover after pressure disappeared?
+5. can a controlled test reproduce the same attribution?
+
+One counter proves loss. Drop provenance turns that loss into an actionable systems diagnosis. In high-performance networking, that difference determines whether the next optimization targets the real bottleneck or merely moves it.
