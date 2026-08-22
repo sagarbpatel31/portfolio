@@ -1,0 +1,141 @@
+---
+title: "DMA Buffers Need Explicit Cache-Coherency Contracts"
+date: "2026-08-19"
+tags: ["Embedded Systems", "DMA", "Linux Kernel", "Networking", "Performance", "Reliability"]
+excerpt: "A DMA transfer can complete successfully while the CPU still reads stale bytes or a device receives old data. Reliable zero-copy pipelines make ownership, synchronization, and cache-coherency transitions explicit."
+---
+
+# DMA Buffers Need Explicit Cache-Coherency Contracts
+
+DMA makes high-throughput embedded and networking systems possible by moving data without asking the CPU to copy every byte. It also introduces a second observer of memory with its own timing and visibility rules.
+
+That changes the meaning of a successful transfer. A descriptor can complete, lengths can look correct, and the CPU can still consume stale cache lines. In the opposite direction, a device can read memory before the CPU's latest writes become visible to it.
+
+The reliable design is not "remember to flush the cache." It is an explicit contract for who owns each buffer and what synchronization must occur when ownership changes.
+
+## DMA Breaks the Single-Owner Mental Model
+
+Ordinary application code often assumes that a write followed by a read observes the new value. A DMA-capable device introduces another execution domain:
+
+```text
+CPU producer -> memory -> DMA device -> CPU consumer
+```
+
+Depending on the architecture, interconnect, mapping type, and platform configuration, CPU caches and device-visible memory may not become coherent automatically.
+
+The important questions are:
+
+- Is the allocation coherent for both observers?
+- Is the buffer mapped for streaming access with explicit synchronization?
+- Which direction can data move?
+- Who owns the buffer right now?
+- What event proves that ownership can transfer safely?
+
+If those answers live only in driver folklore, later optimizations will eventually violate them.
+
+## Model Ownership as States
+
+A buffer lifecycle should be small enough to draw and strict enough to assert.
+
+```text
+CPU_OWNED
+  -> sync for device
+  -> DEVICE_OWNED
+  -> completion observed
+  -> sync for CPU
+  -> CPU_OWNED
+```
+
+While the device owns a buffer, CPU code must not inspect or modify payload data unless the platform contract explicitly permits concurrent access. While the CPU owns it, the descriptor must not be published to hardware.
+
+This state model belongs in code, not just documentation. Debug builds can track ownership beside each descriptor and reject double submission, early reuse, or a missing completion transition.
+
+## Mapping Type Is an Interface Decision
+
+Coherent and streaming mappings solve different problems.
+
+Coherent memory simplifies visibility for frequently shared control structures such as descriptor rings, but it can have platform-specific cost and allocation constraints. Streaming mappings are often appropriate for payloads that move in one direction for a bounded interval, but they require correct synchronization at ownership boundaries.
+
+The choice should be visible in the buffer API:
+
+```c
+buffer_prepare_for_device(buf, DMA_TO_DEVICE);
+device_submit(buf);
+
+device_wait_complete(buf);
+buffer_prepare_for_cpu(buf, DMA_FROM_DEVICE);
+consume_payload(buf);
+```
+
+These names communicate intent better than scattered architecture-specific cache operations. The implementation can use the platform's supported DMA API while callers follow one ownership protocol.
+
+## Direction Is Part of Correctness
+
+DMA direction is not merely an optimization hint. It documents which observer writes and which observer reads.
+
+| Direction | Producer | Consumer | Critical transition |
+| --- | --- | --- | --- |
+| To device | CPU | device | publish CPU writes before submission |
+| From device | device | CPU | expose device writes after completion |
+| Bidirectional | both | both | synchronize every ownership transfer |
+
+Declaring every buffer bidirectional avoids making a decision, but it also hides incorrect assumptions and may force unnecessary synchronization. Prefer the narrowest direction that matches the real dataflow.
+
+## Zero Copy Multiplies Ownership Boundaries
+
+A zero-copy pipeline may pass one allocation through a camera, accelerator, packetizer, and network device. Removing copies is valuable, but every additional hardware participant adds compatibility and ownership questions.
+
+```text
+camera DMA -> inference accelerator -> CPU metadata -> network DMA
+```
+
+Before calling this path zero copy, define:
+
+1. which devices can address the allocation
+2. which participant owns it at each stage
+3. how completion is represented
+4. where synchronization occurs
+5. how cancellation returns ownership
+
+The cancellation path matters. A timeout that returns a buffer to a pool while hardware still references it creates corruption that may appear several transactions later.
+
+## Instrument Transitions, Not Payloads
+
+Full payload logging is expensive and may expose sensitive data. Ownership telemetry is usually enough to diagnose the class of defect.
+
+Useful evidence includes:
+
+- buffer and descriptor identifiers
+- allocation or pool generation
+- previous and next owner
+- DMA direction and mapped length
+- submission and completion sequence numbers
+- timeout, cancellation, and reset events
+- device, queue, CPU, and release identifiers
+
+On an invariant violation, retain a bounded transition history. A sequence showing `DEVICE_OWNED -> FREE -> CPU_OWNED` without a completion or reset fence is more actionable than a generic data-corruption report.
+
+## Test for Stale Data Deliberately
+
+Happy-path throughput tests rarely expose coherency bugs consistently. Add stress cases designed to make stale visibility and ownership errors observable:
+
+1. alternate recognizable byte patterns across reused buffers
+2. vary transfer sizes across cache-line boundaries
+3. move submission and completion handling across CPU cores
+4. force timeout, cancellation, and device-reset paths
+5. reuse buffer pools aggressively under sustained load
+6. verify payload checksums and descriptor generations end to end
+
+Run these tests on every supported hardware cohort. An implementation that appears correct on one coherent development platform can fail on a production target with different cache and interconnect behavior.
+
+## The Practical Standard
+
+Before trusting a DMA pipeline, I want it to answer:
+
+1. which observer owns each buffer now?
+2. what exact event transfers ownership?
+3. which synchronization operation makes prior writes visible?
+4. can a timeout or reset prove the device released the buffer?
+5. do tests detect stale data, early reuse, and cross-core races?
+
+DMA performance comes from avoiding unnecessary CPU work. DMA reliability comes from making memory ownership impossible to misunderstand.

@@ -1,0 +1,137 @@
+---
+title: "Agent Executions Need Reproducible Environment Manifests"
+date: "2026-08-21"
+tags: ["AI Agents", "Developer Tools", "CI/CD", "Security", "Reliability", "Observability"]
+excerpt: "An agent transcript does not capture the repository, tools, permissions, services, and network state that shaped an execution. Reproducible environment manifests turn surprising runs into reviewable engineering evidence."
+---
+
+# Agent Executions Need Reproducible Environment Manifests
+
+When a coding or operations agent produces a surprising result, teams often start with the transcript. The transcript explains what the model requested and what tools reported, but it does not fully describe the environment in which those actions ran.
+
+The same command can behave differently with another repository commit, dependency lockfile, compiler, feature flag, credential scope, service endpoint, or network policy.
+
+If an execution matters enough to review, debug, or audit, it needs a reproducible environment manifest beside the conversation.
+
+## A Transcript Is Only One Layer of Evidence
+
+An agent run depends on several inputs that may not appear in natural-language messages:
+
+```text
+prompt and context
+  + model and tool policy
+  + repository and working tree
+  + runtime and dependencies
+  + environment and permissions
+  + external services and time
+  = observed execution
+```
+
+Capturing only the first layer creates an incomplete incident record. A reviewer may replay the visible commands and still get a different result because an invisible dependency changed.
+
+The goal is not to preserve an entire machine image for every trivial task. It is to retain the minimum immutable identities and policies needed to explain consequential behavior.
+
+## Record Inputs by Identity, Not Friendly Name
+
+Names such as `main`, `latest`, `python3`, or `production-api` are convenient and mutable. A useful manifest resolves them to evidence that can be compared later.
+
+```json
+{
+  "run_id": "agent-run-01942",
+  "repository": {
+    "remote": "github.com/example/service",
+    "commit": "8c12f4a...",
+    "working_tree_patch_sha256": "5f619d..."
+  },
+  "runtime": {
+    "os_image": "sha256:32ab...",
+    "node": "22.18.0",
+    "lockfile_sha256": "cb2711..."
+  },
+  "policy": {
+    "toolset_version": "2026-08-21.3",
+    "network_profile": "restricted-v4",
+    "credential_scope": "repo-write-no-secrets-read"
+  }
+}
+```
+
+The schema can vary. The important properties are immutability, redaction safety, and enough detail to distinguish two environments that look similar to a human.
+
+## Preserve the Working Tree
+
+Repository commit identity alone is insufficient when the agent starts from or creates uncommitted changes.
+
+Capture:
+
+- base commit
+- staged and unstaged patch hashes
+- untracked files relevant to the task
+- submodule or workspace dependency revisions
+- generated files that influence build or test behavior
+
+Sensitive patches do not always belong in centralized logs. The manifest can store a hash and a protected artifact reference rather than embedding source content. Reviewers still gain proof of whether two runs used the same state.
+
+## Permissions Are Part of Program Behavior
+
+An agent with read-only repository access behaves differently from one that can modify files, reach the public network, query production, or push a branch.
+
+Record the effective policy, not just the intended policy:
+
+| Capability | Evidence to retain |
+| --- | --- |
+| Filesystem | readable and writable roots, sandbox profile |
+| Network | allowed destinations or policy identifier |
+| Credentials | scope and issuer, never secret values |
+| Tools | tool names, versions, and approval requirements |
+| Process | runtime limits, user identity, container image |
+
+This matters for both reliability and security. A failed run may have lacked a required capability, while an unexpectedly successful run may reveal that its permissions were broader than intended.
+
+## External State Needs Bounded Snapshots
+
+Perfect replay is impossible when a run depends on live APIs, package registries, databases, clocks, or search results. The manifest should make those dependencies visible and preserve bounded evidence when practical.
+
+For each consequential external read, retain:
+
+- endpoint or service identity
+- request time and response status
+- API or schema version
+- content hash or artifact reference
+- cache and freshness metadata
+
+Do not record tokens, personal data, or unrestricted response bodies by default. Evidence collection needs the same minimization and retention controls as the production system it observes.
+
+## Replay the Execution, Not the Model's Exact Words
+
+Reproducibility does not mean expecting a probabilistic model to generate an identical transcript. It means recreating the execution boundary closely enough to validate the engineering outcome.
+
+A useful replay can answer:
+
+1. does the same patch apply to the same base state?
+2. do the declared build and tests produce the same result?
+3. do policy checks allow and deny the same operations?
+4. are generated artifacts semantically equivalent?
+5. can the original failure be reproduced under the recorded conditions?
+
+This shifts review from "would the model say the same thing?" to "does the resulting system behavior remain explainable and verifiable?"
+
+## Make the Manifest Automatic
+
+Agents should not have to remember to assemble this evidence manually. The execution platform can capture a manifest at run start, append tool and environment transitions, and seal the final record with artifact hashes.
+
+For high-impact actions such as deployment, database migration, or dependency release, promotion should require the manifest and verification results. Lower-risk exploratory work can use a lighter profile.
+
+The manifest should also identify uncertainty. If an external response was not retained or a mutable dependency could not be resolved, mark that gap explicitly rather than implying complete replayability.
+
+## The Practical Standard
+
+Before treating an agent run as reviewable engineering work, I want it to answer:
+
+1. what exact repository and working-tree state did it use?
+2. which runtime, dependencies, tools, and policies shaped the run?
+3. which external inputs were mutable?
+4. can another environment verify the resulting artifacts and tests?
+5. which evidence is missing, redacted, or intentionally not retained?
+
+A transcript records the interaction. A reproducible environment manifest records the conditions that made the interaction consequential.

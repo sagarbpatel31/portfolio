@@ -1,0 +1,136 @@
+---
+title: "Robotics Command Paths Need Expiring Authority Leases"
+date: "2026-08-20"
+tags: ["Robotics", "ROS 2", "Safety", "Distributed Systems", "Reliability", "Observability"]
+excerpt: "When autonomy, teleoperation, and maintenance tools can all command a robot, source priority is not enough. Expiring authority leases make ownership, handoff, and stale-command rejection explicit."
+---
+
+# Robotics Command Paths Need Expiring Authority Leases
+
+A modern robot may accept commands from autonomous planners, a teleoperation console, a local maintenance tool, a recovery controller, and a safety subsystem.
+
+The dangerous question is not only which command has the highest priority. It is whether the actuator controller can prove which source currently has authority, how long that authority remains valid, and why a delayed command should be rejected.
+
+A static priority list cannot answer all three. Robotics command paths benefit from expiring authority leases.
+
+## Priority Does Not Prove Current Ownership
+
+Imagine that teleoperation temporarily overrides autonomy. The operator disconnects, but a network queue later delivers an old velocity command. If the receiver checks only that teleoperation outranks autonomy, the stale command can still win.
+
+The control path needs more context:
+
+- command source identity
+- controlled resource or actuator group
+- authority epoch
+- lease expiration
+- command sequence and generation
+- operating mode
+- reason authority was granted
+
+The command value is only valid inside that authority envelope.
+
+## A Lease Makes Authority Bounded
+
+An authority lease grants one source control of a declared resource for a short period. The source must renew the lease while it remains healthy and engaged.
+
+```json
+{
+  "source": "teleop-console-4",
+  "resource": "mobile-base",
+  "authority_epoch": 83,
+  "mode": "manual",
+  "issued_monotonic_ms": 48122310,
+  "expires_monotonic_ms": 48122560,
+  "fence_token": "base-83"
+}
+```
+
+When renewal stops, authority expires automatically. The receiver transitions to a defined safe response instead of waiting indefinitely for an explicit release message that may never arrive.
+
+Lease duration should follow the dynamics and stopping behavior of the controlled system. It must be long enough to tolerate expected scheduling variation and short enough to bound unintended motion after authority is lost.
+
+## Use Epochs to Fence Delayed Commands
+
+Expiration alone is insufficient when messages can be reordered or delayed. Every new authority grant should advance an epoch or fencing token.
+
+The actuator-side controller accepts a command only when:
+
+```text
+command.authority_epoch == active_lease.authority_epoch
+and command.source == active_lease.source
+and command.sequence > last_accepted_sequence
+and now < active_lease.expiration
+and command.mode == current_mode
+```
+
+Once epoch 84 becomes active, a command from epoch 83 remains invalid even if its timestamp appears recent. This protects handoffs from delayed packets, retries, and restarted publishers.
+
+The actuator boundary, not only an upstream coordinator, should enforce the fence. A guarantee that disappears when one middleware node is bypassed is not a robust control guarantee.
+
+## Handoffs Need a Defined Neutral Point
+
+Transferring authority directly between two active sources can create a discontinuity. One controller may be commanding forward motion while the next assumes the platform is already stationary.
+
+A safer handoff protocol can require:
+
+1. revoke or expire the current lease
+2. command and confirm the resource's neutral or bounded state
+3. advance the authority epoch
+4. grant the new lease
+5. accept commands only after the new source acknowledges the current state
+
+Not every robot must stop completely for every handoff. The required neutral point can be a bounded velocity, stabilized joint state, or trajectory checkpoint. The key is that the transition contract is explicit and testable.
+
+## Separate Authority Loss from Emergency Stop
+
+Lease expiry and emergency stop are related but different mechanisms.
+
+Authority loss handles missing heartbeats, disconnected operators, crashed planners, and stale publishers. It should drive a predictable fail-safe behavior for that resource.
+
+An emergency-stop path should remain independent, higher priority, and capable of overriding every lease. It should not depend on the same application process, message broker, or renewal loop whose failure may have caused the unsafe condition.
+
+This separation lets the system explain whether motion stopped because command authority expired, a safety limit triggered, or an emergency circuit intervened.
+
+## Make Rejection Observable
+
+Dropping an invalid command silently makes recovery and debugging harder. The controller should count rejections by reason and retain bounded samples.
+
+Useful reason codes include:
+
+- no active lease
+- expired lease
+- wrong source
+- stale authority epoch
+- duplicate or out-of-order sequence
+- incompatible operating mode
+- resource already fenced by safety
+
+Operator interfaces should show the current authority holder, remaining lease time, resource scope, and last transition reason. "Robot not responding" is a poor substitute for "teleoperation lease expired 180 ms ago; base entered controlled stop."
+
+## Test Authority Under Delay and Failure
+
+Authority logic needs adversarial integration tests, not only normal mode transitions.
+
+Test at least:
+
+1. delayed commands arriving after a handoff
+2. duplicated renewals and reordered command sequences
+3. operator disconnect without a release message
+4. planner restart with a reset local sequence counter
+5. coordinator crash while a lease is active
+6. mode change during outstanding commands
+7. emergency stop during grant and renewal
+
+Each test should assert actuator behavior, rejection reason, transition latency, operator-visible state, and the evidence retained for review.
+
+## The Practical Standard
+
+Before allowing multiple sources to command a robot, I want the system to answer:
+
+1. who owns authority for each resource?
+2. when does that authority expire without renewal?
+3. how are delayed commands from previous owners fenced?
+4. what bounded state is required during handoff?
+5. can operators see why a command was accepted or rejected?
+
+Priorities choose among contenders. Expiring leases prove that the winner still has the right to command the machine.
