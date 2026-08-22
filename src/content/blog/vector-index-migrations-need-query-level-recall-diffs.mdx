@@ -1,0 +1,158 @@
+---
+title: "Vector Index Migrations Need Query-Level Recall Diffs"
+date: "2026-08-22"
+tags: ["RAG", "Vector Databases", "Evaluation", "Data Engineering", "Reliability", "Production Systems"]
+excerpt: "A rebuilt vector index can be complete, healthy, and fast while returning materially worse evidence. Safe migrations compare old and new retrieval results per query before traffic is promoted."
+---
+
+# Vector Index Migrations Need Query-Level Recall Diffs
+
+A vector-index migration can pass every infrastructure check and still reduce retrieval quality.
+
+The new index may contain the expected row count, report healthy replicas, meet latency targets, and accept queries. Yet a changed embedding model, chunking rule, distance metric, filter behavior, quantization setting, or metadata transform can move the most useful evidence out of the top results.
+
+Migration success needs to include query-level retrieval evidence, not only index health.
+
+## Index Completeness Does Not Prove Retrieval Equivalence
+
+Operational checks usually answer questions such as:
+
+- did every source record get indexed?
+- are shards and replicas healthy?
+- is query latency inside budget?
+- did the backfill finish without errors?
+
+Those are required. They do not prove that users will receive equally useful context.
+
+Two indexes can contain the same documents and rank them differently because of changes in:
+
+- embedding model or normalization
+- chunk boundaries and overlap
+- distance function
+- approximate-nearest-neighbor parameters
+- vector precision or quantization
+- metadata defaults and filter semantics
+- deduplication and version-selection rules
+
+Treating a migration as a storage copy hides these semantic changes.
+
+## Build a Fixed Query and Relevance Set
+
+Start with a versioned evaluation set that represents real retrieval demand. It should include frequent queries, difficult tail cases, negative queries, filters, tenant boundaries, and recently added data.
+
+For each query, record one or more relevance signals:
+
+- explicitly judged relevant document or chunk IDs
+- acceptable evidence groups when multiple passages answer the question
+- documents that must never cross a tenant or policy boundary
+- expected abstention when the corpus lacks support
+
+The set does not need to be enormous to catch migration regressions. It does need stable identities and coverage of the failure modes the production system cares about.
+
+## Run Old and New Indexes Side by Side
+
+During validation, send the same normalized request to both index versions and retain bounded result summaries.
+
+```json
+{
+  "query_id": "eval-00418",
+  "old_index": "catalog-v12",
+  "new_index": "catalog-v13",
+  "filters_sha256": "894f...",
+  "old_top_ids": ["d18:c2", "d07:c5", "d44:c1"],
+  "new_top_ids": ["d07:c5", "d31:c4", "d18:c2"],
+  "old_latency_ms": 21,
+  "new_latency_ms": 17
+}
+```
+
+Normalize identities before comparison. If rechunking changed chunk IDs, maintain lineage from new chunks back to source documents or semantic evidence groups. Otherwise harmless ID churn can look like a quality regression, while a genuinely missing source may be difficult to detect.
+
+## Measure Quality and Churn Separately
+
+No single metric explains every ranking change.
+
+Use a small scorecard:
+
+| Metric | What it reveals |
+| --- | --- |
+| Recall at k | Whether judged relevant evidence remains retrievable |
+| nDCG at k | Whether useful evidence moved lower in the ranking |
+| Top-k overlap | How much the returned set changed |
+| First-relevant rank | How quickly the strongest evidence appears |
+| Empty-result rate | Whether filters or thresholds suppress valid matches |
+| Forbidden-result rate | Whether isolation or policy constraints regressed |
+
+Top-k overlap is a change detector, not a quality metric. A new index can have low overlap because it found better evidence. Conversely, high overlap can preserve the same weak ranking. Always interpret churn beside judged relevance.
+
+## Diagnose Regressions Per Query
+
+An aggregate average can hide a serious regression in one tenant, language, content type, or filter combination.
+
+Every failed query should retain enough context to classify the cause:
+
+- relevant source absent from the new index
+- source present but embedded differently
+- chunk boundary removed critical context
+- metadata conversion changed filter eligibility
+- approximate search failed to reach a candidate
+- threshold rejected a lower-scored but valid match
+- newer duplicate displaced the authoritative version
+
+Slice metrics by the dimensions that control indexing and retrieval behavior: tenant, corpus, language, document age, content type, hardware cohort, filter family, and query intent.
+
+This is where query-level diffs become more valuable than one migration-wide score. They point to the transformation or retrieval stage that owns the change.
+
+## Shadow Production Requests Carefully
+
+Offline evaluations provide known relevance labels. Shadow traffic adds realistic query shape and filter distribution.
+
+The production request can continue serving results from the old index while a bounded sample is also evaluated against the candidate. Record result identities, score distributions, latency, errors, and policy violations without exposing candidate results to users.
+
+Shadowing needs privacy and cost controls:
+
+- sample requests intentionally
+- redact or hash sensitive query fields
+- avoid storing unrestricted retrieved content
+- rate-limit candidate load
+- prevent shadow failures from delaying the serving path
+
+For high-risk corpora, use pre-approved synthetic or replay datasets instead of copying live queries into a new evidence store.
+
+## Include Concurrent Writes in the Migration Contract
+
+A backfill validates historical data, but production keeps changing while it runs. Define how writes are captured between the backfill snapshot and promotion.
+
+Common approaches include dual writes, change-data capture, or a final incremental reconciliation. Whichever path is chosen, verify:
+
+1. no accepted write is missing from the candidate
+2. deletes and access-policy changes propagate correctly
+3. repeated events are idempotent
+4. ordering conflicts resolve predictably
+5. the freshness lag remains inside a declared bound
+
+Retrieval quality is irrelevant if the candidate serves stale permissions or omits recent documents.
+
+## Promote With Explicit Gates
+
+A safe migration has visible states:
+
+```text
+build -> backfill -> reconcile -> offline diff -> shadow -> canary -> promote
+```
+
+Promotion gates should cover correctness, quality, latency, resource use, and isolation. Retain the previous index until the candidate passes a production-relevant observation window and rollback has been exercised.
+
+After promotion, continue query-level sampling. Traffic distribution may expose regressions that the fixed evaluation set did not represent.
+
+## The Practical Standard
+
+Before promoting a vector index, I want the migration to answer:
+
+1. did every required record, deletion, and policy update arrive?
+2. does judged recall remain inside its release threshold?
+3. which queries changed, and why?
+4. are latency and resource gains worth any ranking tradeoff?
+5. can traffic return to the previous index without losing writes?
+
+An index-health check proves that the candidate can serve queries. Query-level recall diffs prove that it still serves the evidence users need.

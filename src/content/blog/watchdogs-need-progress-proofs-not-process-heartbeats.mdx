@@ -1,0 +1,149 @@
+---
+title: "Watchdogs Need Progress Proofs, Not Process Heartbeats"
+date: "2026-08-22"
+tags: ["Embedded Linux", "Reliability", "Robotics", "Edge Computing", "Observability", "Safety"]
+excerpt: "A thread can keep sending heartbeats while useful work is stalled behind a deadlock, saturated queue, or broken dependency. Reliable watchdogs monitor bounded forward progress and preserve evidence before recovery."
+---
+
+# Watchdogs Need Progress Proofs, Not Process Heartbeats
+
+A heartbeat answers a narrow question: did some code execute recently?
+
+It does not prove that sensor frames are being processed, packets are leaving a queue, commands are reaching actuators, or inference results are still fresh. A process can remain alive while every outcome that matters has stopped.
+
+For embedded, robotics, and edge systems, watchdog design should start with useful progress rather than process liveness.
+
+## Alive Is Not the Same as Healthy
+
+A heartbeat often comes from a timer callback or a dedicated monitoring thread. That path can remain responsive while the real workload is blocked elsewhere.
+
+Common examples include:
+
+- a worker deadlocked while the heartbeat thread continues
+- an input queue growing because downstream processing stalled
+- a device driver returning repeated empty completions
+- a planner publishing commands derived from stale state
+- a service retrying forever without completing one transaction
+- an event loop running while a required dependency is unavailable
+
+In each case, restarting only when the heartbeat disappears detects the failure late or never.
+
+## Define Progress in Domain Terms
+
+A progress contract names the observable outcome, its maximum acceptable age, and the conditions under which it should advance.
+
+```json
+{
+  "workload": "camera-inference-pipeline",
+  "progress_signal": "accepted_result_sequence",
+  "expected_when": "camera_ready && mission_active",
+  "maximum_age_ms": 500,
+  "minimum_rate_hz": 5,
+  "grace_after_start_ms": 3000
+}
+```
+
+The signal should advance only after meaningful work crosses a useful boundary. Incrementing a counter when a frame enters the pipeline proves less than incrementing it after a validated result reaches its consumer.
+
+Different operating modes need different contracts. A stationary robot may not produce motion commands, but its safety-state evaluation and sensor freshness should still advance.
+
+## Monitor Age, Rate, and Backlog Together
+
+One progress counter is better than one heartbeat, but it can still hide degradation. Combine three views:
+
+| Signal | Question answered |
+| --- | --- |
+| Age of last success | How long since useful work completed? |
+| Completion rate | Is throughput staying inside its operating envelope? |
+| Backlog or sequence gap | Is unfinished work accumulating? |
+
+A pipeline that completes one item just before every timeout may satisfy an age check while service quality collapses. Rate and backlog expose that condition earlier.
+
+Thresholds should be derived from system budgets, not selected because they create a quiet dashboard. If the control loop requires a fresh result every 100 milliseconds, a five-second watchdog is documenting that the system can remain wrong for five seconds.
+
+## Use Layered Watchdogs
+
+No single observer sees every failure. A useful design layers checks by scope:
+
+```text
+hardware watchdog
+  -> operating-system health supervisor
+  -> process supervisor
+  -> workload progress monitor
+  -> end-to-end service-quality check
+```
+
+The lower layers recover broad failures such as a locked kernel or dead process. The higher layers detect cases where components are alive but the system is no longer delivering a valid outcome.
+
+Each layer needs a clear owner and escalation path. Two watchdogs that can restart the same component independently may create a recovery loop that destroys evidence and hides the original trigger.
+
+## Do Not Let the Workload Grade Itself
+
+A stalled worker should not be solely responsible for declaring itself healthy. Where possible, have an independent observer evaluate immutable progress signals such as completed sequence numbers, queue transitions, or output timestamps.
+
+For a multi-stage pipeline, distinguish local progress from end-to-end progress:
+
+```text
+capture_seq=18422
+decode_seq=18422
+inference_seq=18371
+published_seq=18371
+```
+
+This snapshot shows exactly where advancement stopped. A single global heartbeat would report that the process is healthy because capture and monitoring threads still run.
+
+Use monotonic time for age and timeout decisions. Wall-clock corrections should not make stale work appear fresh or cause premature expiry.
+
+## Preserve Evidence Before Recovery
+
+Restarting quickly is useful only if the team can later explain why it happened. Before destructive recovery, retain a bounded incident snapshot when the failure mode allows it.
+
+Useful evidence includes:
+
+- last successful sequence at every stage
+- queue depths and oldest-item age
+- active operating mode and configuration version
+- thread or task state summaries
+- recent dependency failures and retry counts
+- CPU, memory, device, and thermal state
+- watchdog rule, threshold, and reason code
+- previous recovery count and last recovery outcome
+
+Evidence capture needs a strict time and size budget. A watchdog must not wait indefinitely for diagnostics from the component it already believes is stalled.
+
+## Recovery Should Escalate Deliberately
+
+Not every progress failure requires a full reboot. Define a bounded escalation ladder:
+
+1. reject stale output and enter a safe degraded mode
+2. reset the affected pipeline stage or device
+3. restart the owning process
+4. restart the dependent service group
+5. reboot the device when lower-level recovery fails
+
+Every step should have an attempt limit, cooldown, and success criterion. If the same stage restarts repeatedly without restoring sustained progress, escalating is safer than creating an infinite restart loop.
+
+## Test Stalls, Not Only Crashes
+
+Killing a process verifies only the easiest watchdog path. Inject failures where liveness remains intact:
+
+1. deadlock a worker while leaving monitoring threads runnable
+2. block one dependency and allow retries to continue
+3. stop device completions without closing the device handle
+4. freeze one pipeline stage while upstream queues grow
+5. replay old outputs with current delivery timestamps
+6. slow work enough to violate rate but not age thresholds
+
+For each case, assert detection time, failure attribution, safe-state behavior, evidence completeness, recovery escalation, and restored progress after the fault is removed.
+
+## The Practical Standard
+
+Before trusting a watchdog, I want the system to answer:
+
+1. what useful outcome proves forward progress?
+2. under which operating conditions should that signal advance?
+3. how are age, throughput, and backlog bounded?
+4. which independent observer decides that progress stopped?
+5. what evidence survives before recovery changes the state?
+
+A heartbeat proves that a code path is alive. A progress proof demonstrates that the system is still doing the job it exists to perform.
