@@ -1,0 +1,109 @@
+---
+title: "Edge Inference Overload Needs a Freshness Policy"
+date: "2026-09-17"
+tags: ["Edge AI", "Inference", "NVIDIA Jetson", "Reliability", "Performance", "Operations"]
+excerpt: "When live inputs arrive faster than an edge model can process them, maximizing completed frames can produce stale decisions. A freshness policy defines which work to admit, shed, or degrade before queues become the failure mode."
+---
+
+# Edge Inference Overload Needs a Freshness Policy
+
+An inference pipeline can report healthy throughput while producing decisions about a scene that no longer exists.
+
+Suppose a live camera produces work faster than the device can complete preprocessing, inference, and postprocessing. If every frame is queued, the service may keep reporting a high number of completed frames per second while the age of its latest decision keeps increasing.
+
+For a live system, the useful objective is not always "process every frame." It is "produce a decision that is still valid when someone or something uses it."
+
+## Start With the Consumer's Deadline
+
+The acceptable age of an inference result belongs to the application, not the model benchmark. An alerting system, a robot controller, and an offline inspection job can tolerate very different delays.
+
+Write an explicit contract for each output:
+
+```text
+capture time -> decode -> preprocess -> queue -> infer -> postprocess -> consumer
+```
+
+For example, an illustrative live-inspection contract might require that a result be no older than 250 ms when delivered to its consumer. That is an example, not a universal target. The actual threshold must come from the process being monitored and be validated on the target hardware.
+
+The budget needs to include all stages. Model execution time alone does not reveal queue wait or downstream delivery delay.
+
+## Choose an Admission Policy by Workload
+
+When capacity is exceeded, the system has several choices:
+
+| Workload | Possible overload response | Important constraint |
+| --- | --- | --- |
+| Independent live frames | Keep the newest pending frame | Count discarded frames and preserve source fairness |
+| Temporal model input | Retain required sequence windows | Do not silently break the model's temporal contract |
+| Safety-critical event | Reserve capacity or escalate | Do not discard an event merely because it is old |
+| Offline batch inspection | Backpressure or queue durably | Freshness may be less important than completeness |
+
+There is no safe global "drop frames" switch. Dropping a stale independent frame can improve the age of the next result; dropping an intermediate frame from a temporal sequence can corrupt the meaning of that result.
+
+The policy should be encoded beside the pipeline configuration, reviewed with the model interface, and tested under overload.
+
+## Bound Every Queue
+
+An unbounded queue converts a short capacity mismatch into a long period of stale output. A bounded queue forces the system to declare what it values when overloaded: freshness, completeness, priority, or fairness.
+
+For each queue, specify:
+
+- maximum items or memory
+- maximum age of admitted work
+- behavior at capacity
+- priority between sources
+- evidence emitted when work is dropped or delayed
+
+NVIDIA's DeepStream configuration surface exposes source-level controls such as `drop-frame-interval`, `drop-on-latency`, and buffer-size settings in its [configuration definitions](https://docs.nvidia.com/metropolis/deepstream/9.0/sdk-api/sources_2apps_2apps-common_2includes_2deepstream__config__file__parser_8h_source.html). Those controls are useful mechanisms, but the application still has to decide which behavior is correct for its task.
+
+## Measure Decision Age at the Output
+
+Track at least four signals:
+
+1. capture-to-consumer age for delivered results
+2. queue residence time by stage
+3. admitted, completed, and shed work by reason
+4. longest gap between useful decisions per source
+
+Separate these by camera, hardware cohort, model version, and operating mode. An aggregate average can hide one camera that is consistently starved.
+
+Where timestamp origins differ, record the clock source and synchronization uncertainty. Otherwise the apparent result age may be a clock artifact rather than pipeline delay.
+
+DeepStream's [latency measurement API](https://docs.nvidia.com/metropolis/deepstream/dev-guide/sdk-api/group__ee__nvlatency__group.html) provides component and frame latency structures. I would use such measurements as part of the evidence, then add an application-level timestamp at the final consumer boundary. The latter answers whether the result was useful when acted upon.
+
+## Make Degradation Visible
+
+Overload is not always a reason to restart. A restart can discard context and repeat the same capacity mismatch. Instead, the system may enter a declared degraded mode:
+
+```text
+normal -> freshness at risk -> bounded shedding -> degraded output -> recovery
+```
+
+The degraded output should carry its own status. For example, a consumer should be able to distinguish "no object detected in a fresh frame" from "no fresh frame was processed." Treating both as an empty result is a semantic failure.
+
+Recovery should require sustained improvement, not one fast result. Otherwise the pipeline can oscillate between normal and degraded modes during variable load.
+
+## Test the Policy Under Realistic Pressure
+
+Run overload tests with bursty input, simultaneous cameras, thermal constraints, a slow downstream consumer, and a temporary accelerator stall. Assert more than a throughput number:
+
+- delivered result age stays inside the contract or is marked degraded
+- the queue never grows beyond its declared bound
+- shed work is attributed to a reason and source
+- no source is starved indefinitely
+- temporal models receive valid input windows
+- the pipeline returns to normal after pressure clears
+
+Capture the configuration and hardware profile with each result. A policy that works on one development device may not preserve the same margin on another cohort.
+
+## The Release Standard
+
+Before calling a live edge-AI pipeline production-ready, I want answers to five questions:
+
+1. how old can a decision be when its consumer receives it?
+2. which work may be dropped, and which must be retained?
+3. where are the queue and memory bounds enforced?
+4. how does the consumer learn that output is degraded or stale?
+5. does a pressure test prove recovery without silent data loss?
+
+Higher frame throughput is useful only when the resulting decisions remain timely and honest about their quality.

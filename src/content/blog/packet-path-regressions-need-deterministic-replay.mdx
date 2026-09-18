@@ -1,0 +1,123 @@
+---
+title: "Packet-Path Regressions Need Deterministic Replay"
+date: "2026-09-17"
+tags: ["Networking", "DPDK", "Testing", "Performance", "Reliability", "Systems Programming"]
+excerpt: "A faster forwarding benchmark can still hide a broken parser, policy decision, or egress choice. A release-ready packet path needs a versioned traffic corpus, an independent outcome oracle, and separate correctness and performance gates."
+---
+
+# Packet-Path Regressions Need Deterministic Replay
+
+It is tempting to summarize a data-plane change with one number: packets per second before and after. That number matters, but it does not tell us whether the same packets were accepted, rejected, transformed, and forwarded for the same reasons.
+
+A fast path can get faster by accidentally skipping work. It can also become slower only for the traffic shape that matters most in production. I would put a deterministic replay harness between a packet-path change and a release decision.
+
+## Specify the Outcome Before Measuring Speed
+
+For each test packet, define the intended observable decision:
+
+```text
+input packet + configuration + ingress port
+  -> action: forward | drop | punt | modify
+  -> egress port or queue, when applicable
+  -> normalized output packet, when applicable
+  -> reason code and relevant counters
+```
+
+This is more useful than asserting only that the receive and transmit totals match. A packet that reaches the wrong egress port is not a successful forward. An intentional policy drop and a ring-overflow drop are not interchangeable.
+
+The expected outcome should come from a written contract or a small independent reference implementation. Using the previous release as the only oracle risks preserving its bugs as the definition of correctness.
+
+## Build a Small, Deliberate Corpus
+
+The corpus should cover decisions, not simply volume. A useful starting set includes:
+
+- one ordinary packet for each supported protocol path
+- minimum and maximum supported frame boundaries
+- malformed headers and truncated payloads
+- fragmented or encapsulated traffic, if supported
+- policy allow, deny, and no-match cases
+- flow creation, expiration, and repeated-flow cases
+- checksum and offload-sensitive packets
+- packets that require a slow-path handoff
+
+Assign every case a stable ID and a reason for being in the suite. A large capture with no expected outcomes is useful for load testing, but it is not a reliable functional regression test.
+
+DPDK's [DTS documentation](https://doc.dpdk.org/guides-25.11/tools/dts.html) describes functional test cases with explicit steps and verification, including traffic sent through `testpmd`. That is a useful model even when the system under test is a custom application rather than `testpmd` itself.
+
+## Keep the Replay Environment Identifiable
+
+Packet behavior can depend on the software and hardware around the application. The replay manifest should record at least:
+
+```json
+{
+  "corpus_sha256": "...",
+  "ruleset_sha256": "...",
+  "build_commit": "...",
+  "dpdk_version": "...",
+  "nic_model": "...",
+  "driver_firmware": "...",
+  "offloads": ["rx-checksum", "vlan-strip"],
+  "queue_topology": "..."
+}
+```
+
+The exact fields vary by deployment. The important point is that a failure must be reproducible on the same declared path. A result from a virtual interface does not prove identical behavior on a physical NIC with different offloads.
+
+## Compare Semantics, Not Incidental Bytes
+
+Naive byte-for-byte comparison can report false failures. Checksums may be completed by hardware after the application hands off a packet. Timestamps, sequence fields, and some metadata may legitimately vary.
+
+Normalize only fields the contract explicitly marks variable. Then compare:
+
+1. disposition and reason
+2. egress selection
+3. required header and payload fields
+4. packet length and encapsulation
+5. counter deltas for the decision path
+
+Do not normalize away unexplained differences. Every ignored field should have a documented reason, or the harness can silently accept a regression.
+
+## Separate Functional and Performance Gates
+
+A functional replay should use traffic rates low enough to avoid incidental congestion, unless congestion is the behavior being tested. A performance run should use controlled frame sizes, flow distributions, descriptor counts, and offered load.
+
+The [DPDK single-core forwarding performance suite](https://doc.dpdk.org/api/dts/tests.TestSuite_single_core_forward_perf.html) makes those workload parameters explicit and compares forwarding rate against a baseline. A custom release gate should do the same, but keep its throughput verdict separate from the packet-outcome verdict.
+
+I would report a release candidate with two independent summaries:
+
+| Gate | Example failure |
+| --- | --- |
+| Functional | One encapsulated flow exits the wrong port |
+| Performance | Tail latency rises under a defined packet mix |
+
+Neither gate should compensate for the other. A correct but unacceptably slow path is not ready; a fast but incorrect path is not ready either.
+
+## Replay State Transitions, Not Just Individual Packets
+
+Packet paths are stateful. A single packet can pass while a sequence fails. Include scenarios such as:
+
+```text
+create flow -> update rule -> send matching traffic -> expire flow -> resend
+```
+
+Vary ordering around configuration changes, link transitions, queue pressure, and process restart. The harness should assert that every packet is handled under the intended ruleset generation. That catches stale-table and partial-update behavior that static packet samples miss.
+
+For stress cases, keep an explicit loss budget and record where loss occurs. A test should never pass merely because the final receive total is close enough while a correctness-critical traffic class disappears.
+
+## Preserve the Smallest Useful Failure Artifact
+
+When a regression appears, save the case ID, replay manifest, exact configuration, input packet or sanitized capture, expected outcome, actual outcome, and relevant counters. Reduce long failures to the shortest sequence that still reproduces them.
+
+That artifact turns "throughput looks odd" into a reviewable defect: one traffic class, one declared environment, and one violated packet contract.
+
+## The Release Standard
+
+Before promoting a packet-path change, I want to know:
+
+1. which input decisions are covered by a versioned corpus?
+2. where did the expected outcomes come from?
+3. which hardware and offload settings were tested?
+4. do state transitions and failure paths replay correctly?
+5. did correctness and performance pass independently?
+
+Throughput tells us how quickly the path runs. Deterministic replay tells us whether it still runs the right path.
