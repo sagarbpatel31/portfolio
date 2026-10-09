@@ -26,9 +26,9 @@ interface StackGroup {
 
 const NOW: { label: string; detail: string; status: "active" | "learning" }[] = [
   {
-    label: "Senior Software Engineer @ Ciena",
+    label: "Software Validation Engineer @ Microsoft",
     detail:
-      "Embedded Linux networking firmware on NVIDIA Jetson Orin — packet processing, DMA optimization, edge AI inference pipelines (CUDA/TensorRT).",
+      "Validating firmware for AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing.",
     status: "active",
   },
   {
@@ -73,6 +73,7 @@ const STACK: StackGroup[] = [
     label: "Embedded Toolchain",
     icon: <Wrench size={13} />,
     items: [
+      "Firmware / BIOS Validation",
       "Yocto",
       "Buildroot",
       "CMake",

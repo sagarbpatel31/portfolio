@@ -6,6 +6,16 @@ export const skills: Skill[] = [
     items: ["C", "C++", "Python", "Bash"],
   },
   {
+    category: "Platform Validation",
+    items: [
+      "Firmware Validation",
+      "Software-Driven Verification",
+      "Platform Bring-Up",
+      "BIOS Validation",
+      "Production Readiness Testing",
+    ],
+  },
+  {
     category: "Embedded Systems",
     items: [
       "Embedded Linux",

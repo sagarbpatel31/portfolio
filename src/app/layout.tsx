@@ -25,12 +25,15 @@ export const metadata: Metadata = {
   },
   applicationName: "SAGAR_OS",
   title: {
-    default: "SAGAR_OS — Systems & AI Engineer",
+    default: "SAGAR_OS — Software Validation & Systems AI Engineer",
     template: "%s | SAGAR_OS",
   },
   description:
-    "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+    "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
   keywords: [
+    "Firmware Validation",
+    "BIOS Validation",
+    "Platform Bring-Up",
     "Embedded Systems",
     "Linux",
     "C",
@@ -55,9 +58,9 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   openGraph: {
-    title: "SAGAR_OS — Systems & AI Engineer",
+    title: "SAGAR_OS — Software Validation & Systems AI Engineer",
     description:
-      "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+      "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
     type: "website",
     siteName: "SAGAR_OS",
     locale: "en_US",
@@ -73,9 +76,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SAGAR_OS — Systems & AI Engineer",
+    title: "SAGAR_OS — Software Validation & Systems AI Engineer",
     description:
-      "Building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+      "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
     creator: "@sagarp31",
     images: [`${SITE_URL}/opengraph-image`],
   },

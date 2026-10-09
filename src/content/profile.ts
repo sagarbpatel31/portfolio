@@ -1,17 +1,18 @@
 export const profile = {
   name: "Sagar Patel",
-  title: "Systems & AI Engineer",
+  title: "Software Validation Engineer | Systems & AI Engineer",
   tagline:
-    "Systems & AI engineer building embedded Linux, edge AI, robotics, and high-performance networking systems that have to run fast, recover cleanly, and ship under real constraints.",
+    "Software validation engineer at Microsoft working on firmware verification, platform bring-up, BIOS validation, and production readiness for AI platforms, with a background in embedded Linux, edge AI, robotics, and high-performance networking.",
   shortBio:
-    "Software engineer building production systems end-to-end — from embedded Linux firmware and high-performance networking to GPU-accelerated edge AI and multi-agent intelligence. 4+ years shipping code where latency is measured in microseconds and failure isn't an option.",
-  bio: "I write software across the full stack of physical AI. At Ciena, I engineer embedded Linux networking firmware for logistics edge gateways and deploy edge AI inference on NVIDIA Jetson Orin. At Cisco, I built P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs. Started my career at TCS writing bare-metal RTOS firmware for ARM-based telecom edge nodes. On the side, I'm building Watchpoint (incident intelligence for ROS2/edge AI), StepAhead (AI motor development tracking), FieldFix (offline AI repair assistant), and SignalForge (DPDK traffic generator). Hackathon-tested across multi-agent AI systems (HydraSwarm) and humanoid robot pipelines (XG1 for Unitree G1).",
+    "Software Validation Engineer at Microsoft with 5+ years building and validating production systems across AI platform firmware, embedded Linux, high-performance networking, GPU-accelerated edge AI, and robotics.",
+  bio: "I build and validate software across the hardware-to-AI stack. At Microsoft, I validate firmware for AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing. Previously at Ciena, I engineered embedded Linux networking firmware and Jetson Orin inference pipelines; at Cisco, I built P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs; and at TCS, I wrote bare-metal RTOS firmware for ARM telecom edge nodes. On the side, I'm building Watchpoint, StepAhead, FieldFix, and SignalForge, with hackathon-tested work across multi-agent AI and humanoid robotics.",
   location: "Riverside, CA",
   email: "sagar@myjobemails.com",
   avatarUrl: "/profile.jpeg",
   resumeUrl: "/resume.pdf",
-  status: "Open to systems, robotics, edge AI, forward-deployed, and embedded software roles",
+  status: "Software Validation Engineer at Microsoft | Open to systems, robotics, edge AI, and embedded software roles",
   focusAreas: [
+    "AI Platform & Firmware Validation",
     "Physical AI & Robotics",
     "Forward Deployed Engineering",
     "Gen AI & Multi-Agent Systems",

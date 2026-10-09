@@ -1,0 +1,148 @@
+---
+title: "Platform Bring-Up Needs an Evidence Ladder"
+date: "2026-10-07"
+tags: ["Platform Bring-Up", "Firmware", "Validation", "AI Infrastructure", "BIOS", "Reliability"]
+excerpt: "A platform that reaches an operating-system prompt once is not brought up. Reliable bring-up advances through explicit layers, records evidence at every boundary, and stops at the first violated contract."
+---
+
+# Platform Bring-Up Needs an Evidence Ladder
+
+A new hardware platform can reach a shell and still be far from ready.
+
+One successful boot does not prove that firmware initializes consistently, memory is configured correctly, devices enumerate across resets, accelerators survive stress, or failures leave enough evidence to diagnose the boundary that broke.
+
+I prefer treating platform bring-up as an evidence ladder. Each layer has entry conditions, observable checks, and artifacts that must exist before validation moves upward.
+
+## Start With Declared Platform Identity
+
+Before debugging behavior, capture what is actually on the bench:
+
+```json
+{
+  "board_revision": "...",
+  "processor_stepping": "...",
+  "memory_population": "...",
+  "firmware_bundle": "...",
+  "bios_configuration_hash": "...",
+  "management_controller_version": "...",
+  "attached_devices": ["..."],
+  "validation_image": "..."
+}
+```
+
+Friendly labels such as "latest firmware" or "the same board" are not sufficient. A one-component version difference can explain an apparent software regression, and a hardware rework can invalidate a previously known-good baseline.
+
+The manifest should be machine-readable and attached to every result. That turns comparisons into evidence instead of memory.
+
+## Climb the Layers in Order
+
+A practical bring-up ladder might look like this:
+
+```text
+power and management
+  -> reset and firmware execution
+  -> processor, memory, and interconnect
+  -> device discovery and configuration
+  -> operating-system handoff
+  -> drivers and accelerators
+  -> workload and production behavior
+```
+
+The exact layers depend on the platform. The rule is stable: do not use a high-level symptom to guess past an unproven lower boundary.
+
+If an accelerator workload fails, first prove that the device enumerated with the expected firmware, link characteristics, address space, and driver binding. Otherwise application logs can distract from a platform defect below the application.
+
+## Define Proof for Every Boundary
+
+Each layer needs a small contract.
+
+| Layer | Example proof |
+| --- | --- |
+| Power and management | rails, sensors, inventory, and event log are readable and within declared bounds |
+| Firmware execution | expected checkpoints complete with no unclassified error |
+| Memory and interconnect | topology matches the manifest and targeted diagnostics pass |
+| Device discovery | required devices enumerate with expected links and resources |
+| OS handoff | boot reaches the target image without fallback or hidden recovery |
+| Drivers and accelerators | binding, reset, telemetry, and basic functional tests pass |
+| Workload | representative validation stays inside correctness and stability gates |
+
+A green result should link to the evidence that made it green. Otherwise the dashboard is only a summary that cannot support triage.
+
+## Stop at the First Broken Contract
+
+Bring-up becomes inefficient when every team debugs the symptom visible at its own layer.
+
+Use the ladder to identify the lowest unproven contract:
+
+1. confirm the platform manifest
+2. find the last layer with valid evidence
+3. reproduce the first failing transition
+4. collect artifacts before changing configuration
+5. change one variable and rerun the same boundary check
+
+This creates a disciplined search space. It also prevents a workaround at the OS or application layer from hiding a firmware or hardware issue that will return later.
+
+## Compare Against a Known-Good Baseline
+
+A known-good system is useful only when its identity is captured with the same rigor as the failing system.
+
+Diff structured facts rather than entire logs:
+
+- firmware component versions
+- setup-variable hashes and effective policy
+- device inventory and link properties
+- memory map and topology summary
+- boot checkpoints and duration by phase
+- driver bindings and error counters
+- management and platform event classifications
+
+Raw logs still matter, but a focused diff makes the first meaningful divergence visible. Preserve both the normalized comparison and the original artifacts so normalization cannot erase a useful detail.
+
+## Automate Read-Only Checks First
+
+Early automation should observe before it mutates.
+
+A bring-up harness can begin by collecting identity, inventory, firmware state, topology, health sensors, and boot evidence. Once those checks are stable, add controlled configuration changes, firmware updates, resets, and recovery tests.
+
+Every modifying test should declare:
+
+```text
+precondition -> action -> expected state -> cleanup -> retained evidence
+```
+
+Cleanup is part of correctness. A validation case that leaves persistent settings or stale device state can make the next case fail for the wrong reason.
+
+## Test Transitions and Interruptions
+
+Nominal cold boot is only one path through a platform. Exercise warm restart, management-controller initiated reset, firmware update, failed update recovery, abrupt power interruption, device reset, and repeated boot cycles where applicable.
+
+For each transition, check both the destination state and the path taken to reach it. A platform that silently enters fallback firmware and eventually boots is not equivalent to one that completed the intended path.
+
+Repetition matters. Intermittent initialization failures need distributions and failure counts, not a single passing screenshot.
+
+## Produce a Portable Bring-Up Bundle
+
+When a layer fails, package the minimum useful evidence:
+
+- immutable platform manifest
+- test case and harness version
+- precondition and action sequence
+- firmware and management logs
+- boot checkpoints and timing
+- OS inventory when the handoff completed
+- expected and actual boundary result
+- changes made since the last known-good run
+
+The bundle should let another engineer understand the failure without access to the original bench conversation.
+
+## The Readiness Standard
+
+Before calling a platform brought up, I want to know:
+
+1. is the exact hardware and firmware identity recorded?
+2. does every layer have an explicit proof artifact?
+3. can the first failing boundary be isolated mechanically?
+4. do reset, update, interruption, and recovery paths behave predictably?
+5. can another engineer reproduce the result from the retained bundle?
+
+Reaching a prompt proves that one path completed once. An evidence ladder proves that the platform is understood well enough to validate, debug, and prepare for production.

@@ -27,7 +27,7 @@ export function HomeDirectory({ postCount }: HomeDirectoryProps) {
     {
       href: "/resume",
       label: "Resume",
-      count: "3 production roles",
+      count: "4 production roles",
       description: "Experience, scope, impact bullets, skills, and education.",
       icon: FileText,
     },

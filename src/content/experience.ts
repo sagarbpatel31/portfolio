@@ -2,9 +2,28 @@ import { Experience } from "@/types";
 
 export const experiences: Experience[] = [
   {
+    company: "Microsoft",
+    role: "Software Validation Engineer",
+    period: "Sep 2026 – Present",
+    location: "Hillsboro, OR",
+    description:
+      "Validate firmware for Microsoft AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing.",
+    highlights: [
+      "Validate firmware for Microsoft AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing",
+    ],
+    tags: [
+      "Firmware Validation",
+      "Software Verification",
+      "Platform Bring-Up",
+      "BIOS",
+      "AI Platforms",
+      "Production Readiness",
+    ],
+  },
+  {
     company: "Ciena",
     role: "Senior Embedded Software Engineer",
-    period: "May 2024 – Present",
+    period: "May 2024 – Aug 2026",
     location: "Remote, USA",
     description:
       "Own embedded Linux networking firmware and edge AI infrastructure for logistics gateways where throughput, recovery behavior, and deployment reliability directly affect warehouse operations.",

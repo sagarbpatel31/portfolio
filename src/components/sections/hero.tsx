@@ -20,7 +20,7 @@ export function Hero() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-60" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
             </span>
-            Open to high-ownership engineering roles
+            Software Validation Engineer at Microsoft
           </div>
 
           <p className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-accent">
@@ -31,8 +31,9 @@ export function Hero() {
             <span className="text-gradient-cyan">hardware and intelligence.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Embedded Linux, high-performance networking, edge AI, and robotics,
-            owned from low-level implementation through production behavior.
+            AI platform firmware validation, embedded Linux, high-performance
+            networking, edge AI, and robotics, owned from low-level
+            implementation through production readiness.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -71,10 +72,11 @@ export function Hero() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+            <span>Microsoft</span>
             <span>Ciena</span>
             <span>Cisco</span>
             <span>TCS</span>
-            <span>4+ years in production systems</span>
+            <span>5+ years in production systems</span>
           </div>
         </div>
       </Container>

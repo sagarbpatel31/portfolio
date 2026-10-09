@@ -104,6 +104,17 @@ describe("Content: experiences", () => {
       expect(e.tags.length).toBeGreaterThan(0);
     });
   });
+
+  it("lists Microsoft as the current role", () => {
+    expect(experiences[0]).toMatchObject({
+      company: "Microsoft",
+      role: "Software Validation Engineer",
+      period: "Sep 2026 – Present",
+    });
+    expect(experiences.find((e) => e.company === "Ciena")?.period).toBe(
+      "May 2024 – Aug 2026",
+    );
+  });
 });
 
 describe("Content: skills", () => {

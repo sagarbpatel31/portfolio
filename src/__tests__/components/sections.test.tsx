@@ -85,7 +85,7 @@ describe("Hero section", () => {
   });
 
   it("renders status badge", () => {
-    expect(screen.getByText(/Open to high-ownership engineering roles/)).toBeInTheDocument();
+    expect(screen.getByText(/Software Validation Engineer at Microsoft/)).toBeInTheDocument();
   });
 
   it("keeps detailed profile data off the homepage hero", () => {
@@ -94,7 +94,7 @@ describe("Hero section", () => {
   });
 
   it("renders the recruiter-facing positioning", () => {
-    expect(screen.getByText(/Embedded Linux, high-performance networking/)).toBeInTheDocument();
+    expect(screen.getByText(/AI platform firmware validation/)).toBeInTheDocument();
   });
 
   it("links directly to selected work", () => {
@@ -205,7 +205,7 @@ describe("About section", () => {
   });
 
   it("renders bio text", () => {
-    expect(screen.getByText(/full stack of physical AI/)).toBeInTheDocument();
+    expect(screen.getByText(/validate firmware for AI platforms/)).toBeInTheDocument();
   });
 
   it("renders focus areas", () => {
@@ -229,13 +229,15 @@ describe("Experience section", () => {
     expect(screen.getByText("work_experience")).toBeInTheDocument();
   });
 
-  it("renders all three experiences", () => {
+  it("renders all experiences", () => {
+    expect(screen.getByText("Microsoft")).toBeInTheDocument();
     expect(screen.getByText("Ciena")).toBeInTheDocument();
     expect(screen.getByText("Cisco Systems")).toBeInTheDocument();
     expect(screen.getByText(/Tata Consultancy Services/)).toBeInTheDocument();
   });
 
   it("renders roles", () => {
+    expect(screen.getByText("Software Validation Engineer")).toBeInTheDocument();
     expect(screen.getByText("Senior Embedded Software Engineer")).toBeInTheDocument();
     expect(screen.getAllByText("Embedded Software Engineer").length).toBeGreaterThanOrEqual(2);
   });

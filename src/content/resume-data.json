@@ -1,12 +1,12 @@
 {
   "name": "Sagar Patel",
-  "title": "Systems & AI Engineer",
+  "title": "Software Validation Engineer | Systems & AI Engineer",
   "location": "Riverside, CA, USA",
   "email": "sagar@myjobemails.com",
   "status": "Open to Physical AI, Forward Deployed, Embedded Software, and Gen AI roles",
-  "shortBio": "Systems engineer focused on production software across embedded Linux, high-performance networking, edge AI, and multi-agent AI. I ship across the boundary between hardware and software, with experience in Yocto, RTOS, CUDA, TensorRT, BlueField DPUs, ROS2, and full-stack product delivery.",
-  "summary": "I write software across the full stack of physical AI. At Ciena, I engineer embedded Linux networking firmware for logistics edge gateways and deploy edge AI inference on NVIDIA Jetson Orin. At Cisco, I built P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs. I started my career at TCS writing bare-metal RTOS firmware for ARM-based telecom edge nodes. On the side, I build Watchpoint, StepAhead, FieldFix, SignalForge, HydraSwarm, and XG1.",
-  "keywords": "Embedded Linux, Yocto, Buildroot, RTOS, Device Drivers, C, C++, Python, CUDA, TensorRT, DeepStream, Jetson Orin, BlueField DPU, P4, DOCA, ROS2, MuJoCo, FastAPI, Next.js, PostgreSQL, Graph/RAG systems, CI/CD, secure boot, MISRA-C, high-performance networking, edge AI, multi-agent AI",
+  "shortBio": "Software Validation Engineer at Microsoft with 5+ years building and validating production systems across AI platform firmware, embedded Linux, high-performance networking, edge AI, and robotics.",
+  "summary": "At Microsoft, I validate firmware for AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing. Previously at Ciena, I engineered embedded Linux networking firmware and Jetson Orin inference pipelines; at Cisco, I built P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs; and at TCS, I developed bare-metal RTOS firmware for ARM telecom edge nodes. On the side, I build Watchpoint, StepAhead, FieldFix, SignalForge, HydraSwarm, and XG1.",
+  "keywords": "Firmware Validation, Software Verification, Platform Bring-Up, BIOS Validation, Production Readiness, AI Platforms, Embedded Linux, Yocto, Buildroot, RTOS, Device Drivers, C, C++, Python, CUDA, TensorRT, DeepStream, Jetson Orin, BlueField DPU, P4, DOCA, ROS2, MuJoCo, FastAPI, Next.js, PostgreSQL, Graph/RAG systems, CI/CD, secure boot, MISRA-C, high-performance networking, edge AI, multi-agent AI",
   "focusAreas": [
     "Physical AI & Robotics",
     "Forward Deployed Engineering",
@@ -25,6 +25,10 @@
     "Early-stage & high-ownership roles"
   ],
   "skills": [
+    {
+      "category": "Platform Validation",
+      "items": ["Firmware Validation", "Software-Driven Verification", "Platform Bring-Up", "BIOS Validation", "Production Readiness Testing"]
+    },
     {
       "category": "Programming",
       "items": ["C", "C++", "Python", "Bash", "TypeScript"]
@@ -52,9 +56,19 @@
   ],
   "experience": [
     {
+      "role": "Software Validation Engineer",
+      "company": "Microsoft",
+      "period": "Sep 2026 - Present",
+      "location": "Hillsboro, OR, USA",
+      "summary": "Firmware validation for Microsoft AI platforms across platform bring-up, BIOS validation, software-driven verification, and production readiness.",
+      "bullets": [
+        "Validate firmware for Microsoft AI platforms through software-driven verification, platform bring-up, BIOS validation, and production-readiness testing."
+      ]
+    },
+    {
       "role": "Senior Embedded Software Engineer",
       "company": "Ciena",
-      "period": "May 2024 - Present",
+      "period": "May 2024 - Aug 2026",
       "location": "Remote, USA",
       "summary": "Embedded Linux networking firmware for logistics edge gateways and edge AI inference on NVIDIA Jetson Orin.",
       "bullets": [

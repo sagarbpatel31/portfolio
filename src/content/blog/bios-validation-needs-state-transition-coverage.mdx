@@ -1,0 +1,160 @@
+---
+title: "BIOS Validation Needs State-Transition Coverage"
+date: "2026-10-08"
+tags: ["BIOS", "Firmware Validation", "Platform Engineering", "Testing", "Reliability", "Production Readiness"]
+excerpt: "A BIOS settings snapshot proves one state, not the transitions that create it. Production validation must cover resets, updates, defaults, persistent variables, recovery paths, and the evidence left when a transition fails."
+---
+
+# BIOS Validation Needs State-Transition Coverage
+
+BIOS validation is often described as a list of settings to inspect after boot. That catches configuration errors, but many firmware defects live between stable states.
+
+A value can look correct after cold boot and fail after a warm reset. A firmware update can preserve a variable that a clean installation resets. A failed boot can enter recovery correctly once and then leave persistent state that changes the next attempt.
+
+The unit of validation should be the state transition, not only the final settings page.
+
+## Model the States That Matter
+
+Start with a small state model for the platform and release.
+
+```text
+factory defaults
+  -> configured
+  -> booted
+  -> warm reset
+  -> firmware updated
+  -> recovery
+  -> restored configuration
+```
+
+Add power-loss, rollback, hardware-change, and security-policy states where they apply. Avoid a giant diagram that nobody can execute. The purpose is to identify transitions with different initialization and persistence behavior.
+
+Each state should define observable facts:
+
+- active firmware versions
+- setup and policy values
+- boot target and fallback state
+- device inventory and resource assignment
+- security and recovery posture
+- persistent error or event records
+
+## Turn Each Arrow Into a Test Contract
+
+A transition test needs more than an action and a final boot assertion.
+
+```yaml
+precondition: configured_release_A
+action: warm_reset
+expected:
+  firmware_bundle: release_A
+  setup_profile: production
+  required_devices: present
+  recovery_path: not_entered
+evidence:
+  - configuration_hash
+  - boot_checkpoint_log
+  - device_inventory
+  - platform_event_summary
+cleanup: restore_configured_release_A
+```
+
+The contract makes failures classifiable. It distinguishes a setting that changed, a device that failed to initialize, an unexpected fallback, and a test that started from the wrong precondition.
+
+## Validate Persistence Intentionally
+
+Not every value should persist across every transition. Define the rule per variable class:
+
+| Variable class | Example expectation |
+| --- | --- |
+| User configuration | persists across ordinary reset |
+| Hardware-derived data | is recomputed when hardware changes |
+| Security policy | follows the declared update and recovery policy |
+| Temporary training or cache data | may be invalidated by version or topology change |
+| Failure counters | persist or clear according to the diagnostic contract |
+
+Then test both sides: values that must survive and values that must not.
+
+Configuration hashes are useful for fast comparison, but retain a normalized field-level diff when a hash changes. The hash proves difference; the diff explains it.
+
+## Cover Reset Types Separately
+
+"Reboot" is not one operation. Cold start, warm reset, firmware-requested reset, management-controller reset, and recovery-triggered restart can exercise different initialization paths.
+
+For every supported reset type, verify:
+
+1. the reset source is attributed correctly
+2. required components are reinitialized
+3. persistent state follows policy
+4. device enumeration returns to the expected inventory
+5. boot reaches the intended target without silent fallback
+
+Do not infer cold-boot coverage from a warm-reset pass. They may share the same visible destination while taking different firmware paths.
+
+## Test Update and Recovery as One Workflow
+
+A successful firmware flash is not the end of an update test. Validate the full sequence:
+
+```text
+pre-update baseline
+  -> stage or apply update
+  -> required reset
+  -> version and configuration verification
+  -> functional smoke tests
+  -> recovery or rollback exercise
+```
+
+Interrupt the workflow at supported boundaries and verify that the platform chooses the documented recovery path. After recovery, rerun identity and functional checks; a system that merely boots may still contain a mixed or degraded firmware state.
+
+Retain the previous known-good bundle until the candidate passes a meaningful observation window.
+
+## Include Hardware Topology Changes
+
+BIOS behavior can change with memory population, accelerators, storage, networking devices, and processor stepping. Use a declared support matrix rather than attempting every theoretical combination.
+
+Select boundary and risk-based cases:
+
+- minimum and maximum supported population
+- representative device combinations
+- a topology change after configuration has been saved
+- removal and re-addition of a device
+- firmware combinations allowed during rolling updates
+
+The test should prove both recognition of the new topology and correct cleanup of state derived from the previous topology.
+
+## Measure Boot as a Distribution
+
+One boot-time number hides intermittent stalls and retries. Record phase timing across repeated transitions and inspect distributions:
+
+- median and high-percentile total boot time
+- phase-level duration
+- retry or fallback count
+- rate of missing checkpoints
+- variance by reset type and hardware cohort
+
+A candidate that boots successfully but adds a long-tail delay may still fail a production readiness objective.
+
+## Preserve Failure Evidence Before Retrying
+
+Automatic retry can convert a useful failure into an unexplained eventual pass. Before retry or recovery changes the state, capture a bounded set of artifacts:
+
+- transition case ID and attempt number
+- firmware and configuration identities
+- last completed checkpoint
+- reset and recovery reason
+- platform and management event summaries
+- inventory or topology divergence
+- timing and retry evidence
+
+If evidence capture itself can block recovery, enforce a strict time limit and fall back to the smallest durable record.
+
+## The Release Standard
+
+Before promoting a BIOS or platform-firmware release, I want answers to five questions:
+
+1. which state transitions are explicitly covered?
+2. which values must persist, reset, or be recomputed?
+3. do update interruption and recovery return a coherent platform?
+4. are reset-type and hardware-topology differences visible in the results?
+5. does every failure retain enough evidence to identify the first broken transition?
+
+A settings snapshot shows where the platform ended. State-transition coverage proves that it can reach and leave that state predictably under production conditions.

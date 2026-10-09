@@ -17,12 +17,13 @@ export const selectedImpact = [
 ];
 
 export const heroSignals = [
-  "4+ years shipping production systems",
-  "Embedded Linux + CUDA + DPDK + ROS2",
+  "5+ years building and validating production systems",
+  "Firmware validation + Embedded Linux + CUDA + DPDK + ROS2",
   "Open to systems, robotics, and edge AI roles",
 ];
 
 export const specializationSignals = [
+  "AI platform & firmware validation",
   "Embedded Linux & BSP",
   "Edge AI inference",
   "Robotics pipelines",
@@ -73,6 +74,17 @@ export const engineeringPrinciples = [
 ];
 
 export const stackMap = [
+  {
+    domain: "Platform Validation",
+    summary: "Firmware and AI platform readiness across bring-up, BIOS, verification, and release gates.",
+    items: [
+      "Firmware Validation",
+      "Software-Driven Verification",
+      "Platform Bring-Up",
+      "BIOS Validation",
+      "Production Readiness",
+    ],
+  },
   {
     domain: "Embedded",
     summary: "Firmware and platform layers where boot, safety, and release discipline matter.",

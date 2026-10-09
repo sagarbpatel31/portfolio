@@ -28,6 +28,7 @@ describe("TimelineCard", () => {
 
   it("renders a deployment entry per experience", () => {
     expect(screen.getByText(`${experiences.length} deployments`)).toBeInTheDocument();
+    expect(screen.getByText(/Microsoft/)).toBeInTheDocument();
     expect(screen.getByText(/Ciena/)).toBeInTheDocument();
   });
 });
