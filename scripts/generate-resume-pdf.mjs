@@ -6,19 +6,14 @@ const resumeData = (await import("../src/content/resume-data.json", {
   with: { type: "json" },
 })).default;
 
-function getScheduleLink(name, email) {
+function getScheduleLink(email) {
   const bookingUrl = process.env.NEXT_PUBLIC_BOOKING_URL?.trim();
 
   if (bookingUrl) {
     return bookingUrl;
   }
 
-  const subject = encodeURIComponent(`Intro call request for ${name}`);
-  const body = encodeURIComponent(
-    `Hi ${name},\n\nI would like to schedule a short intro call to discuss opportunities.\n\nBest,\n`
-  );
-
-  return `mailto:${email}?subject=${subject}&body=${body}`;
+  return `mailto:${email}`;
 }
 
 function esc(text) {
@@ -75,7 +70,7 @@ function makePage(lines) {
     if (item.type === "bullet") {
       const bulletLines = wrapText(item.text, 78);
       bulletLines.forEach((line, index) => {
-        add(index === 0 ? `• ${line}` : `  ${line}`, { x: 58, size: 9.5, font: "F1", gap: 12 });
+        add(index === 0 ? `- ${line}` : `  ${line}`, { x: 58, size: 9.5, font: "F1", gap: 12 });
       });
       continue;
     }
@@ -117,7 +112,7 @@ pages.push(
 
 pages.push(
   makePage([
-    { type: "heading", text: "PROFESSIONAL EXPERIENCE", size: 12, gap: 16 },
+    { type: "heading", text: "PROFESSIONAL EXPERIENCE", size: 12, gap: 22 },
     ...resumeData.experience.flatMap((job) => [
       { type: "subheading", text: `${job.role} - ${job.company}`, size: 10, gap: 13 },
       { type: "text", text: `${job.period} | ${job.location}`, style: { size: 9, gap: 12 } },
@@ -152,7 +147,7 @@ pages.push(
     { type: "text", text: `Email: ${resumeData.email}`, style: { size: 10, gap: 14 } },
     {
       type: "text",
-      text: `Book an intro call: ${getScheduleLink(resumeData.name, resumeData.email)}`,
+      text: `Book an intro call: ${getScheduleLink(resumeData.email)}`,
       style: { size: 8.5, gap: 12 },
     },
   ])
