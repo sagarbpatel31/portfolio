@@ -1,0 +1,216 @@
+---
+title: "Production Readiness Needs Repeatability Gates, Not One Clean Run"
+date: "2026-10-12"
+tags: ["Production Readiness", "Firmware Validation", "Testing", "Reliability", "Platform Engineering", "Release Engineering"]
+excerpt: "One successful run proves that a system can pass once. Production readiness requires bounded variation across repeated boots, resets, updates, workloads, and hardware cohorts."
+---
+
+# Production Readiness Needs Repeatability Gates, Not One Clean Run
+
+One clean validation run is useful evidence. It is not a production-readiness argument.
+
+Firmware and platform behavior can vary with reset type, hardware cohort, thermal state, initialization order, retained variables, and timing. A candidate that passes once and fails once in fifty runs may still create serious fleet risk.
+
+Production readiness needs explicit repeatability gates: a defined number of independent opportunities to fail, a declared tolerance, controlled evidence about variation, and a rule for what happens when the result is inconclusive.
+
+## Define the Repeatability Contract
+
+Start by defining what must repeat and under which conditions.
+
+```yaml
+workflow: accelerator_warm_reset_recovery
+cohort: production_topology_A
+candidate: release_2026_10
+independent_runs: 100
+allowed_functional_failures: 0
+allowed_infrastructure_failures: 2
+timing_gate:
+  p50_ms: 8200
+  p99_ms: 9400
+  max_ms: 10000
+evidence_required: true
+```
+
+The numbers depend on risk and opportunity count. The important part is that they exist before the campaign starts. A gate chosen after seeing the data is an explanation, not a release criterion.
+
+## Count Opportunities to Fail
+
+"Ran overnight" is not a useful sample size.
+
+Count the operations that exercise the failure mode:
+
+- boots completed
+- resets issued
+- firmware updates attempted
+- recovery transitions entered
+- devices initialized
+- workloads started and stopped
+- power interruptions applied
+
+Duration still matters for thermal drift and resource accumulation, but opportunity count makes campaigns comparable.
+
+A twelve-hour run with ten boots and a two-hour run with 500 resets answer different questions.
+
+## Make Runs Independent Enough
+
+Repeating the same command without resetting relevant state can create false confidence.
+
+Define which state must be restored between attempts:
+
+| State | Example control |
+| --- | --- |
+| Persistent firmware variables | restore the declared baseline or record intentional carryover |
+| Operating-system caches | clear or preserve according to the production workflow |
+| Device state | reset through the supported boundary |
+| Workload data | use a versioned input corpus |
+| Thermal condition | measure and stratify rather than assume equivalence |
+| Lab infrastructure | verify controller, power, and network health independently |
+
+Independence does not always mean factory reset. It means the precondition for each run is known and matches the behavior being tested.
+
+## Separate Stable, Flaky, and Inconclusive
+
+Binary pass/fail labels are too coarse for repeated validation.
+
+Use result classes that preserve uncertainty:
+
+```text
+stable_pass
+stable_fail
+intermittent_product_failure
+infrastructure_failure
+inconclusive
+```
+
+An intermittent failure is not an average between pass and fail. It is evidence that the system has an uncontrolled condition.
+
+An inconclusive campaign should not silently become a pass because most runs succeeded. Extend the sample, repair the evidence path, or reduce the claim being made.
+
+## Track Distributions, Not Just Means
+
+Averages can stay flat while the tail becomes dangerous.
+
+For every repeated phase, retain:
+
+- median and high-percentile duration
+- minimum and maximum
+- variance or robust spread
+- timeout and retry count
+- fallback or degraded-mode entry
+- missing checkpoint rate
+
+For example, a boot campaign can have the same average duration before and after a firmware change while the candidate adds a small number of 60-second stalls. That long tail may be the real production risk.
+
+Plot distributions by run order as well as aggregate percentile. Run-order views expose warm-up, leak, wear, and cumulative-state effects.
+
+## Randomize Without Losing Reproducibility
+
+Fixed execution order can hide sequence-dependent failures. Fully random execution can make reproduction difficult.
+
+Use seeded randomization:
+
+```text
+campaign_id: repeatability_2026_10_12
+seed: 481516
+sequence:
+  cold_boot
+  workload_A
+  warm_reset
+  workload_B
+  device_reset
+  recovery_check
+```
+
+Store the seed and resolved sequence with the result. The campaign explores more orderings while every failure remains replayable.
+
+Include a smaller deterministic smoke sequence before and after randomized runs. If the closing smoke test fails, the campaign may have accumulated state that individual results did not expose.
+
+## Stratify by Hardware Cohort
+
+Aggregate repeatability can hide a weak platform cohort.
+
+At minimum, compare results across the dimensions that can change initialization or workload behavior:
+
+- board or system revision
+- processor stepping
+- memory population
+- accelerator or peripheral combination
+- firmware bundle
+- security policy
+- power and thermal envelope
+
+Do not require every theoretical permutation. Select representative, boundary, and historically weak cohorts, then report coverage explicitly.
+
+"10,000 passes" is much less persuasive if all 10,000 came from one easy configuration.
+
+## Detect Environmental Drift
+
+Lab conditions can change during a long campaign. Without environmental telemetry, an apparent product regression may actually be a power-controller, network, storage, or cooling issue.
+
+Capture a low-cost health stream alongside product evidence:
+
+- input power and reset-controller status
+- ambient and component temperatures
+- network reachability and latency
+- storage health and free space
+- harness version and host utilization
+- clock synchronization state
+
+Use these signals to classify infrastructure failures, not to erase product failures that happened during imperfect conditions. The classification rule should be documented and reviewable.
+
+## Preserve First-Failure Evidence
+
+Automatic retry can help measure recurrence, but it must not destroy the first useful failure state.
+
+Before retrying, capture:
+
+1. exact run and opportunity number
+2. precondition identity
+3. last completed checkpoint
+4. first violated contract
+5. relevant firmware and platform artifacts
+6. environmental state
+7. cleanup or recovery action
+
+Then continue the campaign if it is safe. A single failure followed by 99 clean retries is still a failure that needs classification.
+
+## Set Gates by Consequence
+
+Not every workflow needs the same sample size or tolerance.
+
+Use consequence and fleet opportunity to set the gate:
+
+- a cosmetic telemetry issue may permit a small known rate
+- a recoverable workload restart may require a bounded service-impact rate
+- a firmware update corruption path may require zero observed failures plus fault-injection coverage
+- a security or data-integrity invariant should not be averaged into an availability score
+
+The gate should reflect what failure means, not only what the lab can conveniently run.
+
+## Treat Flakiness as a Release Signal
+
+Flaky tests and flaky products are different problems, but both weaken the release claim.
+
+Every intermittent result should land in one of three buckets:
+
+```text
+product behavior
+test or harness defect
+insufficient evidence
+```
+
+Track all three. A candidate with no confirmed product failures but a rising harness-failure rate may still be unsafe to promote because the validation system cannot observe it reliably.
+
+Do not quarantine a flaky test without replacing the coverage it provided.
+
+## The Release Standard
+
+Before calling a candidate repeatable, ask:
+
+1. what exact workflow and opportunity count were exercised?
+2. were preconditions controlled and recorded for every run?
+3. were timing tails, retries, and fallback entries evaluated?
+4. did representative hardware cohorts meet the gate independently?
+5. was every intermittent or inconclusive result classified with preserved evidence?
+
+One clean run proves possibility. A repeatability gate establishes how consistently the platform reaches the required state, how variation behaves across production-relevant conditions, and whether the remaining uncertainty is acceptable for release.
