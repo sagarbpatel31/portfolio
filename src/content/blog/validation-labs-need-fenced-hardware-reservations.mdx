@@ -1,0 +1,229 @@
+---
+title: "Validation Labs Need Fenced Hardware Reservations"
+date: "2026-10-25"
+tags: ["Validation Infrastructure", "Lab Automation", "Distributed Systems", "Firmware Validation", "Reliability", "Testing"]
+excerpt: "Shared validation hardware needs expiring reservations, fencing tokens, verified baselines, and quarantine rules so a stale runner cannot corrupt another campaign or its evidence."
+---
+
+# Validation Labs Need Fenced Hardware Reservations
+
+Shared validation labs are distributed systems built from physical equipment.
+
+They contain scarce servers, boards, power controllers, flash tools, network switches, serial consoles, and measurement devices. Each resource has mutable state, and many operations can leave the hardware unavailable or partially configured.
+
+A scheduling database that says a runner owns a system is not enough. If an old runner wakes after a timeout and continues issuing power or flash commands, it can corrupt the next campaign even though the database shows a new owner.
+
+Safe lab automation needs fenced hardware reservations: time-bounded ownership combined with a monotonically increasing token that every mutating operation must validate.
+
+## Treat Reservation as an Authority Grant
+
+A reservation should answer more than who booked the system. It should define the exact authority currently allowed to mutate it.
+
+```yaml
+resource: rack07_node12
+owner: campaign_84f2
+generation: 1937
+issued_at: 2026-10-25T09:00:00Z
+expires_at: 2026-10-25T09:20:00Z
+baseline: prod_2026_09
+state: active
+```
+
+The generation is the fencing token. Every command sent through the lab control plane includes it:
+
+```text
+flash(resource, image, generation=1937)
+power_cycle(resource, generation=1937)
+set_topology(resource, profile, generation=1937)
+```
+
+The controller rejects commands carrying a generation older than the resource's current generation. A stale process can retain credentials, network access, or an old reservation record, but it can no longer change the system after ownership advances.
+
+## Why Expiration Alone Is Insufficient
+
+An expiring lock helps recover capacity when a runner crashes. It does not prevent the crashed runner from returning.
+
+Consider this sequence:
+
+1. runner A reserves a system and begins a firmware update
+2. a network partition prevents A from renewing the reservation
+3. the reservation expires and runner B acquires the system
+4. the partition heals and A sends the next update command
+
+Without fencing, A and B can both believe their local view is valid. With fencing, B receives a newer generation and the controller rejects A's old token.
+
+Time answers whether a reservation should be considered alive. Fencing answers whether a command is still authorized. Reliable automation needs both.
+
+## Put Validation at the Mutation Boundary
+
+Checking the token only in the scheduler leaves gaps.
+
+Every component capable of changing hardware should enforce ownership as close to the mutation as practical:
+
+- firmware flash service
+- power and reset controller
+- topology or switch controller
+- serial-console command bridge
+- programmable load or fault injector
+- recovery and cleanup worker
+
+If a legacy controller cannot validate tokens directly, place a single enforcing proxy in front of it and block alternate mutation paths. A token checked in one API is not useful if another script can reach the same power controller without it.
+
+Read-only telemetry can use a less restrictive policy, but its records should still carry the observed generation so evidence can be associated with the correct campaign.
+
+## Admit Only Healthy, Known Resources
+
+Acquiring an idle system should not immediately make it test-ready.
+
+Run an admission sequence before granting active ownership:
+
+```text
+inventory matches resource record
+controllers are reachable
+serial console is responsive
+power state is known
+firmware state is readable
+required peripherals are present
+previous cleanup completed
+no quarantine is active
+```
+
+This separates availability from readiness. A resource can be free but unsafe to allocate because the previous campaign left an unknown firmware image, disconnected a peripheral, or lost communication with the power controller.
+
+Failed admission should move the resource to a diagnosable state rather than sending it back into the free pool for another runner to discover the same problem.
+
+## Make Baseline Setup a Transaction
+
+Validation results depend on starting state. Treat baseline preparation as part of the reservation protocol, not as informal setup inside a test.
+
+A preparation transaction can include:
+
+1. verify the fenced generation
+2. capture current inventory and state
+3. install the declared firmware bundle
+4. apply the topology and security profile
+5. reset through the required boundary
+6. verify post-reset identity and health
+7. mark the resource ready for the campaign
+
+If any step fails, the resource does not become ready. Record the first failed transition and move to recovery or quarantine.
+
+This prevents a test from beginning on a partially prepared system and producing evidence that looks like a product failure but is actually setup drift.
+
+## Renew Conservatively and Stop Before Expiry
+
+Runners should renew well before the reservation expires and treat failed renewal as a loss of authority.
+
+Do not keep mutating hardware while retrying renewal indefinitely. Define a safety margin large enough for control-plane delay, then stop issuing new commands if ownership cannot be confirmed.
+
+Long operations such as firmware flashing need special handling. Options include:
+
+- reserve enough time for the operation plus recovery
+- let the controller own the atomic operation after accepting a valid token
+- renew through a separate heartbeat that cannot be blocked by test output
+
+Never extend ownership only because a local process is still running. The source of truth must remain the reservation service.
+
+## Clean Up Before Returning Capacity
+
+Release should be a controlled transition, not a database delete.
+
+The cleanup path should:
+
+- stop workloads and fault injection
+- collect final evidence
+- restore the declared safe baseline
+- remove temporary configuration and secrets
+- verify inventory, power, console, and controller health
+- record the final state under the active generation
+- return the resource to the ready pool only after verification
+
+If cleanup fails, quarantine the resource. Do not mark it free and attach a warning that the next campaign may never read.
+
+A quarantine record should identify the last owner, failed cleanup step, current generation, known state, and required recovery action.
+
+## Model Composite Resources Explicitly
+
+A validation target is often a group of resources rather than one machine.
+
+A campaign may require a server, two accelerators, a programmable switch port, a power controller channel, and a serial console. Acquiring them independently can deadlock or allow another campaign to take a required subresource.
+
+Represent the bundle and its ownership hierarchy:
+
+```text
+testbed reservation
+  server
+  accelerator set
+  switch profile
+  power channel
+  console channel
+```
+
+Acquire the bundle atomically when possible. If that is not possible, use a declared ordering and release partial acquisitions on failure.
+
+Commands to child resources should validate the parent reservation generation or a derived child token. The important invariant is that no subresource can outlive or contradict the authority of the campaign that owns the testbed.
+
+## Handle Priority Without Silent Stealing
+
+Urgent release validation sometimes needs to preempt lower-priority work. Preemption must still preserve ownership safety.
+
+A safe sequence is:
+
+1. notify the current owner and request a checkpoint
+2. stop new mutations
+3. collect evidence and perform bounded cleanup
+4. expire or revoke the old reservation
+5. increment the fencing generation
+6. prepare the resource for the new owner
+
+Do not simply reassign the database row while the prior campaign continues. Priority changes scheduling order; it does not remove the need for a clean authority transition.
+
+Track wait time, preemption count, utilization, and starvation by queue class. High utilization is not a success if important boundary cohorts are permanently unavailable to routine regression.
+
+## Bind Evidence to Ownership
+
+Every artifact should identify the reservation that authorized its collection:
+
+```json
+{
+  "campaign": "campaign_84f2",
+  "resource": "rack07_node12",
+  "generation": 1937,
+  "candidate": "fw_2026_10_25_rc1",
+  "baseline": "prod_2026_09",
+  "captured_at": "2026-10-25T09:14:08Z"
+}
+```
+
+This makes overlapping, late, or stale telemetry detectable. Evidence arriving with an old generation can be retained for diagnosis, but it should not be merged into the active campaign as if it came from the current system state.
+
+The same identity should appear in controller audit logs, test results, and cleanup records so an investigator can reconstruct the complete ownership timeline.
+
+## Exercise the Failure Cases
+
+The reservation service itself needs fault-injection testing.
+
+Verify behavior when:
+
+- a runner crashes without releasing
+- the network partitions during a mutation
+- a controller restarts and loses local cache
+- two acquisition requests race
+- a renewal arrives after expiration
+- cleanup fails halfway through
+- an operator performs a manual recovery
+- clocks differ between runner and control plane
+
+The invariant is not that failures never occur. It is that at most one generation can authorize mutation, and an ambiguous resource never returns to the ready pool without verification.
+
+## The Operational Standard
+
+Before trusting a shared validation lab, ask:
+
+1. Does every reservation expire and carry a monotonically increasing fencing token?
+2. Does every hardware mutation validate that token at the control boundary?
+3. Are readiness, baseline preparation, cleanup, and quarantine explicit state transitions?
+4. Can composite testbeds be acquired without partial ownership or deadlock?
+5. Can every result be tied to the resource generation that produced it?
+
+Lab scheduling is part of the validation system, not background administration. Fenced reservations prevent stale automation from changing current hardware, protect campaign evidence from cross-contamination, and turn scarce physical systems into infrastructure that can be shared with confidence.

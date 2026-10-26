@@ -1,0 +1,207 @@
+---
+title: "Firmware Regression Needs Change-Aware Test Selection"
+date: "2026-10-24"
+tags: ["Firmware Validation", "Regression Testing", "Release Engineering", "Platform Engineering", "Risk Analysis", "Reliability"]
+excerpt: "A useful regression plan connects each change to affected contracts, dependent workflows, hardware cohorts, and a permanent safety floor instead of choosing between one smoke test and the entire lab."
+---
+
+# Firmware Regression Needs Change-Aware Test Selection
+
+Firmware regression testing often collapses into one of two weak strategies.
+
+The first runs a small, familiar smoke suite because the full campaign takes too long. The second runs everything, consumes every available system, and still provides little explanation for why a particular result matters.
+
+A better approach is change-aware test selection: identify what changed, trace the contracts and workflows that can be affected, add a non-negotiable safety floor, and preserve the selection rationale as release evidence.
+
+The goal is not simply to run fewer tests. It is to spend limited validation capacity where it produces the strongest risk reduction without creating invisible coverage gaps.
+
+## Start With the Change, Not the Test Catalog
+
+A test name rarely describes the complete behavior it protects. Begin with a normalized change record instead:
+
+```yaml
+candidate: fw_2026_10_24_rc3
+changed_components:
+  - pcie_link_training
+  - platform_error_policy
+changed_contracts:
+  - accelerator_discovery
+  - degraded_device_reporting
+persistent_state_changed: false
+security_boundary_changed: false
+rollback_path_changed: false
+```
+
+The record can be generated from source paths, firmware manifests, configuration diffs, interface definitions, and developer annotations. Human review is still valuable, but it should correct an explicit machine-readable claim rather than reconstruct the candidate from memory.
+
+Unknown changes must fail closed. If the selector cannot classify a modified component or bundle, it should expand coverage or require review instead of silently treating the change as low risk.
+
+## Map Components to Observable Contracts
+
+Source ownership and runtime impact are not the same graph.
+
+A small change in link training can affect device discovery, boot duration, retry behavior, error reporting, workload admission, reset recovery, and update rollback. Selecting only the unit tests closest to the changed source misses those transitive effects.
+
+Maintain a dependency map with at least four layers:
+
+```text
+component -> contract -> workflow -> test
+                         -> hardware cohort
+```
+
+For example:
+
+| Changed component | Affected contract | Workflow | Required cohort |
+| --- | --- | --- | --- |
+| PCIe link training | device enumeration | cold boot and discovery | maximum device population |
+| Error policy | degraded-state reporting | link fault and recovery | mixed device revisions |
+| Firmware manifest | bundle compatibility | update and rollback | previous production baseline |
+
+The graph does not need to model every implementation detail. It needs enough fidelity to explain why each selected test and cohort is relevant to the release claim.
+
+## Keep a Permanent Safety Floor
+
+Change analysis can be wrong. A regression strategy therefore needs a stable set of tests that run for every candidate regardless of the selector output.
+
+The safety floor should cover high-consequence platform invariants such as:
+
+- supported boot paths reach the operating state
+- firmware inventory matches the intended bundle
+- update and recovery controls remain reachable
+- security policy is enforced
+- required devices enumerate without silent degradation
+- platform health telemetry is present and internally consistent
+
+This is not a second full suite. It is a compact, deliberately maintained tripwire for unexpected coupling and errors in the selection model itself.
+
+When a safety-floor test catches a defect that targeted selection missed, update the dependency map and record the escape. That feedback makes the selector better over time.
+
+## Score Risk Before Allocating Capacity
+
+Not every changed component deserves the same campaign depth. Use a declared risk model rather than informal urgency.
+
+Useful factors include:
+
+- consequence of failure
+- size and novelty of the change
+- number of dependent workflows
+- persistent-state or update impact
+- security-boundary impact
+- historical defect density
+- observability quality
+- hardware variability
+- ease of safe recovery
+
+A sample policy might route candidates like this:
+
+```text
+low risk    = safety floor + directly affected contracts
+medium risk = low risk + dependent workflows + boundary cohorts
+high risk   = medium risk + fault injection + update/rollback + repeatability
+unknown     = high-risk path until reviewed
+```
+
+The score should determine more than test count. It can also control repetition, cohort breadth, required evidence, review level, and whether promotion is automatic or manual.
+
+## Select Hardware as Deliberately as Tests
+
+Running the right test on one easy system can still provide weak evidence.
+
+Map each contract to the platform dimensions that can change its behavior:
+
+- board and processor revision
+- memory capacity and population
+- peripheral count and topology
+- secure-boot or policy configuration
+- previous firmware baseline
+- power and thermal envelope
+- known weak or historically noisy combinations
+
+Select representative, boundary, and historically sensitive cohorts. Record why each cohort was included and which dimensions were not covered.
+
+Coverage is a claim about both behavior and configuration. A selector that reasons only about test names solves half of the problem.
+
+## Publish a Selection Manifest
+
+Every campaign should produce a versioned manifest before execution:
+
+```yaml
+selector_version: 7
+candidate: fw_2026_10_24_rc3
+risk: high
+safety_floor: platform_core_v12
+selected_suites:
+  - pcie_discovery_boundary
+  - degraded_link_recovery
+  - firmware_update_rollback
+selected_cohorts:
+  - max_accelerator_population
+  - mixed_revision_topology
+  - previous_production_baseline
+rationale:
+  - pcie_link_training_changed
+  - error_policy_contract_changed
+reviewer: validation_owner
+```
+
+This manifest turns test selection into reviewable release evidence. It also makes two campaigns comparable when the same candidate is rerun after a harness repair or infrastructure interruption.
+
+Do not allow the final report to contain tests that cannot be tied back to the manifest, or unexplained omissions from it.
+
+## Measure the Selector, Not Just the Candidate
+
+A green campaign says nothing about whether the selection strategy was efficient or complete.
+
+Track the selector as its own engineering system:
+
+- defects found by targeted tests
+- defects found only by the safety floor
+- post-release escapes traceable to omitted coverage
+- selected tests that never exercise an affected contract
+- execution time and scarce-hardware consumption
+- inconclusive results caused by unavailable cohorts
+- changes that required manual reclassification
+
+Historical replay is especially useful. Run the selector against past defect-introducing changes and ask whether it would have chosen a test capable of exposing each defect.
+
+That is a practical recall measurement. It does not prove future completeness, but it exposes weak mappings before they become release gaps.
+
+## Preserve Negative and Baseline Controls
+
+Targeted validation can accidentally prove only that the new path works.
+
+Include controls that establish contrast:
+
+- a known-good production baseline on the same cohort
+- an unsupported or invalid input that must be rejected
+- a deliberate fault that must trigger the expected evidence
+- a rollback or recovery path when state can persist
+
+Controls help distinguish candidate defects from lab defects and confirm that the test can observe the failure it claims to detect.
+
+If a fault-injection test remains green after the fault is applied, the campaign is not reassuring. Its observation path is broken.
+
+## Reconcile Targeted and Periodic Full Coverage
+
+Change-aware selection should not eliminate broad campaigns.
+
+Run the targeted plan on every candidate for fast, explainable feedback. Run fuller regression on a schedule, at release milestones, after selector changes, and whenever coupling is uncertain. Compare broad-campaign findings with what the selector chose.
+
+This creates two complementary controls:
+
+1. targeted testing reduces feedback time and allocates scarce systems by risk
+2. periodic broad testing audits the assumptions behind the targeted model
+
+If broad campaigns repeatedly find issues outside selected coverage, fix the model rather than simply increasing the permanent safety floor until it becomes another unmanageable full suite.
+
+## The Release Standard
+
+Before accepting a change-aware regression campaign, ask:
+
+1. Is every changed component classified, including configuration and bundle changes?
+2. Are affected contracts, dependent workflows, and hardware cohorts visible in the selection graph?
+3. Did the candidate pass a stable safety floor independent of the targeted plan?
+4. Is the exact selection manifest versioned with its rationale and risk level?
+5. Are selector escapes and broad-campaign discoveries feeding back into the model?
+
+Good regression selection is not a shortcut around validation. It is a disciplined argument that connects a change to the places where failure can become observable, while retaining enough independent coverage to catch the assumptions that argument gets wrong.
