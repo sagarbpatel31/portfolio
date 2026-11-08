@@ -1,0 +1,246 @@
+---
+title: "Secure Boot Validation Needs Negative-Test Chains"
+date: "2026-11-07"
+tags: ["Secure Boot", "Firmware Validation", "Platform Security", "Testing", "BIOS", "Production Readiness"]
+excerpt: "A signed image that boots proves the acceptance path once. Secure-boot readiness also requires controlled rejection tests for tampering, unknown keys, revocation, rollback, fallback, and recovery."
+---
+
+# Secure Boot Validation Needs Negative-Test Chains
+
+A validly signed image booting successfully is necessary evidence. It is not enough to validate secure boot.
+
+The security claim is mostly about what the platform refuses to execute: modified images, unknown signers, revoked content, prohibited downgrades, and recovery paths that do not satisfy policy.
+
+Secure-boot validation needs a chain of negative tests that changes one trust condition at a time, verifies the rejection boundary, and proves the platform remains in a coherent recoverable state afterward.
+
+## Model the Trust Decisions
+
+Start with the platform's actual trust path rather than a generic checklist.
+
+```text
+platform trust state
+  -> key and revocation policy
+  -> first executable image
+  -> subsequent firmware or boot components
+  -> operating-system handoff
+  -> recovery or maintenance path
+```
+
+For each boundary, document:
+
+- artifact identity and signer
+- policy source and version
+- acceptance and rejection conditions
+- expected event or diagnostic evidence
+- allowed fallback behavior
+- recovery authority
+
+The model should distinguish signature enforcement from measurement or attestation. A component can be measured without being blocked, and blocked without producing the measurement evidence an external verifier expects.
+
+## Establish a Known-Good Control
+
+Every negative chain begins with a positive control on the same platform state.
+
+```yaml
+control:
+  image: boot_bundle_2026_11_rc1
+  digest: sha256:...
+  signer: production_key_04
+  policy: secure_boot_prod_v7
+  expected: accepted
+  expected_inventory: complete
+```
+
+The control confirms that provisioning, hardware, image packaging, and evidence collection are functional before rejection behavior is tested.
+
+Run the control again after restoring the system. A negative test that leaves the platform unable to boot a valid image has exposed a recovery or state-management problem even if the original rejection was correct.
+
+## Change One Trust Condition at a Time
+
+A useful negative case has a single intentional violation.
+
+| Test case | Controlled violation | Required result |
+| --- | --- | --- |
+| Tampered image | modify signed content after signing | reject before execution |
+| Unknown signer | sign with a key outside the trust policy | reject with attributable evidence |
+| Revoked signer or image | add the identity to the active revocation policy | reject despite a valid signature |
+| Invalid format | corrupt required signature metadata | fail closed without unsafe fallback |
+| Prohibited downgrade | present an older signed image below policy | reject or enter the documented recovery path |
+| Mixed bundle | combine individually valid but incompatible components | reject before incoherent execution |
+
+If several fields change at once, the platform may reject for the wrong reason while the intended control is never exercised.
+
+Retain the exact mutation recipe and resulting digest. The rejected artifact is part of the test evidence, not disposable setup.
+
+## Verify Non-Execution, Not Only an Error Message
+
+A visible rejection message does not prove that untrusted code never ran.
+
+Use independent observations where practical:
+
+- last trusted checkpoint reached
+- absence of the untrusted component's execution marker
+- unchanged persistent state owned by that component
+- expected reset or recovery reason
+- policy-specific firmware event
+- measured or attested sequence, when supported
+
+The assertion should identify the first enforcement boundary and the last state known to be trusted.
+
+Avoid relying on one log produced by the same component whose execution is under test. Security validation is stronger when the decision and the observation come from different boundaries.
+
+## Detect Silent Fallbacks
+
+A negative test can appear to pass because the platform quietly boots another image.
+
+After every rejection, verify the identity of what actually executed:
+
+```text
+requested image: candidate_slot_B
+rejected image: candidate_slot_B
+executed image: recovery_slot_A
+fallback reason: signature_policy_failure
+policy result: expected
+```
+
+An operating-system prompt is not sufficient. Collect firmware version, slot identity, image digest or trusted inventory, boot source, and fallback reason.
+
+If fallback is permitted, test its limits. The alternate path must satisfy the same trust policy or a separately documented recovery policy. A secure primary path with an unrestricted recovery path is not a secure system.
+
+## Exercise Key and Policy States
+
+Secure-boot behavior changes with provisioning state.
+
+Build an explicit matrix for supported states such as:
+
+- factory or setup state
+- production-enrolled state
+- key-update transition
+- active revocation update
+- recovery or maintenance authorization
+- restored production state
+
+For each state, define who can enroll or replace trust material, what physical or administrative authorization is required, and which evidence proves the transition occurred.
+
+Do not leave a system in a permissive setup state after a test and then interpret a successful boot as production-policy behavior. Read back and record the effective policy before each case.
+
+## Test Revocation as a Workflow
+
+Revocation is more than adding an identifier to a list.
+
+A complete workflow should verify:
+
+1. the known-vulnerable or test identity is accepted under the old policy
+2. the revocation update is authenticated and applied
+3. the same identity is rejected after the update
+4. unrelated valid images remain bootable
+5. rollback to a policy that removes the revocation is blocked when required
+6. the platform can recover without clearing the security posture
+
+This sequence proves both effectiveness and scope. A revocation mechanism that blocks every image is available but unusable; one that can be rolled back trivially is not durable enforcement.
+
+Preserve policy identities before and after the transition so the result does not depend on a human reading a setup screen.
+
+## Separate Signature Validity From Compatibility
+
+A valid signature answers who authorized an artifact. It does not prove that the artifact belongs on this platform or with the rest of the bundle.
+
+Validate policy for:
+
+- product and hardware identity
+- component role
+- minimum allowed version
+- bundle compatibility
+- update sequence
+- recovery compatibility
+
+An image signed by a trusted organizational key may still be intended for another platform. A mixed bundle may contain only valid signatures while violating the release's compatibility contract.
+
+Negative tests should prove that authorization cannot bypass product identity and version policy.
+
+## Make Recovery Part of the Security Contract
+
+Rejection is useful only if the platform moves to a bounded state.
+
+For each negative case, declare the expected outcome:
+
+```yaml
+on_rejection:
+  execution: blocked
+  platform_state: recovery_wait
+  network_boot: disabled
+  local_recovery: signed_media_only
+  evidence_required:
+    - rejected_digest
+    - policy_identity
+    - rejection_reason
+    - last_trusted_checkpoint
+```
+
+Test repeated failures, interrupted recovery, invalid recovery media, and successful recovery with an authorized image.
+
+Ensure that retry limits, timeout behavior, and operator prompts do not create a path that eventually disables enforcement for availability.
+
+## Protect the Test Infrastructure
+
+Negative security testing intentionally creates unbootable and rejected states. The lab needs a recovery design that does not invalidate the test.
+
+Use:
+
+- dedicated or approved destructive-test systems
+- fenced control of power, flash, and console resources
+- an out-of-band recovery path with separate authorization
+- immutable copies of known-good trust material
+- automatic quarantine when restoration cannot be verified
+- explicit handling for secrets and signing keys
+
+Use test keys and controlled artifacts unless production-key validation is explicitly required and authorized. The test harness should never export private key material or log sensitive enrollment data.
+
+Recovery tooling must not become an undocumented bypass. Its actions should be attributable and excluded from the production path.
+
+## Preserve First-Rejection Evidence
+
+Automatic retries and fallback can overwrite the state that explains a rejection.
+
+Before recovery changes the platform, capture a bounded record:
+
+- test case and mutated artifact digest
+- effective trust and revocation policy identities
+- firmware bundle and hardware inventory
+- last trusted checkpoint
+- first rejection reason and source
+- selected fallback or recovery target
+- persistent-state changes
+- restoration result
+
+Time-bound the capture so evidence collection cannot prevent safe recovery. If detailed logs are unavailable, retain a minimal durable record from the closest trusted boundary.
+
+## Automate the Matrix Without Hiding It
+
+Generate cases from a versioned trust matrix, but publish the resolved plan:
+
+```yaml
+case: revoked_boot_component
+base_artifact: boot_component_v18
+mutation: revoke_signer_test_key_02
+policy_state: production_enrolled
+expected_boundary: firmware_image_verifier
+expected_result: rejected
+expected_recovery: signed_slot_A
+```
+
+Automation should verify that the intended mutation was present before executing the case. Otherwise, a broken artifact generator can turn a negative test into another positive control.
+
+Track coverage by trust boundary, policy state, hardware cohort, and recovery outcome. A large case count is not useful if every case exercises the same verifier in the same state.
+
+## The Release Standard
+
+Before calling secure boot release-ready, ask:
+
+1. Does every supported executable boundary have both acceptance and rejection coverage?
+2. Are tampering, unknown trust, revocation, downgrade, and mixed-bundle cases tested independently?
+3. Does each failure prove non-execution and identify the actual fallback or recovery image?
+4. Are provisioning, key-update, revocation, maintenance, and restored production states explicit?
+5. Can the platform recover with authorized artifacts without weakening the effective policy?
+
+A successful signed boot proves that one allowed path works. Negative-test chains prove that the trust policy rejects the right artifacts at the right boundary, preserves attributable evidence, and returns the platform to a secure operational state.

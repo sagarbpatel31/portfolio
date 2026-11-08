@@ -1,0 +1,234 @@
+---
+title: "Firmware Regressions Need Paired Baselines, Not Historical Averages"
+date: "2026-11-06"
+tags: ["Firmware Validation", "Regression Testing", "Experimental Design", "Platform Engineering", "Reliability", "Performance"]
+excerpt: "A candidate should be compared with a known-good build on the same hardware, under matched conditions, close enough in time that lab drift cannot masquerade as a firmware regression."
+---
+
+# Firmware Regressions Need Paired Baselines, Not Historical Averages
+
+A firmware candidate is often judged against a dashboard of historical averages.
+
+That comparison looks objective, but the history may combine different board revisions, lab controllers, ambient conditions, harness versions, topology changes, and workload inputs. A five-percent timing increase can be a candidate regression, a noisier lab, or simply a different population of systems.
+
+When the release decision matters, run a known-good baseline beside the candidate on matched hardware. The useful signal is the paired difference, not the candidate's distance from an old global average.
+
+## Define the Pair Before Running It
+
+A valid pair shares the conditions that can influence the result and differs only in the firmware identity under evaluation.
+
+```yaml
+pair_id: boot_latency_rack07_node12_0042
+resource: rack07_node12
+hardware_inventory_hash: 97c4a2
+topology_profile: accelerator_max_population
+harness_version: validation_18.3
+workload_corpus: boot_contracts_v9
+baseline: production_2026_10
+candidate: release_2026_11_rc2
+reset_type: cold_power_cycle
+```
+
+Capture the pair definition before execution. If the hardware, harness, topology, or input corpus changes between runs, invalidate the pair or record the difference explicitly.
+
+The goal is not laboratory perfection. It is to remove enough uncontrolled variation that the remaining delta can support a release decision.
+
+## Run Both Builds on the Same Resource
+
+Comparing one candidate machine with a separate baseline machine is better than using unrelated history, but it still confounds firmware with hardware.
+
+Prefer this sequence:
+
+```text
+prepare declared hardware state
+run known-good baseline
+restore the precondition
+run candidate
+compare paired outcomes
+```
+
+For destructive or persistent workflows, the restoration step is part of the experiment. Verify firmware inventory, configuration, topology, persistent variables, storage state, and required controller health before starting the second member of the pair.
+
+If exact restoration is impossible, use multiple matched systems and cross over the builds between them. The design should separate build effects from machine effects instead of assuming nominally identical systems behave identically.
+
+## Control Order Effects
+
+Always running the baseline first can create its own bias.
+
+The first run may pay initialization cost. The second may inherit warmer components, populated caches, trained links, or a lab controller that has already recovered from startup. Alternate or randomize order across repeated pairs:
+
+```text
+pair 1: baseline -> candidate
+pair 2: candidate -> baseline
+pair 3: candidate -> baseline
+pair 4: baseline -> candidate
+```
+
+An ABBA pattern is a practical default when the sample is small. Seeded randomization works well for larger campaigns as long as the resolved order is retained with the evidence.
+
+Order is part of the precondition. Treat it as data, not an implementation detail hidden in the runner.
+
+## Compare Contracts Before Metrics
+
+Performance deltas matter only after both builds satisfy the same functional contract.
+
+For every pair, compare:
+
+- reached platform state
+- firmware and configuration identity
+- device inventory and capability
+- fallback, retry, or recovery entry
+- error and health signals
+- evidence completeness
+
+A candidate that boots faster because one accelerator failed to initialize is not a performance improvement. A baseline run with missing telemetry cannot establish that the candidate changed.
+
+Classify functional divergence first. Compare timing, power, throughput, or resource use only when the outcomes are semantically equivalent.
+
+## Analyze Paired Deltas
+
+Absolute values remain useful for service-level limits, but paired deltas are stronger for attribution.
+
+```text
+delta_i = candidate_i - baseline_i
+```
+
+Track the distribution of those deltas across repeated pairs and hardware cohorts:
+
+- median paired delta
+- high-percentile paired delta
+- proportion of pairs that regress
+- maximum observed regression
+- confidence or uncertainty interval
+- count of invalid or incomplete pairs
+
+For example, a candidate may be 400 milliseconds slower than the historical fleet average but only 30 milliseconds slower than a baseline rerun in the current lab. That suggests environmental drift, not a large candidate regression.
+
+The reverse is also possible: both absolute numbers can sit inside a broad historical range while nearly every matched pair shows the candidate is slower.
+
+## Use Effect Sizes, Not Only Significance
+
+A statistical result can be detectable without being operationally important. It can also be operationally dangerous before a small sample reaches a conventional significance threshold.
+
+Define both:
+
+```yaml
+boot_gate:
+  absolute_max_ms: 12000
+  allowed_median_paired_delta_ms: 150
+  allowed_p99_paired_delta_ms: 500
+  max_regressing_pair_fraction: 0.10
+```
+
+The absolute limit protects the user-facing objective. The paired limits protect against a candidate-specific shift that remains temporarily below that ceiling.
+
+Choose thresholds from consequence, fleet scale, and measurement resolution. Do not select them after inspecting the candidate.
+
+## Repeat Across Relevant Cohorts
+
+One clean pair on one machine does not establish platform-wide behavior.
+
+Select cohorts that can change the path under test:
+
+- board or processor revision
+- memory and peripheral population
+- security configuration
+- production and previous-release firmware state
+- power and thermal boundary
+- historically sensitive components
+
+Run repeated pairs inside each cohort. Report the cohort result independently before producing an aggregate.
+
+An overall median can hide a candidate regression that affects only the maximum device population or one processor stepping. Pairing removes noise within a resource; cohort analysis prevents that local clarity from becoming an overgeneralized claim.
+
+## Detect Lab Drift With Control Pairs
+
+The known-good baseline is also a lab-health probe.
+
+Compare current baseline results with recent baseline pairs on the same resource. A broad shift across baseline and candidate runs may indicate:
+
+- controller latency or retry behavior
+- network or storage congestion
+- thermal or power changes
+- harness or host updates
+- instrumentation loss
+- physical topology drift
+
+Do not automatically discard these runs. Classify the drift, preserve the evidence, and decide whether the pair still answers the intended question.
+
+A lab problem can be a release blocker when the validation system can no longer observe the product reliably.
+
+## Prevent Cross-Run Contamination
+
+Firmware tests can leave state that changes the next run.
+
+Between members of a pair, control or record:
+
+| State | Pairing requirement |
+| --- | --- |
+| Firmware variables | restore the declared profile or retain intentional carryover |
+| Device training data | invalidate or preserve according to the production workflow |
+| Operating-system state | use the same image, services, and cache policy |
+| Workload data | reset to the same versioned corpus |
+| Thermal state | bound, measure, or include it in analysis |
+| Controller state | verify reachability, version, and retry counters |
+
+The cleanup should end with assertions, not a best-effort script. If restoration cannot be proven, mark the pair inconclusive instead of forcing it into the result set.
+
+## Classify Pair Outcomes Explicitly
+
+Use result classes that preserve uncertainty:
+
+```text
+candidate_regression
+candidate_improvement
+equivalent_within_gate
+baseline_failure
+shared_infrastructure_failure
+invalid_pair
+inconclusive
+```
+
+A candidate pass beside a failing baseline is not automatically an improvement. The baseline failure may show that the testbed is unstable or that the precondition changed.
+
+Likewise, one candidate failure beside one baseline pass is evidence, but it still needs a reproducible failure signature and first-failure artifacts before root cause is assigned.
+
+## Preserve a Pair Manifest
+
+Every published comparison should retain:
+
+- exact candidate and baseline identities
+- hardware and topology inventory
+- execution order and timestamps
+- harness, workload, and controller versions
+- precondition and restoration checks
+- raw results for both runs
+- normalized differences
+- invalidation or classification reason
+
+The pair manifest makes the comparison reviewable and replayable. It also prevents a rerun from silently replacing the evidence that caused the original release concern.
+
+## Keep History as Context
+
+Historical dashboards are still valuable. They show seasonality, long-term drift, weak cohorts, and whether the paired experiment is representative.
+
+Use history to ask better questions:
+
+- Is this resource behaving differently from its own recent baseline?
+- Is the paired delta consistent across the fleet?
+- Did a harness or infrastructure change move both builds?
+- Is the candidate exposing a pre-existing marginal condition?
+
+Do not use a wide historical distribution to explain away a repeatable paired regression. History provides context; the controlled pair provides attribution.
+
+## The Release Standard
+
+Before accepting a firmware comparison, ask:
+
+1. Were candidate and baseline exercised on the same resource or a defensible crossover design?
+2. Were preconditions restored and verified between runs?
+3. Was execution order alternated or randomized?
+4. Did both builds satisfy the same functional contract before metrics were compared?
+5. Are paired deltas, cohort differences, invalid runs, and uncertainty visible in the release evidence?
+
+Historical averages describe what happened across many conditions. Paired baselines create a controlled comparison that can separate candidate behavior from hardware variance and lab drift. That distinction turns a noisy dashboard change into evidence a release team can act on.
