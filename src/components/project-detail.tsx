@@ -9,6 +9,7 @@ import {
   Terminal,
   CheckCircle2,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +69,23 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
   const caseStudy = caseStudies.find((study) => study.slug === project.slug);
+  const maturityStyle = {
+    green: {
+      dot: "bg-accent-green",
+      text: "text-accent-green",
+      border: "border-accent-green/20 bg-accent-green/5",
+    },
+    cyan: {
+      dot: "bg-accent",
+      text: "text-accent",
+      border: "border-accent/20 bg-accent/5",
+    },
+    amber: {
+      dot: "bg-accent-amber",
+      text: "text-accent-amber",
+      border: "border-accent-amber/20 bg-accent-amber/5",
+    },
+  }[project.maturity.tone];
 
   return (
     <div className="py-16 sm:py-20">
@@ -98,10 +116,8 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
             <Badge>{project.category}</Badge>
             <span className="text-muted-foreground">{project.year}</span>
             <span className="inline-flex items-center gap-1.5">
-              <span className={`h-1.5 w-1.5 rounded-full ${project.featured ? "bg-accent-green" : "bg-accent-amber"}`} />
-              <span className={project.featured ? "text-accent-green" : "text-accent-amber"}>
-                {project.featured ? "ACTIVE" : "IDLE"}
-              </span>
+              <span className={`h-1.5 w-1.5 rounded-full ${maturityStyle.dot}`} />
+              <span className={maturityStyle.text}>{project.maturity.label.toUpperCase()}</span>
             </span>
           </motion.div>
 
@@ -158,6 +174,68 @@ export function ProjectDetail({ project }: ProjectDetailProps) {
             </motion.div>
           )}
         </motion.div>
+
+        {project.evidence && project.evidence.length > 0 ? (
+          <AnimatedSection className="mt-6">
+            <aside className="dash-card" aria-labelledby="evidence-ledger-title">
+              <div className="dash-card-header">
+                <span
+                  id="evidence-ledger-title"
+                  className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground"
+                >
+                  <ShieldCheck size={14} className="text-accent-green" aria-hidden="true" />
+                  Evidence ledger
+                </span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${maturityStyle.border} ${maturityStyle.text}`}
+                >
+                  {project.maturity.label}
+                </span>
+              </div>
+              <div className="dash-card-body">
+                <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+                  {project.maturity.summary}
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {project.evidence.map((item) => {
+                    const content = (
+                      <>
+                        <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-muted">
+                          {item.label}
+                        </p>
+                        <p className="mt-2 text-sm font-medium leading-snug text-foreground">
+                          {item.value}
+                        </p>
+                        {item.href ? (
+                          <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] text-accent">
+                            Inspect proof
+                            <ArrowUpRight size={11} aria-hidden="true" />
+                          </span>
+                        ) : null}
+                      </>
+                    );
+
+                    return item.href ? (
+                      <a
+                        key={item.label}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border border-border bg-surface/50 p-4 transition-colors hover:border-accent/30"
+                      >
+                        {content}
+                      </a>
+                    ) : (
+                      <div key={item.label} className="rounded-lg border border-border bg-surface/50 p-4">
+                        {content}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+          </AnimatedSection>
+        ) : null}
 
         {/* Description */}
         <AnimatedSection className="mt-10">

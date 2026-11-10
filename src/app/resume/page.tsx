@@ -99,10 +99,10 @@ export default function ResumePage() {
                   Book intro call
                 </a>
                 <Link
-                  href="/projects"
+                  href="/roles"
                   className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-accent/30 hover:text-accent"
                 >
-                  View projects
+                  Explore role fit
                   <ArrowRight size={14} aria-hidden="true" />
                 </Link>
               </div>

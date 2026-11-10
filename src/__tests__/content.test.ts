@@ -6,6 +6,8 @@ import { awards } from "@/content/awards";
 import { socials } from "@/content/socials";
 import { education, certifications } from "@/content/education";
 import { highlights } from "@/content/highlights";
+import { roleProfiles } from "@/content/roles";
+import { getAllSlugs } from "@/lib/blog";
 
 describe("Content: profile", () => {
   it("has all required fields", () => {
@@ -66,6 +68,9 @@ describe("Content: projects", () => {
       expect(p.longDescription).toBeTruthy();
       expect(p.tags.length).toBeGreaterThan(0);
       expect(p.category).toBeTruthy();
+      expect(p.maturity.label).toBeTruthy();
+      expect(p.maturity.summary).toBeTruthy();
+      expect(["green", "cyan", "amber"]).toContain(p.maturity.tone);
       expect(p.highlights.length).toBeGreaterThan(0);
       expect(p.year).toBeTruthy();
       expect(typeof p.featured).toBe("boolean");
@@ -84,6 +89,41 @@ describe("Content: projects", () => {
   it("each project slug is URL-safe", () => {
     projects.forEach((p) => {
       expect(p.slug).toMatch(/^[a-z0-9-]+$/);
+    });
+  });
+
+  it("uses valid evidence links when proof is public", () => {
+    projects.forEach((project) => {
+      project.evidence?.forEach((evidence) => {
+        expect(evidence.label).toBeTruthy();
+        expect(evidence.value).toBeTruthy();
+        if (evidence.href) {
+          expect(evidence.href).toMatch(/^https:\/\//);
+        }
+      });
+    });
+  });
+});
+
+describe("Content: role profiles", () => {
+  it("defines three distinct hiring paths", () => {
+    expect(roleProfiles).toHaveLength(3);
+    expect(new Set(roleProfiles.map((role) => role.slug)).size).toBe(roleProfiles.length);
+  });
+
+  it("references real projects and blog posts", () => {
+    const projectSlugs = new Set(projects.map((project) => project.slug));
+    const blogSlugs = new Set(getAllSlugs());
+
+    roleProfiles.forEach((role) => {
+      expect(role.slug).toMatch(/^[a-z0-9-]+$/);
+      expect(role.targetTitles.length).toBeGreaterThanOrEqual(3);
+      expect(role.strengths).toHaveLength(3);
+      expect(role.signals).toHaveLength(3);
+      expect(role.projectSlugs).toHaveLength(3);
+      expect(role.postSlugs).toHaveLength(4);
+      role.projectSlugs.forEach((slug) => expect(projectSlugs.has(slug)).toBe(true));
+      role.postSlugs.forEach((slug) => expect(blogSlugs.has(slug)).toBe(true));
     });
   });
 });

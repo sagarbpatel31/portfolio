@@ -2,6 +2,7 @@ import { MetadataRoute } from "next";
 import { projects } from "@/content/projects";
 import { getAllSlugs } from "@/lib/blog";
 import { SITE_URL } from "@/lib/site";
+import { roleProfiles } from "@/content/roles";
 
 const BASE_URL = SITE_URL;
 
@@ -18,6 +19,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(),
     changeFrequency: "monthly" as const,
     priority: 0.7,
+  }));
+
+  const roleRoutes = roleProfiles.map((role) => ({
+    url: `${BASE_URL}/roles/${role.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
   }));
 
   return [
@@ -46,6 +54,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
     },
     {
+      url: `${BASE_URL}/roles`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
       url: `${BASE_URL}/wins`,
       lastModified: new Date(),
       changeFrequency: "monthly",
@@ -58,6 +72,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     ...projectRoutes,
+    ...roleRoutes,
     ...blogRoutes,
   ];
 }

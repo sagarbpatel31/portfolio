@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Workflow } from "lucide-react";
+import { ArrowUpRight, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ArchitectureFlow } from "@/components/architecture-flow";
 import type { CaseStudy } from "@/content/hiring";
 
 interface CaseStudyPanelProps {
@@ -56,20 +57,8 @@ export function CaseStudyPanel({ study, compact = false, href }: CaseStudyPanelP
                 flow
               </span>
             </div>
-            <div className="mt-3 flex flex-col gap-2">
-              {study.architecture.map((step, index) => (
-                <div key={step} className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-accent/20 bg-accent/10 font-mono text-[10px] text-accent">
-                    {String(index + 1)}
-                  </div>
-                  <div className="flex-1 rounded-lg border border-accent/15 bg-accent/5 px-3 py-2">
-                    <p className={`leading-snug text-foreground ${bodyClass}`}>{step}</p>
-                  </div>
-                  {index < study.architecture.length - 1 && (
-                    <ArrowRight size={14} className="hidden flex-shrink-0 text-accent/70 md:block" aria-hidden="true" />
-                  )}
-                </div>
-              ))}
+            <div className="mt-3">
+              <ArchitectureFlow steps={study.architecture} compact={compact} />
             </div>
           </div>
         </div>

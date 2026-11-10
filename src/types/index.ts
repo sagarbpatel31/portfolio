@@ -6,6 +6,16 @@ export interface Project {
   longDescription: string;
   tags: string[];
   category: string;
+  maturity: {
+    label: string;
+    summary: string;
+    tone: "green" | "cyan" | "amber";
+  };
+  evidence?: {
+    label: string;
+    value: string;
+    href?: string;
+  }[];
   highlights: string[];
   metrics?: string[];
   links?: { label: string; url: string }[];

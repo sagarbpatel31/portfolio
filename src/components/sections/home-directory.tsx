@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   BookOpen,
+  BriefcaseBusiness,
   Cpu,
   FileText,
   Folder,
@@ -30,6 +31,13 @@ export function HomeDirectory({ postCount }: HomeDirectoryProps) {
       count: "4 production roles",
       description: "Experience, scope, impact bullets, skills, and education.",
       icon: FileText,
+    },
+    {
+      href: "/roles",
+      label: "Role Fit",
+      count: "3 hiring paths",
+      description: "Tailored evidence for validation, embedded, and robotics teams.",
+      icon: BriefcaseBusiness,
     },
     {
       href: "/blog",

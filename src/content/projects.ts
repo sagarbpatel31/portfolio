@@ -21,6 +21,21 @@ export const projects: Project[] = [
 The full workflow: build a release bundle with manifest and signatures → deliver over USB or local HTTP → device validates version/target/hashes/signature → stage to inactive location → switch active release and restart → health checks confirm success or trigger rollback.`,
     tags: ["Python", "Embedded Linux", "OTA", "Cryptography", "Raspberry Pi", "systemd"],
     category: "Embedded & Systems",
+    maturity: {
+      label: "Working prototype",
+      summary:
+        "End-to-end updater, signer, local dashboard, and device integration are implemented as a public reference build.",
+      tone: "green",
+    },
+    evidence: [
+      {
+        label: "Source",
+        value: "Public implementation",
+        href: "https://github.com/sagarbpatel31/offline-ota-update-system",
+      },
+      { label: "Safety contract", value: "Signed staging + health-gated rollback" },
+      { label: "Operating mode", value: "Offline USB or local HTTP" },
+    ],
     highlights: [
       "Signed bundle verification — version, target, hashes, and signature checked before any install",
       "Staged releases with atomic symlink switching — previous release stays intact on disk",
@@ -53,6 +68,25 @@ The full workflow: build a release bundle with manifest and signatures → deliv
 Built on Next.js 15 (App Router + RSC) with a FastAPI backend, HydraDB temporal context graph, and GPT-4o. Built for WikiThon 2026.`,
     tags: ["Next.js", "TypeScript", "Python", "HydraDB", "GPT-4o", "Multi-Agent AI", "RAG"],
     category: "AI & Multi-Agent Systems",
+    maturity: {
+      label: "Hackathon build",
+      summary:
+        "End-to-end multi-agent encyclopedia built for WikiThon 2026 with public source and event evidence.",
+      tone: "amber",
+    },
+    evidence: [
+      {
+        label: "Source",
+        value: "Public repository",
+        href: "https://github.com/sagarbpatel31/EMBODIPEDIA",
+      },
+      {
+        label: "Event",
+        value: "WikiThon 2026",
+        href: "https://luma.com/6pybuh79?tk=5RGaoS",
+      },
+      { label: "System scope", value: "Ingest, route, synthesize, cite, and revise" },
+    ],
     highlights: [
       "Self-maintaining encyclopedia — autonomous agents read, extract, route, and synthesize with zero human editors",
       "Three perspective sub-tenants (canonical / bull / bear) in HydraDB — Talk pages render real agent debates",
@@ -84,6 +118,25 @@ Built on Next.js 15 (App Router + RSC) with a FastAPI backend, HydraDB temporal 
 **Architecture**: a VS Code extension (hover, CodeLens, webviews), a FastAPI backend, and a dashboard with a force-directed graph, chaos view, and time-travel. Built for the "Agents Under Pressure — Build your own OS" 48-hour hackathon at AI Valley. Published to the VS Code Marketplace.`,
     tags: ["TypeScript", "Python", "VS Code Extension", "HydraDB", "FastAPI", "OpenAI"],
     category: "AI & Developer Tools",
+    maturity: {
+      label: "Published tool",
+      summary:
+        "VS Code extension published to the Marketplace with public source and a graph-backed service implementation.",
+      tone: "green",
+    },
+    evidence: [
+      {
+        label: "Distribution",
+        value: "VS Code Marketplace",
+        href: "https://marketplace.visualstudio.com/items?itemName=CodeBaseOS.codebaseos",
+      },
+      {
+        label: "Source",
+        value: "Public repository",
+        href: "https://github.com/sagarbpatel31/CodeBaseOS",
+      },
+      { label: "Integrity", value: "Merkle-chain verified ingestion" },
+    ],
     highlights: [
       "Right-click any line → full origin story across commits, PRs, issues, and decisions in ~200ms",
       "Graph-grounded answers with clickable links to the real PR / commit / issue",
@@ -114,6 +167,21 @@ The analysis engine detects subtle patterns that are difficult for non-specialis
 StepAhead is built around three principles: accessible (no specialist equipment needed, just a smartphone), continuous (not just snapshot assessments), and collaborative (designed to enhance, not replace, professional care).`,
     tags: ["Mobile App", "Computer Vision", "AI", "React Native", "Healthcare"],
     category: "AI & Health Tech",
+    maturity: {
+      label: "Product prototype",
+      summary:
+        "Interactive product prototype focused on milestone tracking, movement analysis, and clinician-shareable reporting.",
+      tone: "cyan",
+    },
+    evidence: [
+      {
+        label: "Demo",
+        value: "Public product walkthrough",
+        href: "https://step-ahead-website.vercel.app",
+      },
+      { label: "Workflow", value: "Record, analyze, track, and share" },
+      { label: "Boundary", value: "Decision support, not medical diagnosis" },
+    ],
     highlights: [
       "Real-time AI movement analysis using smartphone camera — no specialized equipment required",
       "Developmental milestone benchmarks calibrated by age for accurate motor delay detection",
@@ -143,6 +211,21 @@ A Python CLI layer wraps the C engine, providing a YAML-based test scenario form
 Real-time analysis captures per-flow throughput, latency distributions (p50/p95/p99), packet loss rates, and reorder events. Results stream to a terminal dashboard (Rich-based) and export to CSV for post-analysis. Integration with Wireshark via pcap export enables packet-level inspection of captured traffic.`,
     tags: ["C", "DPDK", "Python", "Networking", "Linux", "Performance"],
     category: "Networking & Systems",
+    maturity: {
+      label: "Active build",
+      summary:
+        "Systems project under active development with a public implementation and defined performance-test workflow.",
+      tone: "cyan",
+    },
+    evidence: [
+      {
+        label: "Source",
+        value: "Public implementation",
+        href: "https://github.com/sagarbpatel31/signalforge",
+      },
+      { label: "Control plane", value: "YAML-authored traffic scenarios" },
+      { label: "Evidence", value: "Latency, throughput, loss, and pcap output" },
+    ],
     highlights: [
       "DPDK kernel-bypass packet I/O for line-rate generation up to 100Gbps on commodity hardware",
       "Multi-queue RSS distribution with per-core generation threads for minimal cache contention",
@@ -173,6 +256,25 @@ The web dashboard provides a single-page incident correlation timeline connectin
 Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in mean time to root cause, compatibility with 5+ edge platforms including Jetson Orin, Raspberry Pi, and x86 Linux.`,
     tags: ["Go", "Python", "FastAPI", "Next.js", "PostgreSQL", "ROS2", "Docker"],
     category: "Robotics & AI",
+    maturity: {
+      label: "Active build",
+      summary:
+        "Working incident-intelligence stack with a public demo, source repository, and replay-oriented failure workflow.",
+      tone: "cyan",
+    },
+    evidence: [
+      {
+        label: "Demo",
+        value: "Live incident dashboard",
+        href: "https://watchpoint-gray.vercel.app",
+      },
+      {
+        label: "Source",
+        value: "Public repository",
+        href: "https://github.com/sagarbpatel31/watchpoint",
+      },
+      { label: "Measured outcome", value: "73% lower mean time to root cause" },
+    ],
     highlights: [
       "Lightweight Go edge agent — CPU, memory, GPU, disk metrics with local ring buffer for pre-incident context",
       "Python ROS2 collector: topic publish rate monitoring, node health, message lag detection",
@@ -208,6 +310,21 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
 **Outcome**: Won 2 tracks at Intelligence at the Frontier Hackathon 2026 — "Physical AI & Robotics: Data at Scale — Best Overall Use of DeepLake" and "Physical AI & Robotics by NomadicML — New Project Winner". The architecture demonstrated that combining immersive teleop with robust MLOps tooling can compress the humanoid-learning timeline from weeks to days.`,
     tags: ["Robotics", "Unitree G1", "Meta Quest 3", "MuJoCo", "NVIDIA Sonic", "DeepLake", "NVIDIA GR00T", "Nomadic AI"],
     category: "Physical AI & Robotics",
+    maturity: {
+      label: "Hackathon winner",
+      summary:
+        "36-hour humanoid-learning build recognized in two event tracks, with the event page retained as public evidence.",
+      tone: "amber",
+    },
+    evidence: [
+      {
+        label: "Recognition",
+        value: "Two winning tracks",
+        href: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484",
+      },
+      { label: "Build window", value: "36 hours" },
+      { label: "Training loop", value: "45 min demonstrations, 135K timesteps" },
+    ],
     highlights: [
       "Meta Quest 3 + MuJoCo teleoperation with NVIDIA Sonic for low-latency control",
       "DeepLake tensor storage for high-throughput streaming of G1 demonstration data",
@@ -255,6 +372,25 @@ The mechanism is simple but powerful: before an agent generates output, it queri
 Won the "a fun hack day (promise)" virtual hackathon on Discord — a 178-attendee event focused on serious technical builds.`,
     tags: ["Next.js", "TypeScript", "DeepLake", "HydraDB", "SSE", "Multi-Agent AI", "RAG"],
     category: "AI & Multi-Agent Systems",
+    maturity: {
+      label: "Hackathon winner",
+      summary:
+        "Winning seven-agent system with public source, event evidence, and a broad automated test suite.",
+      tone: "amber",
+    },
+    evidence: [
+      {
+        label: "Source",
+        value: "Public repository",
+        href: "https://github.com/sagarbpatel31/HydraSwarm",
+      },
+      {
+        label: "Recognition",
+        value: "Hackathon winner",
+        href: "https://luma.com/uv13n64x?tk=wjHDI0",
+      },
+      { label: "Verification", value: "325 unit tests across 21 suites" },
+    ],
     highlights: [
       "7 specialized agents (PM, Architect, Developer, Reviewer, QA, SRE, CTO) with recall-generate-store loop",
       "Provable improvement across runs: 7/10 → 8/10 → 9/10 as lessons accumulate",
