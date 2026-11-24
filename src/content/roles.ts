@@ -82,9 +82,9 @@ export const roleProfiles: RoleProfile[] = [
     ],
     projectSlugs: ["offline-ota", "signalforge", "watchpoint"],
     postSlugs: [
+      "testing-firmware-timeouts-at-counter-rollover",
       "secure-boot-validation-needs-negative-test-chains",
       "firmware-regressions-need-paired-baselines",
-      "firmware-regression-needs-change-aware-test-selection",
       "production-readiness-needs-repeatability-gates",
     ],
   },
@@ -149,9 +149,9 @@ export const roleProfiles: RoleProfile[] = [
     ],
     projectSlugs: ["offline-ota", "signalforge", "watchpoint"],
     postSlugs: [
+      "tracing-an-i2c-sensor-through-a-linux-mux",
       "embedded-linux-bsp",
       "dma-buffers-need-explicit-cache-coherency-contracts",
-      "zero-copy-pipelines-need-explicit-buffer-ownership",
       "watchdogs-need-progress-proofs-not-process-heartbeats",
     ],
   },
@@ -216,7 +216,7 @@ export const roleProfiles: RoleProfile[] = [
     ],
     projectSlugs: ["watchpoint", "xg1", "stepahead"],
     postSlugs: [
-      "edge-inference-overload-needs-a-freshness-policy",
+      "mapping-detection-boxes-back-to-camera-pixels",
       "robotics-telemetry-should-preserve-causality-across-clock-domains",
       "latency-budgets-robotics-pipelines",
       "mujoco-sim-to-real",

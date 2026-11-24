@@ -1,0 +1,50 @@
+---
+title: "Finding an I²C Sensor Behind a Linux Multiplexer"
+date: "2026-11-23"
+tags: ["Embedded Linux", "I2C", "Device Drivers", "Debugging"]
+excerpt: "Two sensors can share address 0x48 on different mux channels. Follow the kernel’s channel links to identify the right one and see whether its driver bound."
+---
+
+Imagine a carrier board with two temperature sensors. Both have the fixed address `0x48`. One sits near the CPU on multiplexer channel 1 and the other sits near the inlet on channel 2. A board test prints a perfectly plausible 37 °C. Which sensor did it read?
+
+An address and a temperature are insufficient to answer that question. The wiring diagram identifies each sensor by its path through the mux. Linux exposes that path through sysfs. This is the path I would check before comparing a temperature against a release threshold.
+
+## Follow the inlet channel
+
+For this example, the board description places the mux at `0x70` on adapter 1. Start from that known parent and follow `channel-2`. Linux assigns a logical adapter to a mux channel, and its number can depend on the board configuration and how adapters were registered. The channel link points to the adapter this boot actually registered. [Linux kernel I²C sysfs guide](https://docs.kernel.org/i2c/i2c-sysfs.html)
+
+```sh
+set -eu
+root=${I2C_SYSFS_ROOT:-/sys/bus/i2c/devices}
+channel="$root/1-0070/channel-2"
+if [ ! -d "$channel" ]; then
+    echo "Inlet mux channel is missing" >&2
+    exit 1
+fi
+
+adapter=$(basename "$(readlink "$channel")")
+client="$root/${adapter#i2c-}-0048"
+printf 'Inlet channel maps to %s\n' "$adapter"
+
+if [ ! -d "$client" ]; then
+    echo "No registered client at 0x48 on the inlet channel"
+elif [ ! -L "$client/driver" ]; then
+    echo "Client exists at 0x48 and has no bound driver"
+else
+    driver=$(readlink "$client/driver")
+    printf 'Bound driver: %s\n' "$(basename "$driver")"
+fi
+```
+
+The commands read names and symbolic links. They issue no I²C transactions. Substitute the parent adapter, mux address, channel and sensor address from your own schematic and board description.
+
+## Decide where to look next
+
+| Observation | Next check |
+| --- | --- |
+| The mux exists but channel 2 is missing | Inspect the mux driver binding and its probe messages. Confirm the expected part and channel count. |
+| Channel 2 exists but the sensor client is missing | Check how the board declares the child device and which channel owns that declaration. |
+| The client exists without a driver link | Check its device name, compatible string where applicable, available driver, and probe messages. |
+| The expected driver is bound | Read through the driver's measurement interface. Compare the inlet and CPU-side readings against an independent reference. |
+
+A registered client can come from a board description. Its directory alone cannot tell you whether a transaction succeeded or which physical point a reported temperature represents. A useful test record includes the board revision, mux channel, resolved adapter, bound driver and a reference reading. That gives the next engineer a way to distinguish a wiring change from a bus renumbering. [Related guide to embedded Linux board support](/blog/embedded-linux-bsp)

@@ -1,0 +1,59 @@
+---
+title: "Testing a Firmware Timeout Across Counter Rollover"
+date: "2026-11-23"
+tags: ["Firmware Validation", "C", "Embedded Systems", "RTOS", "Testing"]
+excerpt: "A 20 ms timeout can fire immediately near the end of a 32-bit tick counter. A small C test exercises the last tick before expiry and the first tick after it."
+---
+
+A peripheral gets 20 ms to report that it is ready. The firmware records a millisecond counter when it sends the command. Most tests start at tick zero. There is a second starting point worth testing: ten ticks before the counter wraps.
+
+At one tick per millisecond, a 32-bit counter has a period of about 49.7 days. A test can exercise that boundary in a few instructions by passing the counter value into the timeout check.
+
+## Work the boundary by hand
+
+Start at `0xfffffff6`. Adding 20 in a 32-bit unsigned value puts the deadline at tick 10. A raw comparison such as `now >= deadline` is already true at the start, even though no time has elapsed.
+
+| Current tick | Elapsed ticks since start | Should expire? |
+| --- | --- | --- |
+| 0xfffffff6 | 0 | No |
+| 0xffffffff | 9 | No |
+| 0 | 10 | No |
+| 9 | 19 | No |
+| 10 | 20 | Yes |
+| 11 | 21 | Yes |
+
+## Make the clock an input
+
+This standalone C11 example keeps the start and sample on the same clock and converts their difference to `uint32_t`. The conversion gives the elapsed value modulo 2³². The relevant language rules are in sections 6.2.5 and 6.3.1.3 of the C11 committee draft. [WG14 draft N1570](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf)
+
+```c
+#include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+static bool expired(uint32_t start, uint32_t now, uint32_t delay)
+{
+    uint32_t elapsed = (uint32_t)(now - start);
+    return elapsed >= delay;
+}
+
+int main(void)
+{
+    const uint32_t start = UINT32_MAX - 9;
+    assert(!expired(start, start, 20));
+    assert(!expired(start, UINT32_MAX, 20));
+    assert(!expired(start, 0, 20));
+    assert(!expired(start, 9, 20));
+    assert(expired(start, 10, 20));
+    assert(expired(start, 11, 20));
+    return 0;
+}
+```
+
+Save it as `timeout.c` and run `cc -std=c11 -Wall -Wextra timeout.c -o timeout && ./timeout`. A successful run exits silently. To check the strength of the test, temporarily replace the function body with a raw comparison against a wrapped deadline. The first assertion should fail.
+
+## Decide what happens when sampling stops
+
+This calculation assumes the real elapsed time at the sample is less than one full counter period. After exactly one full period, the clock shows the original value again. If a device can sleep that long, the system needs another time source or a way to count wraps. Also check whether the tick advances during the sleep mode your product uses.
+
+For a driver review, the arithmetic test answers only the first question. The next test should make the polling loop observe expiry, take the timeout branch once, and record which peripheral was waiting. That covers the jump from a correct comparison to a recoverable device. [Related note on firmware regression baselines](/blog/firmware-regressions-need-paired-baselines)

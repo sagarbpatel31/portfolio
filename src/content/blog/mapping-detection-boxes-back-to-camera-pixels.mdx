@@ -1,0 +1,55 @@
+---
+title: "Mapping Detection Boxes Back to Camera Pixels"
+date: "2026-11-23"
+tags: ["Edge AI", "Computer Vision", "Robotics", "Python"]
+excerpt: "A detector finds the right object but draws the box too low. Use a known rectangle to test the resize, padding and clipping in an edge vision pipeline."
+---
+
+A detector can identify the right object with high confidence and still draw its box halfway down the frame. One way to isolate the problem is to feed the overlay code a rectangle with known coordinates. That lets you test the geometry without a model, a GPU, or a labeled dataset.
+
+## Follow one rectangle through preprocessing
+
+Suppose the camera produces a 1280 × 720 image. A fixed 640 × 640 model input uses a centered letterbox. Resizing by 0.5 produces 640 × 360 pixels of image, leaving 140 rows of padding above and below. Here a box is written as continuous pixel edges in `(left, top, right, bottom)` order. Coordinates increase to the right and down.
+
+| Coordinate space | Rectangle |
+| --- | --- |
+| Original camera image | (160, 90, 480, 270) |
+| After resizing | (80, 45, 240, 135) |
+| After adding top padding | (80, 185, 240, 275) |
+
+If the overlay only divides the model output by 0.5, it draws the top edge at camera row 370. The expected row is 90. That 280-pixel error is exactly the top padding expressed at camera resolution. Ultralytics documents the resize and padding choices in its letterbox transform. [LetterBox reference](https://docs.ultralytics.com/reference/data/augment/#ultralytics.data.augment.LetterBox)
+
+## Test the inverse with a known answer
+
+The function below accepts model-input pixel edges and the transform actually used for that frame. It clips the result to the source image and discards any box that covers no source pixels.
+
+```python
+def camera_box(box, *, gain_x, gain_y, left_pad, top_pad, width, height):
+    left, top, right, bottom = box
+
+    def undo(edge, pad, gain, limit):
+        return min(limit, max(0.0, (edge - pad) / gain))
+
+    x1 = undo(left, left_pad, gain_x, width)
+    x2 = undo(right, left_pad, gain_x, width)
+    y1 = undo(top, top_pad, gain_y, height)
+    y2 = undo(bottom, top_pad, gain_y, height)
+    if x2 <= x1 or y2 <= y1:
+        return None
+    return x1, y1, x2, y2
+
+
+frame = dict(gain_x=0.5, gain_y=0.5, left_pad=0, top_pad=140,
+             width=1280, height=720)
+assert camera_box((80, 185, 240, 275), **frame) == (160, 90, 480, 270)
+assert camera_box((80, 100, 240, 150), **frame) == (160, 0, 480, 20)
+assert camera_box((80, 10, 240, 50), **frame) is None
+```
+
+The second check covers a box that straddles the padding. The third covers one entirely inside it. Both cases can pass unnoticed if every test object sits in the middle of the frame.
+
+## Catch the error that a square test image hides
+
+Use a portrait camera frame as a second fixture. With a 720 × 1280 source and the same model input, the 140-pixel margin moves to the left. A pipeline that always subtracts from Y will now fail. Also try a frame that leaves an odd number of padding rows. Record the actual integer offset chosen by preprocessing so the overlay can undo the same transform.
+
+Finally, check the output contract at the point where you take the boxes. Some wrappers already return coordinates in the original image. Applying the inverse twice introduces a second error. For normalized model outputs, first convert to model-input pixels. Keep the frame ID, scales and offsets alongside the detections when frames can be processed out of order. [Ultralytics box rescaling reference](https://docs.ultralytics.com/reference/utils/ops/#ultralytics.utils.ops.scale_boxes)
