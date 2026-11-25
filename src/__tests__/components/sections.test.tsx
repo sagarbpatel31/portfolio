@@ -84,8 +84,9 @@ describe("Hero section", () => {
     expect(screen.getAllByText(/Sagar Patel/).length).toBeGreaterThan(0);
   });
 
-  it("renders status badge", () => {
-    expect(screen.getByText(/Software Validation Engineer at Microsoft/)).toBeInTheDocument();
+  it("renders the current role and employer", () => {
+    expect(screen.getByText("Software Validation Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Microsoft")).toBeInTheDocument();
   });
 
   it("keeps detailed profile data off the homepage hero", () => {
@@ -93,22 +94,25 @@ describe("Hero section", () => {
     expect(screen.queryByText(/C\/C\+\+ · Python · Linux · CUDA/)).not.toBeInTheDocument();
   });
 
-  it("renders the recruiter-facing positioning", () => {
-    expect(screen.getByText(/AI platform firmware validation/)).toBeInTheDocument();
+  it("leads with embedded systems and firmware validation", () => {
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Embedded Systems & Firmware Validation");
   });
 
   it("links directly to selected work", () => {
-    expect(screen.getByRole("link", { name: /View selected work/ })).toHaveAttribute("href", "/projects");
+    expect(screen.getByRole("link", { name: /View selected work/ })).toHaveAttribute("href", "#selected-work");
   });
 
   it("has Resume download CTA", () => {
-    expect(screen.getByRole("link", { name: /Resume/ })).toHaveAttribute("href", "/resume");
+    const download = screen.getByRole("link", { name: "Download resume" });
+    expect(download).toHaveAttribute("href", "/resume.pdf");
+    expect(download).toHaveAttribute("download");
+    expect(screen.getByRole("link", { name: "Experience & education" })).toHaveAttribute("href", "/resume");
   });
 
-  it("has GitHub and LinkedIn social links", () => {
-    const links = screen.getAllByRole("link");
-    expect(links.find((l) => l.getAttribute("aria-label") === "GitHub")).toBeTruthy();
-    expect(links.find((l) => l.getAttribute("aria-label") === "LinkedIn")).toBeTruthy();
+  it("provides direct access to email, GitHub, and LinkedIn", () => {
+    expect(screen.getByRole("link", { name: "Email" })).toHaveAttribute("href", "mailto:sagar@myjobemails.com");
+    expect(screen.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/sagarbpatel31");
+    expect(screen.getByRole("link", { name: "LinkedIn" })).toHaveAttribute("href", "https://linkedin.com/in/sagarp31");
   });
 
   it("has section id", () => {
@@ -146,24 +150,24 @@ describe("Highlights section", () => {
 describe("Selected impact section", () => {
   beforeEach(() => render(<SelectedImpact />));
 
-  it("renders selected_impact heading", () => {
-    expect(screen.getByText("selected_impact")).toBeInTheDocument();
+  it("renders the selected outcomes heading", () => {
+    expect(screen.getByRole("heading", { name: "Selected outcomes" })).toBeInTheDocument();
   });
 
   it("renders the strongest metrics", () => {
     expect(screen.getByText("31%")).toBeInTheDocument();
-    expect(screen.getByText("73%")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText("24%")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 });
 
 describe("Homepage terminal section", () => {
   beforeEach(() => render(<HomeTerminal />));
 
-  it("renders the interactive terminal without restoring the full dashboard", () => {
-    expect(screen.getByText("interactive_console")).toBeInTheDocument();
-    expect(screen.getByText("Query the profile directly.")).toBeInTheDocument();
-    expect(screen.getByTestId("terminal")).toBeInTheDocument();
+  it("keeps the terminal available in a collapsed disclosure", () => {
+    const disclosure = screen.getByText("Explore the SAGAR_OS terminal").closest("details");
+    expect(disclosure).toContainElement(screen.getByTestId("terminal"));
+    expect(disclosure).not.toHaveAttribute("open");
   });
 });
 
@@ -186,8 +190,8 @@ describe("Stack map section", () => {
 describe("Case studies section", () => {
   beforeEach(() => render(<CaseStudies />));
 
-  it("renders selected_work heading", () => {
-    expect(screen.getByText("selected_work")).toBeInTheDocument();
+  it("renders the selected work heading", () => {
+    expect(screen.getByRole("heading", { name: "Selected work" })).toBeInTheDocument();
   });
 
   it("renders the selected case studies", () => {

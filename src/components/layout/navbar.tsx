@@ -46,6 +46,11 @@ export function Navbar() {
               </Link>
             </li>
             <li>
+              <Link href="/roles" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
+                /roles
+              </Link>
+            </li>
+            <li>
               <Link href="/blog" className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-accent">
                 /writing
               </Link>

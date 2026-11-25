@@ -83,9 +83,9 @@ export const roleProfiles: RoleProfile[] = [
     projectSlugs: ["offline-ota", "signalforge", "watchpoint"],
     postSlugs: [
       "testing-firmware-timeouts-at-counter-rollover",
+      "systemd-readiness-for-edge-services",
       "secure-boot-validation-needs-negative-test-chains",
       "firmware-regressions-need-paired-baselines",
-      "production-readiness-needs-repeatability-gates",
     ],
   },
   {
@@ -150,9 +150,9 @@ export const roleProfiles: RoleProfile[] = [
     projectSlugs: ["offline-ota", "signalforge", "watchpoint"],
     postSlugs: [
       "tracing-an-i2c-sensor-through-a-linux-mux",
+      "systemd-readiness-for-edge-services",
       "embedded-linux-bsp",
       "dma-buffers-need-explicit-cache-coherency-contracts",
-      "watchdogs-need-progress-proofs-not-process-heartbeats",
     ],
   },
   {
@@ -192,16 +192,16 @@ export const roleProfiles: RoleProfile[] = [
           "Captures pre-failure context, ROS2 health, resource telemetry, version identity, and replayable evidence at the edge.",
       },
       {
-        title: "Simulation-to-hardware execution",
+        title: "Simulation and policy evaluation",
         detail:
-          "Connects teleoperation, MuJoCo, demonstration data, policy fine-tuning, diagnostics, and physical-system evaluation.",
+          "Connects teleoperation, MuJoCo, demonstration data, policy fine-tuning, and diagnostics.",
       },
     ],
     signals: [
       {
-        value: "73%",
-        label: "lower mean time to root cause",
-        detail: "Incident capture and correlated robotics evidence through Watchpoint.",
+        value: "Replay",
+        label: "portable ROS 2 incident bundles",
+        detail: "Watchpoint correlates ROS 2 state, resource telemetry, and logs around a failure.",
       },
       {
         value: "2 wins",
@@ -217,9 +217,9 @@ export const roleProfiles: RoleProfile[] = [
     projectSlugs: ["watchpoint", "xg1", "stepahead"],
     postSlugs: [
       "mapping-detection-boxes-back-to-camera-pixels",
+      "debugging-ros2-qos-compatibility",
+      "idempotent-telemetry-ingestion",
       "robotics-telemetry-should-preserve-causality-across-clock-domains",
-      "latency-budgets-robotics-pipelines",
-      "mujoco-sim-to-real",
     ],
   },
 ];

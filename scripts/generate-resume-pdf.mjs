@@ -6,16 +6,6 @@ const resumeData = (await import("../src/content/resume-data.json", {
   with: { type: "json" },
 })).default;
 
-function getScheduleLink(email) {
-  const bookingUrl = process.env.NEXT_PUBLIC_BOOKING_URL?.trim();
-
-  if (bookingUrl) {
-    return bookingUrl;
-  }
-
-  return `mailto:${email}`;
-}
-
 function esc(text) {
   return String(text)
     .replace(/\\/g, "\\\\")
@@ -80,78 +70,52 @@ function makePage(lines) {
     }
     add(item.text, item.style);
   }
+  if (y < 40) {
+    throw new Error("Resume content exceeds the page margins.");
+  }
   return ops;
 }
 
-const pages = [];
-
-pages.push(
+const pages = [
   makePage([
-    { type: "heading", text: `${resumeData.name}`, size: 22, gap: 22 },
-    { type: "subheading", text: resumeData.title, size: 12, gap: 16 },
-    {
-      type: "chips",
-      text: `${resumeData.location}  |  ${resumeData.email}  |  ${resumeData.status}`,
-      size: 9,
-      gap: 14,
-    },
-    { type: "spacer", size: 6 },
-    { type: "heading", text: "SUMMARY", size: 12, gap: 16 },
-    { type: "text", text: resumeData.summary, style: { size: 10, gap: 14 } },
-    { type: "spacer", size: 2 },
-    { type: "heading", text: "CORE SKILLS", size: 12, gap: 16 },
-    ...resumeData.skills.flatMap((skill) => [
-      { type: "subheading", text: skill.category, size: 10 },
-      { type: "text", text: skill.items.join("  |  "), style: { size: 9.5, gap: 12 } },
-    ]),
-    { type: "spacer", size: 2 },
-    { type: "heading", text: "ATS KEYWORDS", size: 12, gap: 16 },
-    { type: "text", text: resumeData.keywords, style: { size: 9.5, gap: 12 } },
-  ])
-);
-
-pages.push(
-  makePage([
+    { type: "heading", text: resumeData.name, size: 24, gap: 25 },
+    { type: "subheading", text: resumeData.title, size: 12, gap: 18 },
+    { type: "text", text: `${resumeData.location} | ${resumeData.email}`, style: { size: 9.5, gap: 14 } },
+    { type: "text", text: "sagar-os.vercel.app | github.com/sagarbpatel31 | linkedin.com/in/sagarp31", style: { size: 9.5, gap: 14 } },
+    { type: "spacer", size: 9 },
+    { type: "text", text: resumeData.shortBio, style: { size: 10, gap: 14 } },
+    { type: "spacer", size: 12 },
     { type: "heading", text: "PROFESSIONAL EXPERIENCE", size: 12, gap: 22 },
     ...resumeData.experience.flatMap((job) => [
-      { type: "subheading", text: `${job.role} - ${job.company}`, size: 10, gap: 13 },
-      { type: "text", text: `${job.period} | ${job.location}`, style: { size: 9, gap: 12 } },
-      { type: "text", text: job.summary, style: { size: 9.5, gap: 13 } },
+      { type: "subheading", text: `${job.role} - ${job.company}`, size: 10.5, gap: 15 },
+      { type: "text", text: `${job.period} | ${job.location}`, style: { size: 9.5, gap: 15 } },
       ...job.bullets.map((bullet) => ({ type: "bullet", text: bullet })),
-      { type: "spacer", size: 2 },
+      { type: "spacer", size: 12 },
     ]),
-  ])
-);
-
-pages.push(
+  ]),
   makePage([
-    { type: "heading", text: "SELECTED PROJECTS", size: 12, gap: 16 },
-    ...resumeData.projects.flatMap((project) => [
-      {
-        type: "subheading",
-        text: `${project.title} - ${project.category} (${project.year})`,
-        size: 10,
-        gap: 13,
-      },
-      { type: "text", text: project.summary, style: { size: 9.5, gap: 13 } },
-      ...project.impact.map((item) => ({ type: "bullet", text: item })),
-      { type: "spacer", size: 2 },
+    { type: "subheading", text: resumeData.name, size: 13, gap: 20 },
+    { type: "heading", text: "TECHNICAL SKILLS", size: 12, gap: 20 },
+    ...resumeData.skills.flatMap((skill) => [
+      { type: "subheading", text: skill.category, size: 10, gap: 13 },
+      { type: "text", text: skill.items.join(", "), style: { size: 9.5, gap: 12 } },
+      { type: "spacer", size: 3 },
     ]),
-    { type: "heading", text: "EDUCATION", size: 12, gap: 16 },
+    { type: "spacer", size: 8 },
+    { type: "heading", text: "SELECTED PROJECTS", size: 12, gap: 20 },
+    ...resumeData.projects.flatMap((project) => [
+      { type: "subheading", text: `${project.title} - ${project.category} (${project.year})`, size: 10, gap: 14 },
+      { type: "text", text: project.summary, style: { size: 9.5, gap: 12 } },
+      ...project.impact.map((item) => ({ type: "bullet", text: item })),
+      { type: "spacer", size: 8 },
+    ]),
+    { type: "heading", text: "EDUCATION", size: 12, gap: 18 },
     ...resumeData.education.map((line) => ({ type: "bullet", text: line })),
-    { type: "spacer", size: 2 },
-    { type: "heading", text: "CERTIFICATIONS", size: 12, gap: 16 },
+    { type: "spacer", size: 8 },
+    { type: "heading", text: "CERTIFICATIONS", size: 12, gap: 18 },
     ...resumeData.certifications.map((line) => ({ type: "bullet", text: line })),
-    { type: "spacer", size: 6 },
-    { type: "heading", text: "CONTACT", size: 12, gap: 16 },
-    { type: "text", text: `Email: ${resumeData.email}`, style: { size: 10, gap: 14 } },
-    {
-      type: "text",
-      text: `Book an intro call: ${getScheduleLink(resumeData.email)}`,
-      style: { size: 8.5, gap: 12 },
-    },
-  ])
-);
+  ]),
+];
 
 function buildPdf(pageOps) {
   const font1Id = 1;

@@ -63,6 +63,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const url = `${SITE_URL}/blog/${slug}`;
+  const body = post.content.replace(/^\s*# [^\n]+\r?\n/, "");
   const relatedPosts = getAllSlugs()
     .map((relatedSlug) => getPostBySlug(relatedSlug))
     .filter((related): related is NonNullable<typeof related> => Boolean(related))
@@ -84,7 +85,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   return (
-    <section className="py-16 sm:py-20">
+    <article className="py-12 sm:py-16">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
@@ -114,6 +115,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight mb-5">
             <span className="text-foreground">{post.title}</span>
           </h1>
+          <p className="mb-5 text-base text-muted-foreground">By {profile.name}</p>
           <div className="flex flex-wrap gap-2">
             {post.tags.map((tag) => (
               <span
@@ -128,7 +130,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <div className="dash-card">
           <div className="dash-card-body">
-            <BlogPostContent content={post.content} />
+            <BlogPostContent content={body} />
           </div>
         </div>
 
@@ -166,6 +168,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </section>
         )}
       </Container>
-    </section>
+    </article>
   );
 }

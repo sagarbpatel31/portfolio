@@ -3,11 +3,11 @@ import { profile } from "@/content/profile";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
-export const alt = "SAGAR_OS — Software Validation & Systems AI Engineer";
+export const alt = "Sagar Patel | Embedded Systems & Firmware Validation";
 
 export default function Image() {
   return renderOgImage({
-    eyebrow: "Software Validation + Systems AI",
+    eyebrow: "Embedded Systems & Firmware Validation",
     title: profile.name,
   });
 }

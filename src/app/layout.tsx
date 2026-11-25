@@ -8,6 +8,10 @@ import { profile } from "@/content/profile";
 import { socials } from "@/content/socials";
 import "./globals.css";
 
+const portfolioTitle = `${profile.name} | Embedded Systems & Firmware Validation`;
+const portfolioDescription =
+  "Sagar Patel validates AI platform firmware and builds embedded Linux, edge AI, and robotics systems. Explore case studies, technical writing, and his resume.";
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -25,11 +29,10 @@ export const metadata: Metadata = {
   },
   applicationName: "SAGAR_OS",
   title: {
-    default: "SAGAR_OS — Software Validation & Systems AI Engineer",
-    template: "%s | SAGAR_OS",
+    default: portfolioTitle,
+    template: `%s | ${profile.name}`,
   },
-  description:
-    "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+  description: portfolioDescription,
   keywords: [
     "Firmware Validation",
     "BIOS Validation",
@@ -58,9 +61,8 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   openGraph: {
-    title: "SAGAR_OS — Software Validation & Systems AI Engineer",
-    description:
-      "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+    title: portfolioTitle,
+    description: portfolioDescription,
     type: "website",
     siteName: "SAGAR_OS",
     locale: "en_US",
@@ -70,15 +72,14 @@ export const metadata: Metadata = {
         url: `${SITE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "SAGAR_OS — Systems & AI Engineer",
+        alt: portfolioTitle,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SAGAR_OS — Software Validation & Systems AI Engineer",
-    description:
-      "Validating AI platform firmware and building high-performance embedded Linux, networking, edge AI, and physical AI systems.",
+    title: portfolioTitle,
+    description: portfolioDescription,
     creator: "@sagarp31",
     images: [`${SITE_URL}/opengraph-image`],
   },

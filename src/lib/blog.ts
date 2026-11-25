@@ -9,7 +9,7 @@ const BLOG_DIR = path.join(process.cwd(), "src/content/blog");
 let cache: BlogPost[] | null = null;
 
 export function getAllPosts(): BlogPost[] {
-  if (cache) return cache;
+  if (process.env.NODE_ENV !== "development" && cache) return cache;
   if (!fs.existsSync(BLOG_DIR)) {
     return [];
   }

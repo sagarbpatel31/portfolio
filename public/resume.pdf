@@ -6,149 +6,120 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
 endobj
 3 0 obj
-<< /Length 2721 >>
+<< /Length 3489 >>
 stream
-BT /F2 22 Tf 48 752 Td (Sagar Patel) Tj ET
-BT /F2 12 Tf 48 730 Td (Software Validation Engineer | Systems & AI Engineer) Tj ET
-BT /F1 9 Tf 48 714 Td (Riverside, CA, USA | sagar@myjobemails.com | Open to Physical AI, Forward Deployed, Embedded Software, and Gen AI) Tj ET
-BT /F1 9 Tf 48 700 Td (roles) Tj ET
-BT /F2 12 Tf 48 680 Td (SUMMARY) Tj ET
-BT /F1 10 Tf 48 664 Td (At Microsoft, I validate firmware for AI platforms through software-driven verification, platform) Tj ET
-BT /F1 10 Tf 48 650 Td (bring-up, BIOS validation, and production-readiness testing. Previously at Ciena, I engineered) Tj ET
-BT /F1 10 Tf 48 636 Td (embedded Linux networking firmware and Jetson Orin inference pipelines; at Cisco, I built) Tj ET
-BT /F1 10 Tf 48 622 Td (P4-programmable data-plane pipelines and AI traffic intelligence on BlueField DPUs; and at TCS, I) Tj ET
-BT /F1 10 Tf 48 608 Td (developed bare-metal RTOS firmware for ARM telecom edge nodes. On the side, I build Watchpoint,) Tj ET
-BT /F1 10 Tf 48 594 Td (StepAhead, FieldFix, SignalForge, HydraSwarm, and XG1.) Tj ET
-BT /F2 12 Tf 48 578 Td (CORE SKILLS) Tj ET
-BT /F2 10 Tf 48 562 Td (Platform Validation) Tj ET
-BT /F1 9.5 Tf 48 548 Td (Firmware Validation | Software-Driven Verification | Platform Bring-Up | BIOS Validation | Production) Tj ET
-BT /F1 9.5 Tf 48 536 Td (Readiness Testing) Tj ET
-BT /F2 10 Tf 48 524 Td (Programming) Tj ET
-BT /F1 9.5 Tf 48 510 Td (C | C++ | Python | Bash | TypeScript) Tj ET
-BT /F2 10 Tf 48 498 Td (Embedded) Tj ET
-BT /F1 9.5 Tf 48 484 Td (Embedded Linux | RTOS | Yocto | Buildroot | Device Drivers | Secure Boot) Tj ET
-BT /F2 10 Tf 48 472 Td (Networking) Tj ET
-BT /F1 9.5 Tf 48 458 Td (P4 | DPDK | DMA Optimization | TCP/IP | BlueField DPU | Telemetry) Tj ET
-BT /F2 10 Tf 48 446 Td (Edge AI) Tj ET
-BT /F1 9.5 Tf 48 432 Td (CUDA | TensorRT | DeepStream | ONNX | Jetson Orin | Nsight Systems) Tj ET
-BT /F2 10 Tf 48 420 Td (Robotics) Tj ET
-BT /F1 9.5 Tf 48 406 Td (ROS2 | MuJoCo | Physical AI | Control Systems | Sensor Fusion) Tj ET
-BT /F2 10 Tf 48 394 Td (Web / Infra) Tj ET
-BT /F1 9.5 Tf 48 380 Td (Next.js | FastAPI | PostgreSQL | Docker | CI/CD | GitHub Actions) Tj ET
-BT /F2 12 Tf 48 366 Td (ATS KEYWORDS) Tj ET
-BT /F1 9.5 Tf 48 350 Td (Firmware Validation, Software Verification, Platform Bring-Up, BIOS Validation, Production Readiness, AI) Tj ET
-BT /F1 9.5 Tf 48 338 Td (Platforms, Embedded Linux, Yocto, Buildroot, RTOS, Device Drivers, C, C++, Python, CUDA, TensorRT,) Tj ET
-BT /F1 9.5 Tf 48 326 Td (DeepStream, Jetson Orin, BlueField DPU, P4, DOCA, ROS2, MuJoCo, FastAPI, Next.js, PostgreSQL, Graph/RAG) Tj ET
-BT /F1 9.5 Tf 48 314 Td (systems, CI/CD, secure boot, MISRA-C, high-performance networking, edge AI, multi-agent AI) Tj ET
+BT /F2 24 Tf 48 752 Td (Sagar Patel) Tj ET
+BT /F2 12 Tf 48 727 Td (Software Validation Engineer | Systems & AI Engineer) Tj ET
+BT /F1 9.5 Tf 48 709 Td (Riverside, CA, USA | sagar@myjobemails.com) Tj ET
+BT /F1 9.5 Tf 48 695 Td (sagar-os.vercel.app | github.com/sagarbpatel31 | linkedin.com/in/sagarp31) Tj ET
+BT /F1 10 Tf 48 672 Td (Software Validation Engineer at Microsoft with 5+ years building and validating production systems) Tj ET
+BT /F1 10 Tf 48 658 Td (across AI platform firmware, embedded Linux, high-performance networking, edge AI, and robotics.) Tj ET
+BT /F2 12 Tf 48 632 Td (PROFESSIONAL EXPERIENCE) Tj ET
+BT /F2 10.5 Tf 48 610 Td (Software Validation Engineer - Microsoft) Tj ET
+BT /F1 9.5 Tf 48 595 Td (Sep 2026 - Present | Hillsboro, OR, USA) Tj ET
+BT /F1 9.5 Tf 58 580 Td (- Validate firmware for Microsoft AI platforms through software-driven) Tj ET
+BT /F1 9.5 Tf 58 568 Td (verification, platform bring-up, BIOS validation, and production-readiness) Tj ET
+BT /F1 9.5 Tf 58 556 Td (testing.) Tj ET
+BT /F2 10.5 Tf 48 532 Td (Senior Embedded Software Engineer - Ciena) Tj ET
+BT /F1 9.5 Tf 48 517 Td (May 2024 - Aug 2026 | Remote, USA) Tj ET
+BT /F1 9.5 Tf 58 502 Td (- Optimized packet processing, DMA transfer paths, and interrupt handling to) Tj ET
+BT /F1 9.5 Tf 58 490 Td (improve sustained throughput by 31% during peak fulfillment operations.) Tj ET
+BT /F1 9.5 Tf 58 478 Td (- Led Yocto-based platform work including BSP upgrades, secure boot integration,) Tj ET
+BT /F1 9.5 Tf 58 466 Td (CI validation, and release management, reducing bring-up and deployment) Tj ET
+BT /F1 9.5 Tf 58 454 Td (timelines by 24%.) Tj ET
+BT /F1 9.5 Tf 58 442 Td (- Built CUDA and TensorRT inference pipelines on Jetson Orin to detect conveyor) Tj ET
+BT /F1 9.5 Tf 58 430 Td (and sorter anomalies in real time, reducing unplanned downtime by 22%.) Tj ET
+BT /F2 10.5 Tf 48 406 Td (Embedded Software Engineer - Cisco Systems) Tj ET
+BT /F1 9.5 Tf 48 391 Td (Jan 2023 - Apr 2024 | Austin, TX, USA) Tj ET
+BT /F1 9.5 Tf 58 376 Td (- Integrated P4-programmable pipelines with switching ASIC SDKs, improving) Tj ET
+BT /F1 9.5 Tf 58 364 Td (forwarding stability and reducing packet loss by 31% in large-scale) Tj ET
+BT /F1 9.5 Tf 58 352 Td (validation.) Tj ET
+BT /F1 9.5 Tf 58 340 Td (- Implemented NVIDIA BlueField DPU workflows with DOCA and ONNX inference to) Tj ET
+BT /F1 9.5 Tf 58 328 Td (improve encrypted anomaly classification accuracy by 24%.) Tj ET
+BT /F1 9.5 Tf 58 316 Td (- Optimized DPU offload scheduling and inference workloads, reducing host CPU) Tj ET
+BT /F1 9.5 Tf 58 304 Td (utilization by 29% while maintaining throughput under peak traffic.) Tj ET
+BT /F2 10.5 Tf 48 280 Td (Embedded Software Engineer - Tata Consultancy Services) Tj ET
+BT /F1 9.5 Tf 48 265 Td (Jul 2020 - Aug 2021 | Remote, India) Tj ET
+BT /F1 9.5 Tf 58 250 Td (- Developed bare-metal RTOS firmware for ARM-based telecom edge nodes,) Tj ET
+BT /F1 9.5 Tf 58 238 Td (implementing multicast packet replication and QoS shaping to boost reliable) Tj ET
+BT /F1 9.5 Tf 58 226 Td (delivery by 28%.) Tj ET
+BT /F1 9.5 Tf 58 214 Td (- Wrote custom kernel modules and device drivers for high-speed Ethernet) Tj ET
+BT /F1 9.5 Tf 58 202 Td (interfaces, cutting packet jitter by 35% in distributed deployments.) Tj ET
+BT /F1 9.5 Tf 58 190 Td (- Integrated bootloader development with firmware authentication and MISRA-C) Tj ET
+BT /F1 9.5 Tf 58 178 Td (compliant coding, streamlining secure deployment across platforms.) Tj ET
 endstream
 endobj
 4 0 obj
-<< /Length 3628 >>
+<< /Length 2989 >>
 stream
-BT /F2 12 Tf 48 752 Td (PROFESSIONAL EXPERIENCE) Tj ET
-BT /F2 10 Tf 48 730 Td (Software Validation Engineer - Microsoft) Tj ET
-BT /F1 9 Tf 48 717 Td (Sep 2026 - Present | Hillsboro, OR, USA) Tj ET
-BT /F1 9.5 Tf 48 705 Td (Firmware validation for Microsoft AI platforms across platform bring-up, BIOS validation, software-driven) Tj ET
-BT /F1 9.5 Tf 48 692 Td (verification, and production readiness.) Tj ET
-BT /F1 9.5 Tf 58 679 Td (- Validate firmware for Microsoft AI platforms through software-driven) Tj ET
-BT /F1 9.5 Tf 58 667 Td (verification, platform bring-up, BIOS validation, and production-readiness) Tj ET
-BT /F1 9.5 Tf 58 655 Td (testing.) Tj ET
-BT /F2 10 Tf 48 641 Td (Senior Embedded Software Engineer - Ciena) Tj ET
-BT /F1 9 Tf 48 628 Td (May 2024 - Aug 2026 | Remote, USA) Tj ET
-BT /F1 9.5 Tf 48 616 Td (Embedded Linux networking firmware for logistics edge gateways and edge AI inference on NVIDIA Jetson Orin.) Tj ET
-BT /F1 9.5 Tf 58 603 Td (- Optimized packet processing, DMA transfer paths, and interrupt handling to) Tj ET
-BT /F1 9.5 Tf 58 591 Td (improve sustained throughput by 31% during peak fulfillment operations.) Tj ET
-BT /F1 9.5 Tf 58 579 Td (- Led Yocto-based platform work including BSP upgrades, secure boot integration,) Tj ET
-BT /F1 9.5 Tf 58 567 Td (CI validation, and release management, reducing bring-up and deployment) Tj ET
-BT /F1 9.5 Tf 58 555 Td (timelines by 24%.) Tj ET
-BT /F1 9.5 Tf 58 543 Td (- Built CUDA and TensorRT inference pipelines on Jetson Orin to detect conveyor) Tj ET
-BT /F1 9.5 Tf 58 531 Td (and sorter anomalies in real time, reducing unplanned downtime by 22%.) Tj ET
-BT /F2 10 Tf 48 517 Td (Embedded Software Engineer - Cisco Systems) Tj ET
-BT /F1 9 Tf 48 504 Td (Jan 2023 - Apr 2024 | Austin, TX, USA) Tj ET
-BT /F1 9.5 Tf 48 492 Td (Switching firmware with P4-programmable data-plane pipelines and AI-assisted traffic intelligence on NVIDIA) Tj ET
-BT /F1 9.5 Tf 48 479 Td (BlueField DPUs.) Tj ET
-BT /F1 9.5 Tf 58 466 Td (- Integrated P4-programmable pipelines with switching ASIC SDKs, improving) Tj ET
-BT /F1 9.5 Tf 58 454 Td (forwarding stability and reducing packet loss by 31% in large-scale) Tj ET
-BT /F1 9.5 Tf 58 442 Td (validation.) Tj ET
-BT /F1 9.5 Tf 58 430 Td (- Implemented NVIDIA BlueField DPU workflows with DOCA and ONNX inference to) Tj ET
-BT /F1 9.5 Tf 58 418 Td (improve encrypted anomaly classification accuracy by 24%.) Tj ET
-BT /F1 9.5 Tf 58 406 Td (- Optimized DPU offload scheduling and inference workloads, reducing host CPU) Tj ET
-BT /F1 9.5 Tf 58 394 Td (utilization by 29% while maintaining throughput under peak traffic.) Tj ET
-BT /F2 10 Tf 48 380 Td (Embedded Software Engineer - Tata Consultancy Services) Tj ET
-BT /F1 9 Tf 48 367 Td (Jul 2020 - Aug 2021 | Remote, India) Tj ET
-BT /F1 9.5 Tf 48 355 Td (Bare-metal RTOS firmware and embedded Linux for ARM-based telecom edge nodes in carrier-grade networking) Tj ET
-BT /F1 9.5 Tf 48 342 Td (environments.) Tj ET
-BT /F1 9.5 Tf 58 329 Td (- Developed bare-metal RTOS firmware for ARM-based telecom edge nodes,) Tj ET
-BT /F1 9.5 Tf 58 317 Td (implementing multicast packet replication and QoS shaping to boost reliable) Tj ET
-BT /F1 9.5 Tf 58 305 Td (delivery by 28%.) Tj ET
-BT /F1 9.5 Tf 58 293 Td (- Wrote custom kernel modules and device drivers for high-speed Ethernet) Tj ET
-BT /F1 9.5 Tf 58 281 Td (interfaces, cutting packet jitter by 35% in distributed deployments.) Tj ET
-BT /F1 9.5 Tf 58 269 Td (- Integrated bootloader development with firmware authentication and MISRA-C) Tj ET
-BT /F1 9.5 Tf 58 257 Td (compliant coding, streamlining secure deployment across platforms.) Tj ET
+BT /F2 13 Tf 48 752 Td (Sagar Patel) Tj ET
+BT /F2 12 Tf 48 732 Td (TECHNICAL SKILLS) Tj ET
+BT /F2 10 Tf 48 712 Td (Platform Validation) Tj ET
+BT /F1 9.5 Tf 48 699 Td (Firmware Validation, Software-Driven Verification, Platform Bring-Up, BIOS Validation, Production Readiness) Tj ET
+BT /F1 9.5 Tf 48 687 Td (Testing) Tj ET
+BT /F2 10 Tf 48 672 Td (Programming) Tj ET
+BT /F1 9.5 Tf 48 659 Td (C, C++, Python, Bash, TypeScript) Tj ET
+BT /F2 10 Tf 48 644 Td (Embedded) Tj ET
+BT /F1 9.5 Tf 48 631 Td (Embedded Linux, RTOS, Yocto, Buildroot, Device Drivers, Secure Boot) Tj ET
+BT /F2 10 Tf 48 616 Td (Networking) Tj ET
+BT /F1 9.5 Tf 48 603 Td (P4, DPDK, DMA Optimization, TCP/IP, BlueField DPU, Telemetry) Tj ET
+BT /F2 10 Tf 48 588 Td (Edge AI) Tj ET
+BT /F1 9.5 Tf 48 575 Td (CUDA, TensorRT, DeepStream, ONNX, Jetson Orin, Nsight Systems) Tj ET
+BT /F2 10 Tf 48 560 Td (Robotics) Tj ET
+BT /F1 9.5 Tf 48 547 Td (ROS2, MuJoCo, Physical AI, Control Systems, Sensor Fusion) Tj ET
+BT /F2 10 Tf 48 532 Td (Web / Infra) Tj ET
+BT /F1 9.5 Tf 48 519 Td (Next.js, FastAPI, PostgreSQL, Docker, CI/CD, GitHub Actions) Tj ET
+BT /F2 12 Tf 48 496 Td (SELECTED PROJECTS) Tj ET
+BT /F2 10 Tf 48 476 Td (Offline OTA Update System - Embedded Linux \(2026\)) Tj ET
+BT /F1 9.5 Tf 48 462 Td (Signed bundles, atomic staging, health-check promotion, rollback, and audit history for offline edge Linux) Tj ET
+BT /F1 9.5 Tf 48 450 Td (devices.) Tj ET
+BT /F1 9.5 Tf 58 438 Td (- Offline delivery over USB/local HTTP) Tj ET
+BT /F1 9.5 Tf 58 426 Td (- Automatic rollback on health-check failure) Tj ET
+BT /F1 9.5 Tf 58 414 Td (- Local audit history and dashboard) Tj ET
+BT /F2 10 Tf 48 394 Td (Embodipedia - AI / Multi-Agent Systems \(2026\)) Tj ET
+BT /F1 9.5 Tf 48 380 Td (Self-maintaining encyclopedia with typed claims, perspective routing, citations, and temporal views.) Tj ET
+BT /F1 9.5 Tf 58 368 Td (- Canonical/bull/bear routing) Tj ET
+BT /F1 9.5 Tf 58 356 Td (- Cited prose with unverified badges) Tj ET
+BT /F1 9.5 Tf 58 344 Td (- Live ingest and revision history) Tj ET
+BT /F2 10 Tf 48 324 Td (XG1 - Physical AI / Robotics \(2026\)) Tj ET
+BT /F1 9.5 Tf 48 310 Td (Humanoid robot learning pipeline for Unitree G1 combining teleop, DeepLake data, and GR00T fine-tuning.) Tj ET
+BT /F1 9.5 Tf 58 298 Td (- Won 2 hackathon tracks) Tj ET
+BT /F1 9.5 Tf 58 286 Td (- Meta Quest 3 + MuJoCo teleop) Tj ET
+BT /F1 9.5 Tf 58 274 Td (- DeepLake streaming for fast training) Tj ET
+BT /F2 12 Tf 48 254 Td (EDUCATION) Tj ET
+BT /F1 9.5 Tf 58 236 Td (- M.S. in Computer Science, Sofia University, Oct 2025 - Jun 2027) Tj ET
+BT /F1 9.5 Tf 58 224 Td (- M.S. in Embedded and Cyber Physical Systems, University of California, Irvine,) Tj ET
+BT /F1 9.5 Tf 58 212 Td (Sep 2021 - Dec 2022) Tj ET
+BT /F1 9.5 Tf 58 200 Td (- B.Tech, Charotar University of Science and Technology, Jul 2017 - Jun 2021) Tj ET
+BT /F2 12 Tf 48 180 Td (CERTIFICATIONS) Tj ET
+BT /F1 9.5 Tf 58 162 Td (- NVIDIA-Certified Associate: Generative AI LLMs \(NCA-GENL\)) Tj ET
 endstream
 endobj
 5 0 obj
-<< /Length 2066 >>
-stream
-BT /F2 12 Tf 48 752 Td (SELECTED PROJECTS) Tj ET
-BT /F2 10 Tf 48 736 Td (Offline OTA Update System - Embedded Linux \(2026\)) Tj ET
-BT /F1 9.5 Tf 48 723 Td (Signed bundles, atomic staging, health-check promotion, rollback, and audit history for offline edge Linux) Tj ET
-BT /F1 9.5 Tf 48 710 Td (devices.) Tj ET
-BT /F1 9.5 Tf 58 697 Td (- Offline delivery over USB/local HTTP) Tj ET
-BT /F1 9.5 Tf 58 685 Td (- Automatic rollback on health-check failure) Tj ET
-BT /F1 9.5 Tf 58 673 Td (- Local audit history and dashboard) Tj ET
-BT /F2 10 Tf 48 659 Td (Embodipedia - AI / Multi-Agent Systems \(2026\)) Tj ET
-BT /F1 9.5 Tf 48 646 Td (Self-maintaining encyclopedia with typed claims, perspective routing, citations, and temporal views.) Tj ET
-BT /F1 9.5 Tf 58 633 Td (- Canonical/bull/bear routing) Tj ET
-BT /F1 9.5 Tf 58 621 Td (- Cited prose with unverified badges) Tj ET
-BT /F1 9.5 Tf 58 609 Td (- Live ingest and revision history) Tj ET
-BT /F2 10 Tf 48 595 Td (XG1 - Physical AI / Robotics \(2026\)) Tj ET
-BT /F1 9.5 Tf 48 582 Td (Humanoid robot learning pipeline for Unitree G1 combining teleop, DeepLake data, and GR00T fine-tuning.) Tj ET
-BT /F1 9.5 Tf 58 569 Td (- Won 2 hackathon tracks) Tj ET
-BT /F1 9.5 Tf 58 557 Td (- Meta Quest 3 + MuJoCo teleop) Tj ET
-BT /F1 9.5 Tf 58 545 Td (- DeepLake streaming for fast training) Tj ET
-BT /F2 12 Tf 48 531 Td (EDUCATION) Tj ET
-BT /F1 9.5 Tf 58 515 Td (- M.S. in Computer Science, Sofia University, Oct 2025 - Jun 2027) Tj ET
-BT /F1 9.5 Tf 58 503 Td (- M.S. in Embedded and Cyber Physical Systems, University of California, Irvine,) Tj ET
-BT /F1 9.5 Tf 58 491 Td (Sep 2021 - Dec 2022) Tj ET
-BT /F1 9.5 Tf 58 479 Td (- B.Tech, Charotar University of Science and Technology, Jul 2017 - Jun 2021) Tj ET
-BT /F2 12 Tf 48 465 Td (CERTIFICATIONS) Tj ET
-BT /F1 9.5 Tf 58 449 Td (- NVIDIA-Certified Associate: Generative AI LLMs \(NCA-GENL\)) Tj ET
-BT /F2 12 Tf 48 431 Td (CONTACT) Tj ET
-BT /F1 10 Tf 48 415 Td (Email: sagar@myjobemails.com) Tj ET
-BT /F1 8.5 Tf 48 401 Td (Book an intro call: mailto:sagar@myjobemails.com) Tj ET
-endstream
+<< /Type /Page /Parent 7 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
 endobj
 6 0 obj
-<< /Type /Page /Parent 9 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+<< /Type /Page /Parent 7 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 4 0 R >>
 endobj
 7 0 obj
-<< /Type /Page /Parent 9 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 4 0 R >>
+<< /Type /Pages /Kids [5 0 R 6 0 R] /Count 2 >>
 endobj
 8 0 obj
-<< /Type /Page /Parent 9 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 5 0 R >>
-endobj
-9 0 obj
-<< /Type /Pages /Kids [6 0 R 7 0 R 8 0 R] /Count 3 >>
-endobj
-10 0 obj
-<< /Type /Catalog /Pages 9 0 R >>
+<< /Type /Catalog /Pages 7 0 R >>
 endobj
 xref
-0 11
+0 9
 0000000000 65535 f
 0000000009 00000 n
 0000000079 00000 n
 0000000154 00000 n
-0000002927 00000 n
-0000006607 00000 n
-0000008725 00000 n
-0000008861 00000 n
-0000008997 00000 n
-0000009133 00000 n
-0000009202 00000 n
+0000003695 00000 n
+0000006736 00000 n
+0000006872 00000 n
+0000007008 00000 n
+0000007071 00000 n
 trailer
-<< /Size 11 /Root 10 0 R >>
+<< /Size 9 /Root 8 0 R >>
 startxref
-9252
+7120
 %%EOF

@@ -1,5 +1,7 @@
 import { Project } from "@/types";
 
+const xg1Repository = "https://github.com/AIBotTeachesAI/quest3-unitree-g1-teleop";
+
 export const projects: Project[] = [
   {
     slug: "offline-ota",
@@ -8,13 +10,13 @@ export const projects: Project[] = [
       "Local-first OTA for Linux edge devices — signed bundles, staged installs, health-check promotion, automatic rollback. No cloud required.",
     description:
       "An offline-first OTA update system for Linux edge devices. Delivers signed update bundles over USB or local HTTP, verifies integrity and authenticity before install, stages releases safely, promotes only after health checks pass, and rolls back automatically on failure — with a local dashboard for status and audit history.",
-    longDescription: `Most OTA systems assume cloud connectivity. Field-deployed edge hardware — industrial gateways, agricultural controllers, remote sensors — often has none. Offline OTA Update System is built for exactly that: deliver and apply firmware/app updates with full cryptographic safety and automatic rollback, entirely offline.
+    longDescription: `Field-deployed Linux gateways and controllers can lose internet access. This prototype delivers signed application-level updates over USB or local HTTP and keeps a local audit trail.
 
 **Signed bundle delivery**: Updates ship as signed bundles delivered over USB or local HTTP. The device agent validates version, target, file hashes, and signature against a trusted public key before anything touches the active system. An update that fails verification never gets staged.
 
 **Staged installs with symlink switching**: Releases are staged into inactive directories. The agent only switches the active release (via atomic symlink swap) after the new version is fully written and verified, then restarts the service. The previous release stays intact on disk.
 
-**Health-check promotion + automatic rollback**: After switching, the agent runs health checks against the new release. If they pass, the update is promoted. If they fail — or the service crashes — the agent automatically rolls back to the last known-good release by switching the symlink back. This is the core safety guarantee: a bad update can't brick the device.
+**Health-check promotion + automatic rollback**: After switching, the agent runs health checks against the new release. If they pass, the update is promoted. If they fail, the agent restores the previous application release by switching the symlink back.
 
 **Components**: a device updater daemon and state machine (\`agent/\`), a release builder + demo app for Raspberry Pi (\`demo_service/\`), a local dashboard and API for status and audit history (\`server/\`), a manifest + signing tool (\`signer/\`), and systemd units for device integration (\`device/\`).
 
@@ -253,7 +255,7 @@ Incident triggers fire on configurable conditions: CPU threshold breach, topic r
 
 The web dashboard provides a single-page incident correlation timeline connecting all signals. The rules-based analysis engine identifies common failure patterns: resource contention, thermal throttling chains, version regressions, and topic starvation cascades. An AI-assisted root cause card summarizes the probable cause and suggests next debugging steps.
 
-Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in mean time to root cause, compatibility with 5+ edge platforms including Jetson Orin, Raspberry Pi, and x86 Linux.`,
+The repository includes seeded CPU contention, thermal throttling, and version regression scenarios for trying the incident workflow locally with Docker Compose.`,
     tags: ["Go", "Python", "FastAPI", "Next.js", "PostgreSQL", "ROS2", "Docker"],
     category: "Robotics & AI",
     maturity: {
@@ -273,7 +275,7 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
         value: "Public repository",
         href: "https://github.com/sagarbpatel31/watchpoint",
       },
-      { label: "Measured outcome", value: "73% lower mean time to root cause" },
+      { label: "Demo fixtures", value: "CPU contention, thermal throttling, and version regression" },
     ],
     highlights: [
       "Lightweight Go edge agent — CPU, memory, GPU, disk metrics with local ring buffer for pre-incident context",
@@ -281,7 +283,7 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
       "Auto-incident capture on node crash, topic starvation, thermal throttling, or process failure",
       "Portable replay bundles (.zip) with all incident evidence — shareable across teams",
       "Rules-based + AI-assisted RCA: identifies resource contention, version regressions, failure chains",
-      "73% MTTR reduction and 10K+ incidents captured in production testing",
+      "Docker Compose demo with seeded devices, metrics, and incident scenarios",
     ],
     links: [
       { label: "Live Demo", url: "https://watchpoint-gray.vercel.app" },
@@ -297,17 +299,17 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
       "2-day humanoid robot pipeline for the Unitree G1 — Meta Quest 3 teleop, NVIDIA Sonic, DeepLake data, GR00T policy fine-tuning, Nomadic diagnostics. Won 2 tracks.",
     description:
       "XG1 is a rapid-iteration humanoid robot learning pipeline built in 2 days for the Unitree G1. It combines immersive teleoperation, high-throughput tensor data infrastructure, and foundation-model fine-tuning to move from manual demonstration to autonomous policy testing — winning both the DeepLake and NomadicML tracks at Intelligence at the Frontier Hackathon.",
-    longDescription: `XG1 demonstrates a fast-track workflow for humanoid robot learning. The challenge: take a Unitree G1 humanoid from manual demonstration to autonomous policy testing in 36 hours, with reliable performance on complex tasks like walking to tables and pick-and-place maneuvers with beverages and apples.
+    longDescription: `Our team built a workflow for training and evaluating policies for a Unitree G1 humanoid in a 36-hour hackathon. We used MuJoCo for teleoperation and policy evaluation. Deploying the policy to physical hardware was listed as future work.
 
-**Teleoperation Layer**: We integrated Meta Quest 3 with MuJoCo for intuitive 6DOF control, using NVIDIA Sonic to achieve low-latency control commands. This let us manually complete the target tasks (walking + pick-and-place) and capture high-fidelity demonstration data. Sonic's millisecond-class latency was critical — any teleop lag breaks operator confidence.
+**Teleoperation**: We connected Meta Quest 3 to MuJoCo through NVIDIA Sonic. Operators used the setup to collect demonstrations of walking to a table and picking and placing objects.
 
-**Data Strategy with DeepLake**: To handle high-throughput training, we used DeepLake to store and stream Lightwheel's G1 beverage organization data. The efficient tensor storage provided the fast I/O necessary to fine-tune models within tight time constraints. Without it, the training pipeline would have been I/O-bound rather than compute-bound — the entire fine-tuning loop would have stalled.
+**Data storage**: We used DeepLake to store and stream Lightwheel's G1 beverage-organization dataset in tensor form for training.
 
-**Policy Fine-Tuning with NVIDIA GR00T**: We fine-tuned NVIDIA GR00T on our collected data. Since Sonic's fine-tuning features were not yet released, we used Sonic primarily for high-fidelity data collection while running autonomous inference through GR00T. The 45 minutes of demonstration data (135,000 timesteps at 50Hz) was enough to produce a working policy in ~2 hours of training.
+**Policy fine-tuning**: We used Sonic for demonstration collection, then fine-tuned NVIDIA GR00T N1.6 on teleoperation data for autonomous policy evaluation.
 
 **Diagnostics with Nomadic AI**: To understand why the fine-tuned agent struggled with specific task instructions, we used Nomadic AI as a diagnostic layer. This pinpointed failure modes in the model's reasoning — identifying which task instructions caused divergence, at what decision points, and what features the model was attending to incorrectly. The output was a concrete improvement path rather than vague hypotheses.
 
-**Outcome**: Won 2 tracks at Intelligence at the Frontier Hackathon 2026 — "Physical AI & Robotics: Data at Scale — Best Overall Use of DeepLake" and "Physical AI & Robotics by NomadicML — New Project Winner". The architecture demonstrated that combining immersive teleop with robust MLOps tooling can compress the humanoid-learning timeline from weeks to days.`,
+**Outcome**: The team won two tracks at the 2026 Intelligence at the Frontier Hackathon — Best Overall Use of DeepLake and the NomadicML Physical AI & Robotics New Project award.`,
     tags: ["Robotics", "Unitree G1", "Meta Quest 3", "MuJoCo", "NVIDIA Sonic", "DeepLake", "NVIDIA GR00T", "Nomadic AI"],
     category: "Physical AI & Robotics",
     maturity: {
@@ -317,20 +319,21 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
       tone: "amber",
     },
     evidence: [
+      { label: "Source", value: "Team repository and implementation notes", href: xg1Repository },
       {
         label: "Recognition",
         value: "Two winning tracks",
         href: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484",
       },
       { label: "Build window", value: "36 hours" },
-      { label: "Training loop", value: "45 min demonstrations, 135K timesteps" },
+      { label: "Evaluation", value: "MuJoCo simulation" },
     ],
     highlights: [
       "Meta Quest 3 + MuJoCo teleoperation with NVIDIA Sonic for low-latency control",
       "DeepLake tensor storage for high-throughput streaming of G1 demonstration data",
-      "NVIDIA GR00T policy fine-tuning on 45 min of collected demonstrations (135K timesteps)",
+      "NVIDIA GR00T N1.6 policy fine-tuning on teleoperation data",
       "Nomadic AI diagnostics layer pinpointing fine-tuned agent failure modes",
-      "Successful execution: walking to tables, beverage and apple pick-and-place",
+      "Teleoperation demonstrations of walking to tables and pick-and-place tasks",
       "Built in 36 hours from blank slate to autonomous policy testing",
     ],
     metrics: [
@@ -338,6 +341,7 @@ Metrics that matter: 10K+ incidents captured in early testing, 73% reduction in 
       "Won NomadicML track — New Project Winner",
     ],
     links: [
+      { label: "GitHub", url: xg1Repository },
       { label: "Hackathon", url: "https://intelligence-at-the-frontier-hackathon.devspot.app/?activeTab=challenges&challenge=484" },
     ],
     featured: false,

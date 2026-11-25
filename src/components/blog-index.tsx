@@ -128,7 +128,8 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
                   type="button"
                   key={tag}
                   onClick={() => toggleTag(tag)}
-                  className={`rounded border px-2 py-0.5 font-mono text-[11px] transition-all ${
+                  aria-pressed={active}
+                  className={`min-h-9 rounded border px-2.5 py-1 font-mono text-sm transition-all ${
                     active
                       ? "border-accent/60 bg-accent/15 text-accent"
                       : "border-border bg-surface/50 text-muted-foreground hover:border-accent/30 hover:text-accent"
@@ -143,7 +144,8 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
               <button
                 type="button"
                 onClick={() => setShowAllTags((current) => !current)}
-                className="rounded border border-border px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
+                aria-expanded={showAllTags}
+                className="min-h-9 rounded border border-border px-2.5 py-1 font-mono text-sm text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent"
               >
                 {showAllTags ? "fewer topics" : `+${allTags.length - 10} topics`}
               </button>
@@ -154,7 +156,7 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
 
       {/* Result count + clear */}
       <div className="flex items-center justify-between font-mono text-xs text-muted">
-        <span>
+        <span role="status">
           Showing {visiblePosts.length} of {filtered.length}{" "}
           {filtered.length === 1 ? "post" : "posts"}
           {hasFilters && ` (${posts.length} total)`}
@@ -193,10 +195,10 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
               className="dash-card group flex flex-col transition-colors hover:border-accent/30"
             >
               <div className="dash-card-body flex flex-1 flex-col gap-2">
-                <div className="flex items-center gap-3 font-mono text-[10px] text-muted">
+                <div className="flex items-center gap-3 font-mono text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Calendar size={10} />
-                    {formatDate(post.date)}
+                    <time dateTime={post.date}>{formatDate(post.date)}</time>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock size={10} />
@@ -206,14 +208,14 @@ export function BlogIndex({ posts }: { posts: PostMeta[] }) {
                 <h2 className="font-semibold leading-snug text-foreground transition-colors group-hover:text-accent">
                   {post.title}
                 </h2>
-                <p className="flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                <p className="flex-1 text-base leading-relaxed text-muted-foreground line-clamp-3">
                   {post.excerpt}
                 </p>
                 <div className="flex flex-wrap gap-1 pt-1">
                   {post.tags.slice(0, 4).map((tag) => (
                     <span
                       key={tag}
-                      className="rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 font-mono text-[10px] text-accent"
+                      className="rounded border border-accent/20 bg-accent/5 px-1.5 py-0.5 font-mono text-xs text-accent"
                     >
                       {tag}
                     </span>

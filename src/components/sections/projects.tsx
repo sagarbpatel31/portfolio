@@ -1,15 +1,24 @@
 import Link from "next/link";
-import { ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { projects } from "@/content/projects";
+import { caseStudies } from "@/content/hiring";
+
+const selectedSlugs = caseStudies.map((study) => study.slug);
+const orderedProjects = [
+  ...selectedSlugs.flatMap((slug) => projects.filter((project) => project.slug === slug)),
+  ...projects.filter((project) => !selectedSlugs.some((slug) => project.slug === slug)),
+];
 
 interface ProjectsProps {
   compact?: boolean;
 }
 
 export function Projects({ compact = false }: ProjectsProps) {
+  const ProjectTitle = compact ? "h2" : "h3";
+
   return (
     <section
       id="projects"
@@ -28,7 +37,7 @@ export function Projects({ compact = false }: ProjectsProps) {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+          {orderedProjects.map((project) => (
             <Link
               key={project.slug}
               href={`/projects/${project.slug}`}
@@ -36,37 +45,19 @@ export function Projects({ compact = false }: ProjectsProps) {
             >
               <Card className="flex h-full flex-col transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-accent/30">
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
-                        {project.year} · {project.category}
-                      </p>
-                      <h3 className="mt-2 font-semibold leading-snug text-foreground transition-colors group-hover:text-accent">
-                        {project.title}
-                      </h3>
-                    </div>
-                    {project.featured && (
-                      <span
-                        className="shrink-0 rounded border border-accent/20 bg-accent/5 p-1.5 text-accent"
-                        aria-label="Featured project"
-                      >
-                        <Trophy size={12} aria-hidden="true" />
-                      </span>
-                    )}
-                  </div>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {project.category} · {project.year}
+                  </p>
+                  <ProjectTitle className="mt-2 font-semibold leading-snug text-foreground transition-colors group-hover:text-accent">
+                    {project.title}
+                  </ProjectTitle>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col">
                   <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
                     {project.tagline}
                   </p>
-                  {project.metrics && project.metrics.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {project.metrics.slice(0, 2).map((metric) => (
-                        <Badge key={metric}>{metric}</Badge>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-4 flex flex-wrap gap-1.5">
+                  <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                    <Badge>{project.maturity.label}</Badge>
                     {project.tags.slice(0, 4).map((tag) => (
                       <Badge key={tag} variant="outline">
                         {tag}

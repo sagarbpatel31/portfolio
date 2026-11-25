@@ -7,23 +7,18 @@ import { HomeDirectory } from "@/components/sections/home-directory";
 import { getAllPosts } from "@/lib/blog";
 
 export default function Home() {
-  const posts = getAllPosts();
-  const latestPosts = posts.slice(0, 1).map((post) => ({
-    slug: post.slug,
-    title: post.title,
-    date: post.date,
-    readingTime: post.readingTime,
-    tags: post.tags,
+  const latestPosts = getAllPosts().slice(0, 3).map(({ slug, title, date, readingTime, tags, excerpt }) => ({
+    slug, title, date, readingTime, tags, excerpt,
   }));
 
   return (
     <>
       <Hero />
       <SelectedImpact />
-      <HomeTerminal />
       <CaseStudies />
-      <HomeDirectory postCount={posts.length} />
+      <HomeDirectory />
       <LatestBlogs posts={latestPosts} />
+      <HomeTerminal />
     </>
   );
 }

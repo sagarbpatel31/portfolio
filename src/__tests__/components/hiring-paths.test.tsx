@@ -25,11 +25,11 @@ describe("ArchitectureFlow", () => {
 });
 
 describe("HomeDirectory", () => {
-  it("exposes tailored role paths without adding another homepage section", () => {
-    render(<HomeDirectory postCount={89} />);
+  it("links directly to each tailored role page", () => {
+    render(<HomeDirectory />);
 
-    expect(screen.getByRole("link", { name: /Role Fit/ })).toHaveAttribute("href", "/roles");
-    expect(screen.getByText("3 hiring paths")).toBeInTheDocument();
-    expect(screen.getByText("89 notes")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Firmware & Platform Validation/ })).toHaveAttribute("href", "/roles/firmware-platform-validation");
+    expect(screen.getByRole("link", { name: /Embedded Systems/ })).toHaveAttribute("href", "/roles/embedded-systems");
+    expect(screen.getByRole("link", { name: /Edge AI & Robotics/ })).toHaveAttribute("href", "/roles/edge-ai-robotics");
   });
 });

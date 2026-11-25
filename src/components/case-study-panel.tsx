@@ -14,7 +14,7 @@ interface CaseStudyPanelProps {
 
 export function CaseStudyPanel({ study, compact = false, href }: CaseStudyPanelProps) {
   const titleClass = compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl";
-  const bodyClass = compact ? "text-xs sm:text-sm" : "text-sm";
+  const bodyClass = compact ? "text-sm" : "text-base";
   const gridClass = compact ? "grid gap-3 lg:grid-cols-[0.95fr_1.05fr]" : "grid gap-3 lg:grid-cols-[0.85fr_1.15fr]";
 
   const content = (
@@ -83,6 +83,26 @@ export function CaseStudyPanel({ study, compact = false, href }: CaseStudyPanelP
           <p className="font-mono text-[10px] uppercase tracking-widest text-accent">Outcome</p>
           <p className={`mt-2 leading-relaxed text-foreground ${bodyClass}`}>{study.outcome}</p>
         </div>
+
+        <section aria-label="Design decisions">
+          <h4 className="text-lg font-semibold text-foreground">Design decisions</h4>
+          <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+            {study.decisions.map((decision) => (
+              <div key={decision.choice} className="rounded-lg border border-border bg-surface/40 p-4">
+                <dt className="font-medium text-foreground">{decision.choice}</dt>
+                <dd className={`mt-2 leading-relaxed text-muted-foreground ${bodyClass}`}>{decision.reason}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section aria-label="Suggested validation">
+          <h4 className="text-lg font-semibold text-foreground">Suggested validation</h4>
+          <p className={`mt-2 text-muted-foreground ${bodyClass}`}>Checks to run when reviewing or extending this build.</p>
+          <ul className={`mt-3 list-disc space-y-2 pl-5 leading-relaxed text-muted-foreground ${bodyClass}`}>
+            {study.validationPlan.map((check) => <li key={check}>{check}</li>)}
+          </ul>
+        </section>
 
         {href ? (
           <span className="inline-flex items-center gap-1 text-sm text-accent transition-colors group-hover:text-accent-light">

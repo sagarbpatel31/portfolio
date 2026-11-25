@@ -1,0 +1,54 @@
+---
+title: "Making Telemetry Retries Safe After a Lost Response"
+date: "2026-11-19"
+tags: ["Observability", "PostgreSQL", "Distributed Systems", "Edge AI", "Reliability"]
+excerpt: "A lost response can turn one telemetry batch into duplicate incident evidence. A transaction design with stable batch IDs, payload checks, and concurrency tests makes the retry behavior explicit."
+---
+
+An edge agent uploads a batch of incident telemetry. The server commits the records, but the connection drops before the response reaches the agent. The agent retries. If the API generates a new identity for every request, one observation can now appear twice in the incident timeline.
+
+The following is a proposed ingestion design for a system like Watchpoint, with a transaction boundary and tests to review before implementation. [Watchpoint case study](/projects/watchpoint)
+
+## Give the batch a persistent identity
+
+The agent generates a batch ID when it writes the outgoing batch to its local spool. Every retry reuses that ID and the same encoded payload. A process restart must reload both from durable storage.
+
+Scope the identity to the authenticated device. The server should derive that device identity from authentication and bind it to the batch, so two devices can use independent ID spaces.
+
+```sql
+CREATE TABLE ingest_batches (
+    device_id uuid NOT NULL,
+    batch_id uuid NOT NULL,
+    payload_sha256 text NOT NULL,
+    accepted_count integer NOT NULL CHECK (accepted_count >= 0),
+    PRIMARY KEY (device_id, batch_id)
+);
+```
+
+The composite primary key enforces uniqueness for the device-and-batch pair. The check constrains the receipt's count. These are database constraints, so concurrent API instances share the same enforcement point. [PostgreSQL 16 constraints](https://www.postgresql.org/docs/16/ddl-constraints.html)
+
+## Commit the receipt and evidence together
+
+Within one database transaction, attempt to insert the receipt with a conflict target of `(device_id, batch_id)` and `DO NOTHING RETURNING batch_id`.
+
+- If the insert returns a row, write the validated observations in the same transaction, then commit before acknowledging success.
+- If it returns no row, read the existing receipt in a subsequent statement. Compare its stored payload digest with the digest of the retry. Return the stored result when they match. Reject reuse of the ID for different content.
+- If the observations fail validation or cannot be written, roll back the transaction so the receipt cannot indicate acceptance of a partial batch.
+
+The digest must cover a defined representation. Hashing the original encoded bytes is simple when the client preserves those bytes. If the server normalizes JSON before hashing, the normalization rules become part of the API contract.
+
+`ON CONFLICT` handles the unique-key collision during insertion. Under Read Committed isolation, `DO NOTHING` can encounter a conflicting row that was outside the statement's original snapshot. A subsequent statement gets a fresh snapshot, which is why this design reads the receipt after the insert attempt. It also requires keeping receipt rows available throughout the retry window. [INSERT semantics](https://www.postgresql.org/docs/16/sql-insert.html) and [Read Committed isolation](https://www.postgresql.org/docs/16/transaction-iso.html)
+
+## Test the uncertain outcome
+
+| Test | Expected persisted result |
+| --- | --- |
+| Drop the response after commit, then retry | One receipt and one set of observations |
+| Send identical retries concurrently | One batch accepted, with matching receipts returned |
+| Reuse the ID with changed content | Existing observations retained, conflict reported |
+| Fail midway through writing observations | Receipt and observations rolled back together |
+| Restart the agent before acknowledgement | The persisted batch ID is reused |
+
+Batch deduplication covers retries of that batch. If an agent can regroup the same observation into a different batch, the design also needs a stable observation identity and a uniqueness constraint at that level.
+
+Finally, define how long the server retains receipts and how long agents may retry. Deleting a receipt while its batch is still eligible for replay reopens the duplicate-write path. That retention boundary belongs in the API documentation and the recovery tests.

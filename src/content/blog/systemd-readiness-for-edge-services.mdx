@@ -1,0 +1,73 @@
+---
+title: "Defining Readiness for an Embedded Linux Service"
+date: "2026-11-19"
+tags: ["Embedded Linux", "systemd", "Firmware Validation", "Reliability"]
+excerpt: "A worked service contract with a systemd unit, explicit readiness conditions, and failure-injection checks for startup, restart, and application-update validation."
+---
+
+Consider an edge application that opens a camera, loads calibration, and serves an inference endpoint. Its process can exist while all three operations are still in progress. A release check that observes only the process ID can approve an application before it can perform useful work.
+
+This is a worked design for a hypothetical service. It gives a validation engineer specific observations to collect before approving an application update.
+
+## Choose the startup boundary
+
+With `Type=exec`, systemd considers startup complete when the executable has been invoked successfully. With `Type=notify`, the application explicitly sends `READY=1` after initialization. The application must implement that notification protocol. Changing the unit file alone cannot supply it. The service manager can then order dependent units against that notification. [systemd service documentation](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html)
+
+For the example application, I would define readiness as all of the following being true.
+
+- The configured camera has opened with the expected identity.
+- Calibration has loaded and its version is recorded.
+- A sample has completed preprocessing and inference.
+- The request endpoint can return a result with the active model identity.
+
+These are proposed acceptance conditions. A camera recorder or a gateway would need different ones.
+
+## Express the contract in the unit
+
+```ini
+[Unit]
+Description=Edge inference application
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=notify
+NotifyAccess=main
+ExecStart=/opt/edge-inference/bin/service
+TimeoutStartSec=30
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The paths and time limits above are illustrative. The service stays in startup until it sends its readiness notification or reaches the startup timeout. Failures trigger the configured restart policy, subject to the start-rate limit. Those limits should follow measured initialization time on the target hardware. [Service configuration](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html) and [unit start limits](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html)
+
+The main process can report progress using `STATUS=` and completion using `READY=1`. Recording the initialization phase helps explain a timeout. The notification API also has attribution rules governed by `NotifyAccess`. [sd_notify documentation](https://www.freedesktop.org/software/systemd/man/latest/sd_notify.html)
+
+## Collect evidence at each boundary
+
+For a disposable test device, capture the unit state and the boot journal alongside the application probe.
+
+```bash
+systemctl show edge-inference.service \
+  -p ActiveState -p SubState -p Result -p NRestarts
+journalctl -b -u edge-inference.service --no-pager
+```
+
+Record a release identifier in the application response. Otherwise, a successful probe could come from an old instance or a process running an unexpected model.
+
+## Validate failure and recovery
+
+| Injected condition | Expected evidence |
+| --- | --- |
+| Delay camera initialization | Readiness waits for the first usable sample |
+| Remove calibration | Startup fails with the calibration identity recorded |
+| Suppress the readiness notification | The startup timeout is visible in the journal |
+| Repeatedly fail initialization | The configured restart limit bounds the loop |
+| Start successfully, then disconnect the camera | The application health probe reports lost capability |
+
+The last row deserves its own check. Startup readiness records a transition. An updater also needs a probe of the running application before promoting a release, and operations need a way to observe subsequent failures.
+
+For the [Offline OTA case study](/projects/offline-ota), I would use this table as a review plan for its health-gated promotion workflow. It specifies evidence to collect during validation and avoids treating a successful service start as the whole acceptance test.

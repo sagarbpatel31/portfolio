@@ -270,6 +270,6 @@ Watchpoint is in early production deployment with one robotics company. Open que
 - **Predictive triggers**: not "this metric dropped below X" but "this metric trajectory predicts failure in N seconds." Rules-based but with trend analysis.
 - **Bundle replay in simulator**: take a real incident bundle, replay it in a sim environment, test fixes before deploying.
 
-The core architecture has held up well. Edge agent in Go, Python ROS2 collector, portable bundles, rules-based RCA, correlation timeline UI. Each layer can be replaced independently. None of them are smart — but together they make incident response 73% faster.
+The Go edge agent, Python ROS 2 collector, bundle format, rules engine, and timeline UI can each be replaced independently. The bundle gives an engineer one place to inspect what happened around a failure.
 
 That's the whole goal.

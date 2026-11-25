@@ -8,6 +8,7 @@ import { fadeIn } from "@/lib/motion";
 const navLinks = [
   { label: "/home", href: "/" },
   { label: "/work", href: "/projects" },
+  { label: "/roles", href: "/roles" },
   { label: "/writing", href: "/blog" },
   { label: "/stack", href: "/uses" },
   { label: "/wins", href: "/wins" },
@@ -28,7 +29,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 bg-background/95 backdrop-blur-lg"
+          className="fixed inset-0 z-50 overflow-y-auto bg-background/95 backdrop-blur-lg"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile navigation"
@@ -47,7 +48,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             </button>
           </div>
 
-          <nav className="flex flex-col items-center justify-center gap-6 px-4 pt-16">
+          <nav className="flex flex-col items-center justify-center gap-4 px-4 py-8 sm:gap-6 sm:py-12">
             {navLinks.map((link, index) => (
               <motion.div
                 key={link.href}

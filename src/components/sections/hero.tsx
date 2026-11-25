@@ -1,83 +1,99 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Download, Github, Linkedin } from "lucide-react";
+import { ArrowDown, Download, Github, Linkedin, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
+import { profile } from "@/content/profile";
+import { socials } from "@/content/socials";
+
+const contactIcons = { Email: Mail, LinkedIn: Linkedin, GitHub: Github };
+const contactLinks = socials.filter(
+  (social): social is (typeof socials)[number] & { name: keyof typeof contactIcons } =>
+    Object.hasOwn(contactIcons, social.name)
+);
 
 export function Hero() {
   return (
-    <section
-      id="hero"
-      className="relative overflow-hidden border-b border-border/70 py-14 sm:py-20 lg:py-24"
-    >
+    <section id="hero" className="relative isolate overflow-hidden border-b border-border/70">
       <div
-        className="pointer-events-none absolute -right-24 top-12 h-72 w-72 rounded-full bg-accent/8 blur-3xl"
+        className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,var(--color-accent-glow),transparent_60%)]"
         aria-hidden="true"
       />
-
-      <Container>
-        <div className="max-w-5xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent-green/20 bg-accent-green/5 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-accent-green">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-green opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-green" />
-            </span>
-            Software Validation Engineer at Microsoft
-          </div>
-
-          <p className="mb-3 font-mono text-xs uppercase tracking-[0.24em] text-accent">
-            Sagar Patel · Systems &amp; AI Engineer
-          </p>
-          <h1 className="max-w-4xl text-4xl font-bold leading-[1.03] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-7xl">
-            I build the software between{" "}
-            <span className="text-gradient-cyan">hardware and intelligence.</span>
+      <Container className="grid items-center gap-8 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14 lg:py-20">
+        <div>
+          <p className="mb-4 font-mono text-sm font-medium text-accent">{profile.name}</p>
+          <h1 className="max-w-3xl text-[clamp(2.125rem,6vw,4.25rem)] font-bold leading-[1.06] tracking-[-0.045em] text-foreground">
+            Embedded Systems &amp;{" "}
+            <span className="text-gradient-cyan">Firmware Validation</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            AI platform firmware validation, embedded Linux, high-performance
-            networking, edge AI, and robotics, owned from low-level
-            implementation through production readiness.
+          <p className="mt-5 max-w-[56ch] text-base leading-relaxed text-muted-foreground sm:text-lg">
+            I validate AI platform firmware at Microsoft, from bring-up and BIOS verification to
+            release testing. My background spans embedded Linux, high-speed networking, and
+            GPU inference on edge devices.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              href="/projects"
-              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2.5 font-mono text-xs font-semibold text-background transition-colors hover:bg-accent-dim"
-            >
-              View selected work
-              <ArrowRight size={14} aria-hidden="true" />
-            </Link>
-            <Link
-              href="/resume"
-              className="inline-flex items-center gap-2 rounded-md border border-border bg-card/60 px-4 py-2.5 font-mono text-xs font-semibold text-foreground transition-colors hover:border-accent/30 hover:text-accent"
-            >
-              <Download size={14} aria-hidden="true" />
-              Resume
-            </Link>
-            <a
-              href="https://github.com/sagarbpatel31"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center rounded-md border border-border p-2.5 text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent sm:inline-flex"
-              aria-label="GitHub"
-            >
-              <Github size={14} />
-            </a>
-            <a
-              href="https://linkedin.com/in/sagarp31"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden items-center rounded-md border border-border p-2.5 text-muted-foreground transition-colors hover:border-accent/30 hover:text-accent sm:inline-flex"
-              aria-label="LinkedIn"
-            >
-              <Linkedin size={14} />
-            </a>
+          <div className="mt-7 flex flex-wrap gap-2 sm:gap-3">
+            <Button asChild className="min-h-11 gap-2 px-4 text-sm font-semibold">
+              <a href={profile.resumeUrl} download>
+                <Download size={16} aria-hidden="true" />
+                Download resume
+              </a>
+            </Button>
+            <Button asChild variant="outline" className="min-h-11 gap-2 bg-card/60 px-4 text-sm">
+              <a href="#selected-work">
+                View selected work
+                <ArrowDown size={15} aria-hidden="true" />
+              </a>
+            </Button>
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[11px] uppercase tracking-wider text-muted">
-            <span>Microsoft</span>
-            <span>Ciena</span>
-            <span>Cisco</span>
-            <span>TCS</span>
-            <span>5+ years in production systems</span>
+          <div className="mt-4 flex flex-wrap gap-x-5">
+            {contactLinks.map(({ name, url }) => {
+              const Icon = contactIcons[name];
+              return (
+                <a
+                  key={name}
+                  href={url}
+                  className="inline-flex min-h-10 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-accent"
+                >
+                  <Icon size={15} aria-hidden="true" />
+                  {name}
+                </a>
+              );
+            })}
           </div>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-accent/20 bg-card/90 shadow-xl shadow-background/45">
+          <div className="flex items-center gap-4 px-5 py-4 sm:px-6">
+            <Image
+              src={profile.avatarUrl}
+              alt=""
+              width={56}
+              height={56}
+              className="size-14 shrink-0 rounded-lg border border-border object-cover object-[center_28%]"
+            />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Software Validation Engineer</p>
+              <p className="mt-1 text-sm text-muted-foreground">Microsoft</p>
+            </div>
+          </div>
+          <dl className="space-y-4 border-t border-border px-5 py-4 sm:px-6">
+            <div>
+              <dt className="font-mono text-xs text-muted-foreground">Core stack</dt>
+              <dd className="mt-1 text-sm text-foreground">C/C++ · Python · Linux · Yocto</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-xs text-muted-foreground">Robotics &amp; edge AI</dt>
+              <dd className="mt-1 text-sm text-foreground">ROS 2 · Jetson · CUDA · TensorRT</dd>
+            </div>
+          </dl>
+          <Link
+            href="/resume"
+            className="block border-t border-border px-5 py-3 text-sm font-medium text-accent transition-colors hover:bg-card-hover sm:px-6"
+          >
+            Experience &amp; education <span aria-hidden="true">↗</span>
+          </Link>
         </div>
       </Container>
     </section>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
+import { caseStudies } from "@/content/hiring";
 import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
 import { getRoleProfile, roleProfiles } from "@/content/roles";
@@ -49,7 +50,7 @@ export async function generateMetadata({ params }: RolePageProps): Promise<Metad
     description: role.recruiterSummary,
     alternates: { canonical: url },
     openGraph: {
-      title: `${role.label} | SAGAR_OS`,
+      title: `${profile.name} | ${role.label}`,
       description: role.recruiterSummary,
       url,
       type: "profile",
@@ -68,6 +69,7 @@ export default async function RolePage({ params }: RolePageProps) {
   const selectedProjects = role.projectSlugs
     .map((projectSlug) => projects.find((project) => project.slug === projectSlug))
     .filter((project): project is Project => Boolean(project));
+  const firstStudy = caseStudies.find((study) => study.slug === role.projectSlugs[0]);
   const allPosts = getAllPosts();
   const selectedPosts = role.postSlugs
     .map((postSlug) => allPosts.find((post) => post.slug === postSlug))
@@ -124,6 +126,20 @@ export default async function RolePage({ params }: RolePageProps) {
                   {role.skills.map((skill) => (
                     <Badge key={skill}>{skill}</Badge>
                   ))}
+                </div>
+                <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1">
+                  {firstStudy && (
+                    <Link
+                      href={`/projects/${firstStudy.slug}#work-sample`}
+                      className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline underline-offset-4 hover:text-accent-light"
+                    >
+                      {firstStudy.workSample.action}
+                    </Link>
+                  )}
+                  <a href={profile.resumeUrl} download className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-foreground hover:text-accent">
+                    <Download size={16} aria-hidden="true" />
+                    Download resume
+                  </a>
                 </div>
               </div>
             </div>

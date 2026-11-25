@@ -1,0 +1,66 @@
+---
+title: "Debugging a ROS 2 Topic That Is Visible but Delivers No Messages"
+date: "2026-11-19"
+tags: ["ROS2", "Robotics", "DDS", "Debugging", "Observability"]
+excerpt: "A concrete QoS mismatch, a reliability compatibility table, and a repeatable investigation that distinguishes endpoint discovery from message delivery."
+---
+
+A camera topic appears in the ROS 2 graph. Both nodes are running, yet a monitoring subscriber receives zero samples. Before changing queue depths or restarting the whole graph, inspect what each endpoint offers and requests.
+
+This walkthrough uses a hypothetical camera publisher and collector. Its purpose is to make a communications failure reproducible enough to explain in an incident review.
+
+## Reproduce one specific mismatch
+
+Suppose the camera publishes with best-effort reliability while the collector requests reliable delivery. That pair is incompatible. A reliable publisher can serve a best-effort subscriber, but a best-effort publisher cannot meet a reliable subscriber's request. [ROS 2 Jazzy QoS reference](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst)
+
+| Publisher reliability | Subscriber reliability | Compatible |
+| --- | --- | --- |
+| Best effort | Best effort | Yes |
+| Best effort | Reliable | No |
+| Reliable | Best effort | Yes |
+| Reliable | Reliable | Yes |
+
+Compatibility is evaluated across the relevant policies. A compatible reliability pair can still fail another requirement, such as durability or deadline. ROS 2 follows the underlying request-and-offer model for matching endpoints. [ROS 2 QoS design](https://design.ros2.org/articles/qos.html)
+
+## Capture the endpoint configuration
+
+```bash
+ros2 topic info /camera/image_raw --verbose
+```
+
+Save the publisher and subscription profiles alongside the ROS distribution, middleware implementation, node configuration, and device identity. Recheck the command's options with `ros2 topic info --help` on the installed distribution.
+
+I would investigate in this order.
+
+1. Confirm the exact topic name and message type on both endpoints.
+2. Compare the offered publisher policies with the requested subscription policies.
+3. Change one policy in a controlled test configuration.
+4. Count received samples over a fixed observation window.
+5. Restart each endpoint independently and repeat the observation.
+
+That sequence produces a before-and-after result with one changed variable. A restart by itself can change discovery timing, queue state, and process load at the same time.
+
+## Make the collector's choice explicit
+
+For a live sensor stream where occasional loss is acceptable, an illustrative Python subscriber could use the predefined sensor-data profile.
+
+```python
+from rclpy.qos import qos_profile_sensor_data
+from sensor_msgs.msg import Image
+
+# Inside a Node subclass. on_image is the application's callback.
+self.subscription = self.create_subscription(
+    Image,
+    "/camera/image_raw",
+    self.on_image,
+    qos_profile_sensor_data,
+)
+```
+
+The sensor-data profile favors timely samples using best-effort reliability and a small queue. Select it from the topic's delivery requirements. An event log may require a different policy. QoS events can also report incompatible policies or missed deadlines, depending on support in the middleware. [ROS 2 Jazzy QoS reference](https://github.com/ros2/ros2_documentation/blob/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst)
+
+## Measure useful delivery
+
+After restoring communication, count callback invocations and record reception times. If messages carry source timestamps, document the clock relationship before using them to calculate age. A subscriber that receives a backlog might show an acceptable count while presenting stale data.
+
+For a collector such as [Watchpoint](/projects/watchpoint), I would preserve the endpoint profiles in the incident evidence. The review should be able to distinguish an absent publisher, an incompatible subscriber, and a subscriber that receives messages too slowly. Those observations lead to different fixes.

@@ -44,4 +44,20 @@ describe("getAllPosts", () => {
 
     warn.mockRestore();
   });
+
+  it("discovers newly added files during development without restarting the server", () => {
+    const environment = jest.replaceProperty(process, "env", { ...process.env, NODE_ENV: "development" });
+    mockedFs.readdirSync.mockReturnValue(["good.mdx"] as never);
+
+    try {
+      jest.isolateModules(() => {
+        const { getAllPosts } = require("@/lib/blog");
+        expect(getAllPosts()).toHaveLength(1);
+        mockedFs.readdirSync.mockReturnValue(["good.mdx", "new.mdx"] as never);
+        expect(getAllPosts()).toHaveLength(2);
+      });
+    } finally {
+      environment.restore();
+    }
+  });
 });
